@@ -3,6 +3,8 @@ import dayjs from 'dayjs'
 import {
   createContext,
   useContext,
+  useCallback,
+  useMemo,
   useState,
   type PropsWithChildren,
 } from 'react'
@@ -68,12 +70,21 @@ export const useClashWSContext = () => {
 
 export const ClashWSProvider = ({ children }: PropsWithChildren) => {
   // Create persisted state handlers
-  const logsStorage = createPersistedState('clash-ws-record-logs', true)
-  const trafficStorage = createPersistedState('clash-ws-record-traffic', true)
-  const memoryStorage = createPersistedState('clash-ws-record-memory', true)
-  const connectionsStorage = createPersistedState(
-    'clash-ws-record-connections',
-    true,
+  const logsStorage = useMemo(
+    () => createPersistedState('clash-ws-record-logs', true),
+    [],
+  )
+  const trafficStorage = useMemo(
+    () => createPersistedState('clash-ws-record-traffic', true),
+    [],
+  )
+  const memoryStorage = useMemo(
+    () => createPersistedState('clash-ws-record-memory', true),
+    [],
+  )
+  const connectionsStorage = useMemo(
+    () => createPersistedState('clash-ws-record-connections', true),
+    [],
   )
 
   // Initialize states with persisted values
@@ -89,25 +100,37 @@ export const ClashWSProvider = ({ children }: PropsWithChildren) => {
   )
 
   // Wrapped setters that also persist to localStorage
-  const setRecordLogs = (value: boolean) => {
-    setRecordLogsState(value)
-    logsStorage.setStoredValue(value)
-  }
+  const setRecordLogs = useCallback(
+    (value: boolean) => {
+      setRecordLogsState(value)
+      logsStorage.setStoredValue(value)
+    },
+    [logsStorage],
+  )
 
-  const setRecordTraffic = (value: boolean) => {
-    setRecordTrafficState(value)
-    trafficStorage.setStoredValue(value)
-  }
+  const setRecordTraffic = useCallback(
+    (value: boolean) => {
+      setRecordTrafficState(value)
+      trafficStorage.setStoredValue(value)
+    },
+    [trafficStorage],
+  )
 
-  const setRecordMemory = (value: boolean) => {
-    setRecordMemoryState(value)
-    memoryStorage.setStoredValue(value)
-  }
+  const setRecordMemory = useCallback(
+    (value: boolean) => {
+      setRecordMemoryState(value)
+      memoryStorage.setStoredValue(value)
+    },
+    [memoryStorage],
+  )
 
-  const setRecordConnections = (value: boolean) => {
-    setRecordConnectionsState(value)
-    connectionsStorage.setStoredValue(value)
-  }
+  const setRecordConnections = useCallback(
+    (value: boolean) => {
+      setRecordConnectionsState(value)
+      connectionsStorage.setStoredValue(value)
+    },
+    [connectionsStorage],
+  )
 
   const { connectionsWS, memoryWS, trafficWS, logsWS } = useClashWebSocket()
 
@@ -202,19 +225,31 @@ export const ClashWSProvider = ({ children }: PropsWithChildren) => {
     queryClient.setQueryData([CLASH_LOGS_QUERY_KEY], newData)
   }, [logsWS.latestMessage])
 
+  const contextValue = useMemo(
+    () => ({
+      recordLogs,
+      setRecordLogs,
+      recordTraffic,
+      setRecordTraffic,
+      recordMemory,
+      setRecordMemory,
+      recordConnections,
+      setRecordConnections,
+    }),
+    [
+      recordConnections,
+      recordLogs,
+      recordMemory,
+      recordTraffic,
+      setRecordConnections,
+      setRecordLogs,
+      setRecordMemory,
+      setRecordTraffic,
+    ],
+  )
+
   return (
-    <ClashWSContext.Provider
-      value={{
-        recordLogs,
-        setRecordLogs,
-        recordTraffic,
-        setRecordTraffic,
-        recordMemory,
-        setRecordMemory,
-        recordConnections,
-        setRecordConnections,
-      }}
-    >
+    <ClashWSContext.Provider value={contextValue}>
       {children}
     </ClashWSContext.Provider>
   )

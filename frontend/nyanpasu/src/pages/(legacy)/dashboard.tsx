@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import DataPanel from '@/components/dashboard/data-panel'
 import HealthPanel from '@/components/dashboard/health-panel'
@@ -20,7 +21,9 @@ function Dashboard() {
 
   // When the page is not visible, reduce the traffic data update frequency
   // to prevent performance issues when the page is restored
-  setRecordTraffic(visible)
+  useEffect(() => {
+    setRecordTraffic(visible)
+  }, [setRecordTraffic, visible])
 
   return (
     <BasePage title={t('Dashboard')}>

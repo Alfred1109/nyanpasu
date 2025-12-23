@@ -13,14 +13,30 @@ import {
 
 let permissionGranted: boolean | null = null
 let portable: boolean | null = null
+let pluginAvailable: boolean | null = null
 
 const checkPermission = async () => {
+  if (pluginAvailable === false) {
+    return false
+  }
   if (permissionGranted == null) {
-    permissionGranted = await isPermissionGranted()
+    try {
+      permissionGranted = await isPermissionGranted()
+    } catch {
+      pluginAvailable = false
+      permissionGranted = false
+      return false
+    }
   }
   if (!permissionGranted) {
-    const permission = await requestPermission()
-    permissionGranted = permission === 'granted'
+    try {
+      const permission = await requestPermission()
+      permissionGranted = permission === 'granted'
+    } catch {
+      pluginAvailable = false
+      permissionGranted = false
+      return false
+    }
   }
   return permissionGranted
 }
@@ -47,7 +63,11 @@ export const notification = async ({
     throw new Error('missing message argument!')
   }
   if (portable === null) {
-    portable = await isPortable()
+    try {
+      portable = await isPortable()
+    } catch {
+      portable = true
+    }
   }
   const permissionGranted = portable || (await checkPermission())
   if (portable || !permissionGranted) {
@@ -60,7 +80,12 @@ export const notification = async ({
     title,
   }
   if (body) options.body = body
-  sendNotification(options)
+  try {
+    sendNotification(options)
+  } catch {
+    pluginAvailable = false
+    Notice[type](`${title} ${body ? `: ${body}` : ''}`)
+  }
 }
 
 export const message = async (
