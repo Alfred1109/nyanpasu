@@ -16,6 +16,8 @@ tauri.preview.conf.json
 
 *.tsbuildinfo
 
+ *.module.d.scss.ts
+
 
 manifest/site/updater/*
 !manifest/site/updater/.gitkeep
