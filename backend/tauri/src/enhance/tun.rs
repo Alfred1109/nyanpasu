@@ -26,52 +26,60 @@ macro_rules! append {
 pub fn use_tun(mut config: Mapping, enable: bool) -> Mapping {
     let tun_key = Value::from("tun");
     let tun_val = config.get(&tun_key);
-    tracing::debug!("tun_val: {:?}", tun_val);
-    if !enable && tun_val.is_none() {
-        return config;
-    }
+    tracing::debug!("tun_val: {:?}, enable: {}", tun_val, enable);
 
+    // Fix: Always ensure tun section exists and has enable field to prevent clash-rs SIGSEGV
+    // Even if enable is false, we need a proper tun section with enable: false
+    // to avoid clash-rs crash when parsing empty/malformed tun config
     let mut tun_val = tun_val.map_or(Mapping::new(), |val| {
         val.as_mapping().cloned().unwrap_or(Mapping::new())
     });
 
+    // Always set enable field to prevent parsing errors
     revise!(tun_val, "enable", enable);
-    if enable {
-        let core = {
+
+    if !enable {
+        // For disabled TUN, still provide minimal valid config to prevent clash-rs crash
+        revise!(config, "tun", tun_val);
+        return config;
+    }
+
+    // TUN is enabled, configure based on core type
+    let core = {
+        *Config::verge()
+            .latest()
+            .clash_core
+            .as_ref()
+            .unwrap_or(&ClashCore::default())
+    };
+    if core == ClashCore::ClashRs || core == ClashCore::ClashRsAlpha {
+        #[cfg(target_os = "macos")]
+        append!(tun_val, "device-id", "dev://utun1989");
+        #[cfg(not(target_os = "macos"))]
+        {
+            let key = Value::String("device-id".into());
+            tun_val.remove(&key);
+        }
+        revise!(tun_val, "auto-route", true);
+    } else {
+        let mut tun_stack = {
             *Config::verge()
                 .latest()
-                .clash_core
+                .tun_stack
                 .as_ref()
-                .unwrap_or(&ClashCore::default())
+                .unwrap_or(&TunStack::default())
         };
-        if core == ClashCore::ClashRs {
-            append!(tun_val, "device-id", "dev://utun1989");
-            revise!(tun_val, "auto-route", true);
-        } else {
-            let mut tun_stack = {
-                *Config::verge()
-                    .latest()
-                    .tun_stack
-                    .as_ref()
-                    .unwrap_or(&TunStack::default())
-            };
-            if core == ClashCore::ClashPremium && tun_stack == TunStack::Mixed {
-                tun_stack = TunStack::Gvisor;
-            }
-            append!(tun_val, "stack", AsRef::<str>::as_ref(&tun_stack));
-            append!(tun_val, "dns-hijack", vec!["any:53"]);
-            revise!(tun_val, "auto-route", true);
-            append!(tun_val, "auto-detect-interface", true);
+        if core == ClashCore::ClashPremium && tun_stack == TunStack::Mixed {
+            tun_stack = TunStack::Gvisor;
         }
+        append!(tun_val, "stack", AsRef::<str>::as_ref(&tun_stack));
+        append!(tun_val, "dns-hijack", vec!["any:53"]);
+        revise!(tun_val, "auto-route", true);
+        append!(tun_val, "auto-detect-interface", true);
     }
 
     revise!(config, "tun", tun_val);
-
-    if enable {
-        use_dns_for_tun(config)
-    } else {
-        config
-    }
+    use_dns_for_tun(config)
 }
 
 fn use_dns_for_tun(mut config: Mapping) -> Mapping {

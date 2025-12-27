@@ -340,9 +340,7 @@ pub async fn patch_verge(patch: IVerge) -> Result<()> {
             let (state, _, _) = CoreManager::global().status().await;
             let current_tun = Config::verge().latest().enable_tun_mode.unwrap_or(false);
             let desired_tun = tun_mode.unwrap_or(false);
-            if flag
-                || matches!(state.as_ref(), CoreState::Stopped(_))
-                || current_tun != desired_tun
+            if flag || matches!(state.as_ref(), CoreState::Stopped(_)) || current_tun != desired_tun
             {
                 log::debug!(target: "app", "core is stopped, restart core");
                 Config::generate().await?;

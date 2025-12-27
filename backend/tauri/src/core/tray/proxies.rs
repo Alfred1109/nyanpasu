@@ -60,9 +60,15 @@ type TrayProxies = IndexMap<String, TrayProxyItem>;
 
 /// Convert raw proxies to tray proxies
 fn to_tray_proxies(mode: &str, raw_proxies: &Proxies) -> TrayProxies {
+    tracing::debug!(target: "tray", "Converting proxies for mode: {}", mode);
+    tracing::debug!(target: "tray", "Raw proxies count: {}", raw_proxies.proxies.len());
+    tracing::debug!(target: "tray", "Raw groups count: {}", raw_proxies.groups.len());
+
     let mut tray_proxies = TrayProxies::new();
     if matches!(mode, "global" | "rule" | "script") {
         if mode == "global" || raw_proxies.proxies.is_empty() {
+            let global_all_count = raw_proxies.global.all.len();
+            tracing::debug!(target: "tray", "Global proxy count: {}, current: {:?}", global_all_count, raw_proxies.global.now);
             let global = TrayProxyItem {
                 current: raw_proxies.global.now.clone(),
                 all: raw_proxies
@@ -76,6 +82,8 @@ fn to_tray_proxies(mode: &str, raw_proxies: &Proxies) -> TrayProxies {
             tray_proxies.insert("global".to_owned(), global);
         }
         for raw_group in raw_proxies.groups.iter() {
+            tracing::debug!(target: "tray", "Processing group: {}, type: {}, nodes: {}", 
+                raw_group.name, raw_group.r#type, raw_group.all.len());
             let group = TrayProxyItem {
                 current: raw_group.now.clone(),
                 all: raw_group.all.iter().map(|x| x.name.to_owned()).collect(),
@@ -83,7 +91,11 @@ fn to_tray_proxies(mode: &str, raw_proxies: &Proxies) -> TrayProxies {
             };
             tray_proxies.insert(raw_group.name.to_owned(), group);
         }
+    } else {
+        tracing::warn!(target: "tray", "Mode {} not supported for tray proxies", mode);
     }
+
+    tracing::debug!(target: "tray", "Final tray proxies count: {}", tray_proxies.len());
     tray_proxies
 }
 
@@ -241,9 +253,12 @@ mod platform_impl {
         group_name: &str,
         group: &TrayProxyItem,
     ) -> anyhow::Result<Submenu<R>> {
+        tracing::debug!(target: "tray", "Generating group selector for: {}, type: {}, nodes: {}", 
+            group_name, group.r#type, group.all.len());
         let mut item_ids = ITEM_IDS.lock();
         let mut group_menu = SubmenuBuilder::new(app_handle, group_name);
         if group.all.is_empty() {
+            tracing::warn!(target: "tray", "Group {} has no proxies", group_name);
             group_menu = group_menu.item(
                 &MenuItemBuilder::new(t!("tray.no_proxies"))
                     .enabled(false)
@@ -255,13 +270,18 @@ mod platform_impl {
         // 限制显示的代理节点数量，避免菜单过长
         const MAX_DISPLAY_NODES: usize = 12;
         let total_nodes = group.all.len();
-        let display_nodes = if total_nodes > MAX_DISPLAY_NODES { MAX_DISPLAY_NODES } else { total_nodes };
-        
+        let display_nodes = if total_nodes > MAX_DISPLAY_NODES {
+            MAX_DISPLAY_NODES
+        } else {
+            total_nodes
+        };
+
         // 显示前N个节点
         for item in group.all.iter().take(display_nodes) {
             let key = (group_name.to_string(), item.to_string());
             let id = item_ids.len();
             item_ids.insert(key, id);
+            tracing::debug!(target: "tray", "Adding proxy node: {} in group: {}, id: {}", item, group_name, id);
             let mut sub_item_builder = CheckMenuItemBuilder::new(item.clone())
                 .id(format!("proxy_node_{id}"))
                 .checked(false);
@@ -269,24 +289,27 @@ mod platform_impl {
                 && now == item.as_str()
             {
                 sub_item_builder = sub_item_builder.checked(true);
+                tracing::debug!(target: "tray", "Setting {} as current proxy", item);
             }
 
-            if !matches!(group.r#type.as_str(), "Selector" | "Fallback") {
-                sub_item_builder = sub_item_builder.enabled(false);
-            }
+            // 移除类型限制，允许所有类型的代理组都可以选择
+            // if !matches!(group.r#type.as_str(), "Selector" | "Fallback") {
+            //     sub_item_builder = sub_item_builder.enabled(false);
+            // }
 
             group_menu = group_menu.item(&sub_item_builder.build(app_handle)?);
         }
 
         // 如果有更多节点，添加提示信息
         if total_nodes > MAX_DISPLAY_NODES {
-            group_menu = group_menu
-                .separator()
-                .item(
-                    &MenuItemBuilder::new(format!("... ({} more nodes)", total_nodes - MAX_DISPLAY_NODES))
-                        .enabled(false)
-                        .build(app_handle)?,
-                );
+            group_menu = group_menu.separator().item(
+                &MenuItemBuilder::new(format!(
+                    "... ({} more nodes)",
+                    total_nodes - MAX_DISPLAY_NODES
+                ))
+                .enabled(false)
+                .build(app_handle)?,
+            );
         }
 
         Ok(group_menu.build()?)
@@ -325,28 +348,25 @@ mod platform_impl {
             .latest()
             .clash_tray_selector
             .unwrap_or_default();
-        
+
         // 如果隐藏代理选择器，直接返回
         if selector_mode == ProxiesSelectorMode::Hidden {
             return Ok(menu);
         }
-        
+
         let proxies = ProxiesGuard::global().read().inner().to_owned();
         let mode = crate::utils::config::get_current_clash_mode();
         let tray_proxies = super::to_tray_proxies(mode.as_str(), &proxies);
         let items = generate_selectors::<R>(app_handle, &tray_proxies)?;
-        
+
         // 始终将代理节点放入子菜单中，保持托盘菜单简洁
-        let mut submenu = SubmenuBuilder::with_id(
-            app_handle,
-            "select_proxies",
-            t!("tray.select_proxies"),
-        );
+        let mut submenu =
+            SubmenuBuilder::with_id(app_handle, "select_proxies", t!("tray.select_proxies"));
         for item in items {
             submenu = submenu.item(&item);
         }
         menu = menu.item(&submenu.build()?);
-        
+
         Ok(menu)
     }
 

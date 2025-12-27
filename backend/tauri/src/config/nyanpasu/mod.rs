@@ -392,6 +392,7 @@ impl IVerge {
             theme_mode: Some("system".into()),
             traffic_graph: Some(true),
             enable_memory_usage: Some(true),
+            enable_tun_mode: Some(false), // Fix: Add missing enable_tun_mode to prevent None fallback
             enable_auto_launch: Some(false),
             enable_silent_start: Some(false),
             enable_system_proxy: Some(false),
