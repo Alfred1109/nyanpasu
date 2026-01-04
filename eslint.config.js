@@ -32,6 +32,8 @@ const ignores = [
   'backend/',
   'backend/**/target',
   'scripts/deno/**',
+  'frontend/interface/src/ipc/bindings.ts',
+  'frontend/nyanpasu/src/paraglide/**',
   'eslint.config.js',
   '.lintstagedrc.js',
   'commitlint.config.js',

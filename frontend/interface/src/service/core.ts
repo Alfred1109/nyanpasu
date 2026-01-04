@@ -1,9 +1,9 @@
-import type { ClashCore } from '../ipc/bindings'
 import { fetchLatestCoreVersions, getCoreVersion } from './tauri'
+import type { VergeConfig } from './types'
 
 export interface Core {
   name: string
-  core: ClashCore
+  core: Required<VergeConfig>['clash_core']
   version?: string
   latest?: string
 }
@@ -12,8 +12,6 @@ export const VALID_CORE: Core[] = [
   { name: 'Clash Premium', core: 'clash' },
   { name: 'Mihomo', core: 'mihomo' },
   { name: 'Mihomo Alpha', core: 'mihomo-alpha' },
-  { name: 'Clash Rust', core: 'clash-rs' },
-  { name: 'Clash Rust Alpha', core: 'clash-rs-alpha' },
 ]
 
 export const fetchCoreVersion = async () => {
@@ -41,10 +39,6 @@ export const fetchLatestCore = async () => {
     switch (item.core) {
       case 'clash':
         latest = `n${results['clash_premium']}`
-        break
-
-      case 'clash-rs':
-        latest = results[key].replace(/v/, '')
         break
 
       default:

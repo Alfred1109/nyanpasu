@@ -118,7 +118,7 @@ export const Sparkline: FC<SparklineProps> = ({
       svg
         .select('.area')
         .datum(data)
-        .transition(t as any)
+        .transition(t)
         .attrTween('d', function (d) {
           const previous = d3.select(this).attr('d')
           const current = area(d)
@@ -128,7 +128,7 @@ export const Sparkline: FC<SparklineProps> = ({
       svg
         .select('.line')
         .datum(data)
-        .transition(t as any)
+        .transition(t)
         .attrTween('d', function (d) {
           const previous = d3.select(this).attr('d')
           const current = line(d)

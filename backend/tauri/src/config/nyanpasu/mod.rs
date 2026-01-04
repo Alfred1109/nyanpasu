@@ -30,9 +30,9 @@ pub use widget::NetworkStatisticWidgetConfig;
 pub enum ClashCore {
     #[serde(rename = "clash", alias = "clash-premium")]
     ClashPremium = 0b0001,
-    #[serde(rename = "mihomo", alias = "clash-meta")]
+    #[serde(rename = "mihomo", alias = "clash-meta", alias = "clash-rs")]
     Mihomo,
-    #[serde(rename = "mihomo-alpha")]
+    #[serde(rename = "mihomo-alpha", alias = "clash-rs-alpha")]
     MihomoAlpha,
 }
 
@@ -338,6 +338,7 @@ impl IVerge {
         }
 
         // Handle deprecated auto_close_connection by migrating to break_when_proxy_change
+        #[allow(deprecated)]
         if config.auto_close_connection.is_some() && config.break_when_proxy_change.is_none() {
             config.break_when_proxy_change = if config.auto_close_connection.unwrap() {
                 Some(BreakWhenProxyChange::All)

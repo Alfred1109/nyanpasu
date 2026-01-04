@@ -8,15 +8,21 @@ import {
   NYANPASU_SETTING_QUERY_KEY,
 } from './consts'
 
+export const SUPPORTED_CLASH_CORES = [
+  'clash',
+  'mihomo',
+  'mihomo-alpha',
+] as const satisfies readonly ClashCore[]
+
+export type SupportedClashCore = (typeof SUPPORTED_CLASH_CORES)[number]
+
 export const ClashCores = {
   clash: 'Clash Premium',
   mihomo: 'Mihomo',
   'mihomo-alpha': 'Mihomo Alpha',
-  'clash-rs': 'Clash Rust',
-  'clash-rs-alpha': 'Clash Rust Alpha',
-} as Record<ClashCore, string>
+} as const satisfies Record<SupportedClashCore, string>
 
-export type ClashCoresInfo = Record<ClashCore, ClashCoresDetail>
+export type ClashCoresInfo = Record<SupportedClashCore, ClashCoresDetail>
 
 export type ClashCoresDetail = {
   name: string
@@ -30,7 +36,7 @@ export const useClashCores = () => {
   const query = useQuery({
     queryKey: [CLASH_CORE_QUERY_KEY],
     queryFn: async () => {
-      return await Object.keys(ClashCores).reduce(
+      return await SUPPORTED_CLASH_CORES.reduce(
         async (acc, key) => {
           const result = await acc
           try {
@@ -38,14 +44,14 @@ export const useClashCores = () => {
               unwrapResult(await commands.getCoreVersion(key as ClashCore)) ??
               'N/A'
 
-            result[key as ClashCore] = {
-              name: ClashCores[key as ClashCore],
+            result[key as SupportedClashCore] = {
+              name: ClashCores[key as SupportedClashCore],
               currentVersion,
             }
           } catch (e) {
             console.error('failed to fetch core version', e)
-            result[key as ClashCore] = {
-              name: ClashCores[key as ClashCore],
+            result[key as SupportedClashCore] = {
+              name: ClashCores[key as SupportedClashCore],
               currentVersion: 'N/A',
             }
           }
@@ -74,9 +80,10 @@ export const useClashCores = () => {
         Object.entries(results).forEach(([_key, latestVersion]) => {
           const key = kebabCase(_key)
 
-          if (updatedData[key as ClashCore]) {
-            updatedData[key as ClashCore] = {
-              ...updatedData[key as ClashCore],
+          if (SUPPORTED_CLASH_CORES.includes(key as SupportedClashCore)) {
+            const supportedKey = key as SupportedClashCore
+            updatedData[supportedKey] = {
+              ...updatedData[supportedKey],
               latestVersion,
             }
           }
@@ -89,7 +96,7 @@ export const useClashCores = () => {
   })
 
   const updateCore = useMutation({
-    mutationFn: async (core: ClashCore) => {
+    mutationFn: async (core: SupportedClashCore) => {
       return unwrapResult(await commands.updateCore(core))
     },
     onSuccess: () => {
@@ -98,7 +105,7 @@ export const useClashCores = () => {
   })
 
   const upsert = useMutation({
-    mutationFn: async (core: ClashCore) => {
+    mutationFn: async (core: SupportedClashCore) => {
       return unwrapResult(await commands.changeClashCore(core))
     },
     onSuccess: () => {

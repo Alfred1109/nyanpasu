@@ -10,6 +10,7 @@ use anyhow::anyhow;
 use parking_lot::RwLock;
 pub use profiles::ProfilesJobGuard;
 use std::sync::Arc;
+#[allow(dead_code)]
 pub trait JobExt {
     fn name(&self) -> &'static str;
     fn setup(&self) -> Option<Task>; // called when the app starts or the config changed

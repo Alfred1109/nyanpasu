@@ -283,6 +283,7 @@ impl TaskManager {
         self.storage.clone()
     }
 
+    #[allow(dead_code)]
     pub fn restore_tasks(&mut self, tasks: Vec<Task>) {
         let mut list = self.restore_list.write();
         list.clear();
@@ -394,6 +395,7 @@ impl TaskManager {
 
     // get current task list
     // note: this method will clone the task list
+    #[allow(dead_code)]
     pub fn list(&self) -> Vec<Task> {
         let list = self.list.read();
         list.clone()

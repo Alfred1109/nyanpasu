@@ -1,146 +1,166 @@
 import { IPSBResponse } from '@/openapi'
-import { invoke } from '@tauri-apps/api/core'
-import type {
-  ClashInfo,
-  Profile,
-  Profiles,
-  ProfilesBuilder,
-  Proxies,
-  RemoteProfileOptionsBuilder,
+import {
+  commands,
+  type ClashCore,
+  type ClashInfo,
+  type CoreState,
+  type GetSysProxyResponse,
+  type IVerge,
+  type PatchRuntimeConfig,
+  type ProfileBuilder,
+  type ProfilesBuilder,
+  type RemoteProfileOptionsBuilder,
+  type RunType,
+  type StatusInfo,
+  type TrayIcon,
 } from '../ipc/bindings'
+import { unwrapResult } from '../utils'
 import { ManifestVersion } from './core'
 import { EnvInfos, InspectUpdater, SystemProxy, VergeConfig } from './types'
 
 export const getNyanpasuConfig = async () => {
-  return await invoke<VergeConfig>('get_verge_config')
+  return unwrapResult(await commands.getVergeConfig()) as VergeConfig
 }
 
 export const patchNyanpasuConfig = async (payload: VergeConfig) => {
-  return await invoke<void>('patch_verge_config', { payload })
+  return unwrapResult(await commands.patchVergeConfig(payload as IVerge))
 }
 
 export const toggleSystemProxy = async () => {
-  return await invoke<void>('toggle_system_proxy')
+  return unwrapResult(await commands.toggleSystemProxy())
 }
 
 export const toggleTunMode = async () => {
-  return await invoke<void>('toggle_tun_mode')
+  return unwrapResult(await commands.toggleTunMode())
 }
 
 export const getClashInfo = async () => {
-  return await invoke<ClashInfo | null>('get_clash_info')
+  return (unwrapResult(await commands.getClashInfo()) as ClashInfo) ?? null
 }
 
-export const patchClashConfig = async (payload: Partial<any>) => {
-  return await invoke<void>('patch_clash_config', { payload })
+export const patchClashConfig = async (
+  payload: Partial<PatchRuntimeConfig>,
+) => {
+  return unwrapResult(
+    await commands.patchClashConfig(payload as PatchRuntimeConfig),
+  )
 }
 
 export const getRuntimeExists = async () => {
-  return await invoke<string[]>('get_runtime_exists')
+  return unwrapResult(await commands.getRuntimeExists())
 }
 
 export const getRuntimeLogs = async () => {
+  const { invoke } = await import('@tauri-apps/api/core')
   return await invoke<Record<string, [string, string][]>>('get_runtime_logs')
 }
 
 export const createProfile = async (
-  item: Partial<Profile>,
+  item: Partial<ProfileBuilder>,
   fileData?: string | null,
 ) => {
-  return await invoke<void>('create_profile', { item, fileData })
+  return unwrapResult(
+    await commands.createProfile(item as ProfileBuilder, fileData ?? null),
+  )
 }
 
 export const updateProfile = async (
   uid: string,
   option?: RemoteProfileOptionsBuilder,
 ) => {
-  return await invoke<void>('update_profile', { uid, option })
+  return unwrapResult(await commands.updateProfile(uid, option ?? null))
 }
 
 export const deleteProfile = async (uid: string) => {
-  return await invoke<void>('delete_profile', { uid })
+  return unwrapResult(await commands.deleteProfile(uid))
 }
 
 export const viewProfile = async (uid: string) => {
-  return await invoke<void>('view_profile', { uid })
+  return unwrapResult(await commands.viewProfile(uid))
 }
 
 export const getProfiles = async () => {
-  return await invoke<Profiles>('get_profiles')
+  return unwrapResult(await commands.getProfiles())
 }
 
 export const setProfiles = async (payload: {
   uid: string
-  profile: Partial<Profile>
+  profile: Partial<ProfileBuilder>
 }) => {
-  return await invoke<void>('patch_profile', payload)
+  return unwrapResult(
+    await commands.patchProfile(payload.uid, payload.profile as ProfileBuilder),
+  )
 }
 
 export const setProfilesConfig = async (profiles: ProfilesBuilder) => {
-  return await invoke<void>('patch_profiles_config', { profiles })
+  return unwrapResult(await commands.patchProfilesConfig(profiles))
 }
 
 export const readProfileFile = async (uid: string) => {
-  return await invoke<string>('read_profile_file', { uid })
+  return unwrapResult(await commands.readProfileFile(uid))
 }
 
 export const saveProfileFile = async (uid: string, fileData: string) => {
-  return await invoke<void>('save_profile_file', { uid, fileData })
+  return unwrapResult(await commands.saveProfileFile(uid, fileData))
 }
 
 export const importProfile = async (
   url: string,
   option: RemoteProfileOptionsBuilder,
 ) => {
-  return await invoke<void>('import_profile', {
-    url,
-    option,
-  })
+  return unwrapResult(await commands.importProfile(url, option ?? null))
 }
 
 export const getCoreVersion = async (
   coreType: Required<VergeConfig>['clash_core'],
 ) => {
-  return await invoke<string>('get_core_version', { coreType })
+  return unwrapResult(await commands.getCoreVersion(coreType as ClashCore))
 }
 
 export const setClashCore = async (
   clashCore: Required<VergeConfig>['clash_core'],
 ) => {
-  return await invoke<void>('change_clash_core', { clashCore })
+  return unwrapResult(await commands.changeClashCore(clashCore as ClashCore))
 }
 
 export const restartSidecar = async () => {
-  return await invoke<void>('restart_sidecar')
+  return unwrapResult(await commands.restartSidecar())
 }
 
 export const fetchLatestCoreVersions = async () => {
-  return await invoke<ManifestVersion['latest']>('fetch_latest_core_versions')
+  return unwrapResult(
+    await commands.fetchLatestCoreVersions(),
+  ) as ManifestVersion['latest']
 }
 
 export const updateCore = async (
   coreType: Required<VergeConfig>['clash_core'],
 ) => {
-  return await invoke<number>('update_core', { coreType })
+  return unwrapResult(await commands.updateCore(coreType as ClashCore))
 }
 
 export const inspectUpdater = async (updaterId: number) => {
-  return await invoke<InspectUpdater>('inspect_updater', { updaterId })
+  return unwrapResult(
+    await commands.inspectUpdater(updaterId),
+  ) as unknown as InspectUpdater
 }
 
 export const pullupUWPTool = async () => {
-  return await invoke<void>('invoke_uwp_tool')
+  return unwrapResult(await commands.invokeUwpTool())
 }
 
 export const getSystemProxy = async () => {
-  return await invoke<SystemProxy>('get_sys_proxy')
+  const res = unwrapResult(await commands.getSysProxy()) as GetSysProxyResponse
+  return {
+    enable: res.enable,
+    server: res.server,
+    bypass: res.bypass,
+  } satisfies SystemProxy
 }
 
 export const statusService = async () => {
   try {
-    const result = await invoke<{
-      status: 'running' | 'stopped' | 'not_installed'
-    }>('status_service')
+    const result = unwrapResult(await commands.statusService()) as StatusInfo
     return result.status
   } catch (e) {
     console.error(e)
@@ -149,151 +169,152 @@ export const statusService = async () => {
 }
 
 export const installService = async () => {
-  return await invoke<void>('install_service')
+  return unwrapResult(await commands.installService())
 }
 
 export const uninstallService = async () => {
-  return await invoke<void>('uninstall_service')
+  return unwrapResult(await commands.uninstallService())
 }
 
 export const startService = async () => {
-  return await invoke<void>('start_service')
+  return unwrapResult(await commands.startService())
 }
 
 export const stopService = async () => {
-  return await invoke<void>('stop_service')
+  return unwrapResult(await commands.stopService())
 }
 
 export const restartService = async () => {
-  return await invoke<void>('restart_service')
+  return unwrapResult(await commands.restartService())
 }
 
 export const openAppConfigDir = async () => {
-  return await invoke<void>('open_app_config_dir')
+  return unwrapResult(await commands.openAppConfigDir())
 }
 
 export const openAppDataDir = async () => {
-  return await invoke<void>('open_app_data_dir')
+  return unwrapResult(await commands.openAppDataDir())
 }
 
 export const openCoreDir = async () => {
-  return await invoke<void>('open_core_dir')
+  return unwrapResult(await commands.openCoreDir())
 }
 
 export const getCoreDir = async () => {
-  return await invoke<string>('get_core_dir')
+  return unwrapResult(await commands.getCoreDir())
 }
 
 export const openLogsDir = async () => {
-  return await invoke<void>('open_logs_dir')
+  return unwrapResult(await commands.openLogsDir())
 }
 
 export const collectLogs = async () => {
-  return await invoke<void>('collect_logs')
+  return unwrapResult(await commands.collectLogs())
 }
 
 export const setCustomAppDir = async (path: string) => {
-  return await invoke<void>('set_custom_app_dir', { path })
+  return unwrapResult(await commands.setCustomAppDir(path))
 }
 
 export const restartApplication = async () => {
-  return await invoke<void>('restart_application')
+  return unwrapResult(await commands.restartApplication())
 }
 
 export const isPortable = async () => {
-  return await invoke<boolean>('is_portable')
+  return unwrapResult(await commands.isPortable())
 }
 
 export const getProxies = async () => {
-  return await invoke<Proxies>('get_proxies')
+  return unwrapResult(await commands.getProxies())
 }
 
 export const mutateProxies = async () => {
-  return await invoke<Proxies>('mutate_proxies')
+  return unwrapResult(await commands.mutateProxies())
 }
 
 export const selectProxy = async (group: string, name: string) => {
-  return await invoke<void>('select_proxy', { group, name })
+  return unwrapResult(await commands.selectProxy(group, name))
 }
 
 export const updateProxyProvider = async (name: string) => {
-  return await invoke<void>('update_proxy_provider', { name })
+  return unwrapResult(await commands.updateProxyProvider(name))
 }
 
 export const saveWindowSizeState = async () => {
-  return await invoke<void>('save_window_size_state')
+  return unwrapResult(await commands.saveWindowSizeState())
 }
 
 export const collectEnvs = async () => {
-  return await invoke<EnvInfos>('collect_envs')
+  return unwrapResult(await commands.collectEnvs()) as unknown as EnvInfos
 }
 
 export const getRuntimeYaml = async () => {
-  return await invoke<string>('get_runtime_yaml')
+  return unwrapResult(await commands.getRuntimeYaml())
 }
 
 export const getServerPort = async () => {
-  return await invoke<number>('get_server_port')
+  return unwrapResult(await commands.getServerPort())
 }
 
 export const setTrayIcon = async (
   mode: 'tun' | 'system_proxy' | 'normal',
   path?: string,
 ) => {
-  return await invoke<void>('set_tray_icon', { mode, path })
+  return unwrapResult(
+    await commands.setTrayIcon(mode as unknown as TrayIcon, path ?? null),
+  )
 }
 
 export const isTrayIconSet = async (
   mode: 'tun' | 'system_proxy' | 'normal',
 ) => {
-  return await invoke<boolean>('is_tray_icon_set', {
-    mode,
-  })
+  return unwrapResult(await commands.isTrayIconSet(mode as unknown as TrayIcon))
 }
 
 export const getCoreStatus = async () => {
-  return await invoke<
-    ['Running' | { Stopped: string | null }, number, 'normal' | 'service']
-  >('get_core_status')
+  return unwrapResult(await commands.getCoreStatus()) as [
+    CoreState,
+    number,
+    RunType,
+  ]
 }
 
 export const urlDelayTest = async (url: string, expectedStatus: number) => {
-  return await invoke<number | null>('url_delay_test', {
-    url,
-    expectedStatus,
-  })
+  return unwrapResult(await commands.urlDelayTest(url, expectedStatus))
 }
 
-export const getIpsbASN = async () => invoke<IPSBResponse>('get_ipsb_asn')
+export const getIpsbASN = async () => {
+  return unwrapResult(await commands.getIpsbAsn()) as unknown as IPSBResponse
+}
 
 export const openThat = async (path: string) => {
-  return await invoke<void>('open_that', { path })
+  return unwrapResult(await commands.openThat(path))
 }
 
 export const isAppImage = async () => {
-  return await invoke<boolean>('is_appimage')
+  return unwrapResult(await commands.isAppimage())
 }
 
 export const getServiceInstallPrompt = async () => {
-  return await invoke<string>('get_service_install_prompt')
+  return unwrapResult(await commands.getServiceInstallPrompt())
 }
 
 export const cleanupProcesses = async () => {
-  return await invoke<void>('cleanup_processes')
+  return unwrapResult(await commands.cleanupProcesses())
 }
 
 export const getStorageItem = async (key: string) => {
-  return await invoke<string | null>('get_storage_item', { key })
+  return unwrapResult(await commands.getStorageItem(key))
 }
 
 export const setStorageItem = async (key: string, value: string) => {
-  return await invoke<void>('set_storage_item', { key, value })
+  return unwrapResult(await commands.setStorageItem(key, value))
 }
 
 export const removeStorageItem = async (key: string) => {
-  return await invoke<void>('remove_storage_item', { key })
+  return unwrapResult(await commands.removeStorageItem(key))
 }
 
 export const reorderProfilesByList = async (list: string[]) => {
-  return await invoke<void>('reorder_profiles_by_list', { list })
+  return unwrapResult(await commands.reorderProfilesByList(list))
 }

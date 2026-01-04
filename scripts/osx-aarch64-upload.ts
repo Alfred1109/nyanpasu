@@ -15,9 +15,6 @@ async function resolve() {
   if (!process.env.TAURI_SIGNING_PRIVATE_KEY) {
     throw new Error('TAURI_SIGNING_PRIVATE_KEY is required')
   }
-  if (!process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD) {
-    throw new Error('TAURI_SIGNING_PRIVATE_KEY_PASSWORD is required')
-  }
 
   const { version } = pkgJson
 
@@ -25,7 +22,6 @@ async function resolve() {
 
   consola.info(`Upload to tag ${tag}`)
 
-  const cwd = process.cwd()
   const bundlePath = path.join(
     'backend/target/aarch64-apple-darwin/release/bundle',
   )

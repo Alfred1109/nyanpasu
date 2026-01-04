@@ -46,7 +46,7 @@ where
     T: Clone + Sync + Send,
 {
     /// to auto commit the state when it is dropped
-    pub fn auto_commit(&self) -> ManagedStateAutoCommit<T> {
+    pub fn auto_commit(&self) -> ManagedStateAutoCommit<'_, T> {
         ManagedStateAutoCommit(self)
     }
 }

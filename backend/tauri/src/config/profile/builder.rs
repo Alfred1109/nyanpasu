@@ -14,6 +14,7 @@ pub enum ProfileBuilder {
 }
 
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum ProfileBuilderError {
     #[error(transparent)]
     Remote(#[from] RemoteProfileBuilderError),
@@ -26,6 +27,7 @@ pub enum ProfileBuilderError {
 }
 
 impl ProfileBuilder {
+    #[allow(dead_code)]
     pub fn build(self) -> Result<Profile, ProfileBuilderError> {
         let profile = match self {
             ProfileBuilder::Remote(mut builder) => builder.build()?.into(),

@@ -16,12 +16,15 @@ use std::{
     time::Duration,
 };
 
+#[allow(dead_code)]
 const CLEAR_LOG_TASK_NAME: &str = "clear_logs";
 
 #[derive(Clone, Default)]
+#[allow(dead_code)]
 pub struct ClearLogsJob;
 
 /// Clear logs from the logs directory
+#[allow(dead_code)]
 pub fn clear_logs() -> Result<()> {
     let log_dir = dirs::app_logs_dir()?;
     if !log_dir.exists() {

@@ -41,7 +41,7 @@ const BreakWhenProxyChangeSetting = () => {
     translations[currentLang as keyof typeof translations] ||
     translations.default
 
-  const { value, upsert } = useSetting('break_when_proxy_change' as any)
+  const { value, upsert } = useSetting('break_when_proxy_change')
 
   return (
     <SwitchItem
@@ -49,9 +49,9 @@ const BreakWhenProxyChangeSetting = () => {
       checked={value !== 'none'}
       onChange={() => {
         if (value === 'none') {
-          upsert('all' as any)
+          upsert('all')
         } else {
-          upsert('none' as any)
+          upsert('none')
         }
       }}
     />
@@ -67,7 +67,7 @@ const BreakWhenProfileChangeSetting = () => {
     translations[currentLang as keyof typeof translations] ||
     translations.default
 
-  const { value, upsert } = useSetting('break_when_profile_change' as any)
+  const { value, upsert } = useSetting('break_when_profile_change')
 
   return (
     <SwitchItem
@@ -75,9 +75,9 @@ const BreakWhenProfileChangeSetting = () => {
       checked={value === true}
       onChange={() => {
         if (value === true) {
-          upsert(false as any)
+          upsert(false)
         } else {
-          upsert(true as any)
+          upsert(true)
         }
       }}
     />
@@ -93,7 +93,7 @@ const BreakWhenModeChangeSetting = () => {
     translations[currentLang as keyof typeof translations] ||
     translations.default
 
-  const { value, upsert } = useSetting('break_when_mode_change' as any)
+  const { value, upsert } = useSetting('break_when_mode_change')
 
   return (
     <SwitchItem
@@ -101,9 +101,9 @@ const BreakWhenModeChangeSetting = () => {
       checked={value === true}
       onChange={() => {
         if (value === true) {
-          upsert(false as any)
+          upsert(false)
         } else {
-          upsert(true as any)
+          upsert(true)
         }
       }}
     />

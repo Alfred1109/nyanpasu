@@ -1,9 +1,6 @@
 /** tauri-specta globals **/
 
-import {
-  Channel as TAURI_CHANNEL,
-  invoke as TAURI_INVOKE,
-} from '@tauri-apps/api/core'
+import { invoke as TAURI_INVOKE } from '@tauri-apps/api/core'
 import * as TAURI_API_EVENT from '@tauri-apps/api/event'
 import { type WebviewWindow as __WebviewWindow__ } from '@tauri-apps/api/webviewWindow'
 
@@ -254,6 +251,22 @@ export const commands = {
         status: 'ok',
         data: await TAURI_INVOKE('patch_verge_config', { payload }),
       }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  async toggleSystemProxy(): Promise<Result<null, string>> {
+    try {
+      return { status: 'ok', data: await TAURI_INVOKE('toggle_system_proxy') }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  async toggleTunMode(): Promise<Result<null, string>> {
+    try {
+      return { status: 'ok', data: await TAURI_INVOKE('toggle_tun_mode') }
     } catch (e) {
       if (e instanceof Error) throw e
       else return { status: 'error', error: e as any }

@@ -172,8 +172,6 @@ const UWPTool = () => {
 export const SettingClashBase = () => {
   const { t } = useTranslation()
 
-  const [coreType] = useCoreType()
-
   return (
     <BaseCard label={t('Clash Setting')}>
       <List disablePadding>
@@ -181,7 +179,7 @@ export const SettingClashBase = () => {
 
         <IPv6 />
 
-        {coreType !== 'clash-rs' && <TunStack />}
+        <TunStack />
 
         <LogLevel />
 

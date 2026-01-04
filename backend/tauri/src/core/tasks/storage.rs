@@ -178,12 +178,14 @@ impl TaskStorage {
     }
 
     /// get_instance get the raw storage instance
+    #[allow(dead_code)]
     fn get_instance(&self) -> &redb::Database {
         self.storage.get_instance()
     }
 }
 
 // pub struct TaskGuard;
+#[allow(dead_code)]
 pub trait TaskGuard {
     fn restore(&mut self) -> Result<()>;
     fn dump(&self) -> Result<()>;

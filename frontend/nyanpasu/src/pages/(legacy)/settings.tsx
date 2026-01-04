@@ -22,13 +22,13 @@ function SettingPage() {
 
   const GithubIcon = () => {
     const toGithubRepo = useLockFn(() => {
-      return openThat('https://github.com/libnyanpasu/clash-nyanpasu')
+      return openThat('https://github.com/Alfred1109/clashnyanpasu')
     })
 
     return (
       <IconButton
         color="inherit"
-        title="@libnyanpasu/clash-nyanpasu"
+        title="@Alfred1109/clashnyanpasu"
         onClick={toGithubRepo}
       >
         <GitHub fontSize="inherit" />
@@ -46,7 +46,7 @@ function SettingPage() {
           .join('\n'),
       )
       return openThat(
-        'https://github.com/libnyanpasu/clash-nyanpasu/issues/new?assignees=&labels=T%3A+Bug%2CS%3A+Untriaged&projects=&template=bug_report.yaml&env_infos=' +
+        'https://github.com/Alfred1109/clashnyanpasu/issues/new?assignees=&labels=T%3A+Bug%2CS%3A+Untriaged&projects=&template=bug_report.yaml&env_infos=' +
           formattedEnv,
       )
     })

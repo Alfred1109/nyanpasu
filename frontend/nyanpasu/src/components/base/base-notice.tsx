@@ -18,7 +18,7 @@ const NoticeInner = (props: InnerProps) => {
     setVisible(false)
     onClose()
   }
-  const onAutoClose = (_e: any, reason: string) => {
+  const onAutoClose = (_e: unknown, reason: string) => {
     if (reason !== 'clickaway') onBtnClose()
   }
 
@@ -66,14 +66,23 @@ interface NoticeInstance {
   success(message: ReactNode, duration?: number): void
 }
 
-let parent: HTMLDivElement = null!
+const getOrCreateParent = (): HTMLDivElement => {
+  const existingParent = document.getElementById(
+    'nyanpasu-notice-container',
+  ) as HTMLDivElement
+  if (existingParent) {
+    return existingParent
+  }
+
+  const newParent = document.createElement('div')
+  newParent.id = 'nyanpasu-notice-container'
+  document.body.appendChild(newParent)
+  return newParent
+}
 
 // @ts-expect-error 90 行动态添加了 info、error、success 属性
 export const Notice: NoticeInstance = (props) => {
-  if (!parent) {
-    parent = document.createElement('div')
-    document.body.appendChild(parent)
-  }
+  const parent = getOrCreateParent()
 
   const container = document.createElement('div')
   parent.appendChild(container)

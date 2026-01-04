@@ -24,6 +24,7 @@ pub(super) fn get_arch() -> anyhow::Result<&'static str> {
     }
 }
 
+#[allow(dead_code)]
 pub(super) enum CoreTypeMeta {
     ClashPremium(String),
     Mihomo(String),

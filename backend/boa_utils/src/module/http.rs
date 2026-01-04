@@ -274,7 +274,7 @@ fn test_http_module_loader() -> JsResult<()> {
         import { Base64 } from 'https://esm.run/js-base64@3.7.6';
         // Test toolkit
         import { isEqual } from 'https://esm.run/es-toolkit@1.39.10';
-        import { text } from 'https://github.com/libnyanpasu/clash-nyanpasu/raw/refs/heads/main/pnpm-workspace.yaml';
+        import { text } from 'https://github.com/Alfred1109/clashnyanpasu/raw/refs/heads/main/pnpm-workspace.yaml';
 
         if (isEqual(1, 2)) {
             throw new Error('Wrong isEqual implementation');

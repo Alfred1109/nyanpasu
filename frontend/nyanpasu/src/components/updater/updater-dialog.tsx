@@ -73,8 +73,8 @@ export default function UpdaterDialog({
   })
 
   const releasesPageUrl = IS_NIGHTLY
-    ? `https://github.com/libnyanpasu/clash-nyanpasu/releases/tag/pre-release`
-    : `https://github.com/libnyanpasu/clash-nyanpasu/releases/tag/v${update.version}`
+    ? `https://github.com/Alfred1109/clashnyanpasu/releases/tag/pre-release`
+    : `https://github.com/Alfred1109/clashnyanpasu/releases/tag/v${update.version}`
 
   return (
     <BaseDialog

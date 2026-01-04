@@ -92,7 +92,6 @@ where
 mod tests {
     use super::*;
     use serde::{Deserialize, Serialize};
-    use std::sync::Arc;
     use tempfile::tempdir;
     use tokio::fs;
 

@@ -110,6 +110,7 @@ type Data = String;
 pub struct ScriptWrapper(pub ScriptType, pub Data);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum ChainType {
     #[serde(rename = "merge")]
     Merge,

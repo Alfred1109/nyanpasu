@@ -19,11 +19,17 @@ export default {
     'eslint --cache --fix',
     () => 'tsc -p scripts/tsconfig.json --noEmit',
   ],
-  'frontend/interface/**/*.{ts,tsx}': [
-    'prettier --write',
-    'eslint --cache --fix',
-    () => 'tsc -p frontend/interface/tsconfig.json --noEmit',
-  ],
+  'frontend/interface/**/*.{ts,tsx}': (filenames) => {
+    const filtered = filenames.filter(
+      (file) => !file.endsWith('frontend/interface/src/ipc/bindings.ts'),
+    )
+    if (filtered.length === 0) return []
+    return [
+      `prettier --write ${filtered.join(' ')}`,
+      `eslint --cache --fix ${filtered.join(' ')}`,
+      'tsc -p frontend/interface/tsconfig.json --noEmit',
+    ]
+  },
   'frontend/ui/**/*.{ts,tsx}': [
     'prettier --write',
     'eslint --cache --fix',

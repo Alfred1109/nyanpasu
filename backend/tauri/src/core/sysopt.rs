@@ -3,16 +3,13 @@ use anyhow::{Result, anyhow};
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 use sysproxy::Sysproxy;
 use tauri::{async_runtime::Mutex as TokioMutex, utils::platform::current_exe};
 
 // Import PAC manager
 #[cfg(feature = "default-meta")]
 use crate::core::pac::PacManager;
-
-#[cfg(target_os = "linux")]
-use std::process::Command;
 
 pub struct Sysopt {
     /// current system proxy setting
@@ -38,6 +35,7 @@ static DEFAULT_BYPASS: &str =
     "127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,localhost,*.local,*.crashlytics.com,<local>";
 
 #[cfg(target_os = "linux")]
+#[allow(dead_code)]
 fn detect_desktop_environment() -> String {
     std::env::var("XDG_CURRENT_DESKTOP")
         .or_else(|_| std::env::var("DESKTOP_SESSION"))
@@ -46,6 +44,7 @@ fn detect_desktop_environment() -> String {
 }
 
 #[cfg(target_os = "linux")]
+#[allow(dead_code)]
 fn get_autostart_requirements(desktop_env: &str) -> (bool, Vec<String>) {
     match desktop_env {
         "kde" | "plasma" => {
@@ -269,7 +268,17 @@ impl Sysopt {
             // 备用方法：检查环境变量
             let fallback_appimage = std::env::var("APPIMAGE").ok();
 
-            let final_path = appimage_path.or(fallback_appimage).unwrap_or(app_path);
+            // 备用方法：尝试 argv[0]（某些桌面环境启动时不会带 APPIMAGE）
+            let argv0 = std::env::args_os().next().and_then(|arg0| {
+                let s = arg0.to_string_lossy().to_string();
+                let p = Path::new(&s);
+                (p.is_absolute() && p.exists()).then_some(s)
+            });
+
+            let final_path = appimage_path
+                .or(fallback_appimage)
+                .or(argv0)
+                .unwrap_or(app_path);
 
             log::info!(target: "app", "Using executable path for auto-launch: {}", final_path);
             final_path
@@ -309,7 +318,12 @@ impl Sysopt {
         {
             if enable {
                 log::debug!(target: "app", "Enabling auto-launch for non-macOS platform");
-                auto.enable()?;
+                // Avoid rewriting an existing autostart entry on every launch.
+                // This is especially important on Linux AppImage where current_exe may point to
+                // a transient mount path (e.g. /tmp/.mount_*).
+                if !auto.is_enabled().unwrap_or(false) {
+                    auto.enable()?;
+                }
             } else {
                 log::debug!(target: "app", "Disabling auto-launch for non-macOS platform");
                 let _ = auto.disable();

@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 #[derive(Debug, Clone, Deserialize, Serialize, Type)]
+#[allow(dead_code)]
 pub struct ConnectionInfo {
     pub id: String,
     pub chains: Vec<String>,
@@ -62,11 +63,13 @@ impl ConnectionInterruptionService {
     }
 
     /// Interrupt all connections
+    #[allow(dead_code)]
     pub async fn interrupt_all() -> Result<()> {
         api::delete_connections(None).await
     }
 
     /// Interrupt connections based on proxy chain (not yet implemented)
+    #[allow(dead_code)]
     pub async fn interrupt_by_chain(_chain: &[String]) -> Result<()> {
         // TODO: Implement chain-based connection interruption
         // This would require:

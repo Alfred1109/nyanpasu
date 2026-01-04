@@ -6,8 +6,7 @@ import { EnvInfos } from '@nyanpasu/interface'
  * @param classes - array of classes
  * @returns string of classes
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function classNames(...classes: any[]) {
+export function classNames(...classes: unknown[]) {
   return classes.filter(Boolean).join(' ')
 }
 
@@ -15,7 +14,7 @@ export async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export const containsSearchTerm = (obj: any, term: string): boolean => {
+export const containsSearchTerm = (obj: unknown, term: string): boolean => {
   if (!obj || !term) return false
 
   if (isString(obj)) {
@@ -23,7 +22,7 @@ export const containsSearchTerm = (obj: any, term: string): boolean => {
   }
 
   if (isObject(obj) || isArray(obj)) {
-    return some(obj, (value: any) => containsSearchTerm(value, term))
+    return some(obj, (value: unknown) => containsSearchTerm(value, term))
   }
 
   return false

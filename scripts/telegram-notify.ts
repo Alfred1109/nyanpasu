@@ -1,7 +1,7 @@
 // import { Telegraf } from "telegraf";
 import { existsSync } from 'fs'
 import path from 'path'
-import { fstat, mkdirp } from 'fs-extra'
+import { mkdirp } from 'fs-extra'
 import pRetry from 'p-retry'
 import { getOctokit } from '@actions/github'
 import { version } from '../package.json'
@@ -54,8 +54,8 @@ const isValidFormat = (fileName: string): boolean => {
 }
 
 const repoInfo = {
-  owner: 'libnyanpasu',
-  repo: 'clash-nyanpasu',
+  owner: 'Alfred1109',
+  repo: 'clashnyanpasu',
 }
 
 ;(async () => {
@@ -109,7 +109,7 @@ const repoInfo = {
         `Clash Nyanpasu ${version} Released!`,
         '',
         'Check out on GitHub:',
-        ` - https://github.com/libnyanpasu/clash-nyanpasu/releases/tag/v${version}`,
+        ` - https://github.com/Alfred1109/clashnyanpasu/releases/tag/v${version}`,
       ]),
     })
     consola.success('Send release message to telegram successfully')
@@ -119,7 +119,7 @@ const repoInfo = {
         `Clash Nyanpasu Nightly Build ${GIT_SHORT_HASH} released!`,
         '',
         'Could be unstable, use at your own risk. Download at:',
-        `- https://github.com/libnyanpasu/clash-nyanpasu/actions/runs/${WORKFLOW_RUN_ID}`,
+        `- https://github.com/Alfred1109/clashnyanpasu/actions/runs/${WORKFLOW_RUN_ID}`,
         '',
         'You could also waiting for the telegram bot to upload the binaries, although it may take a while or even fail.',
       ]),

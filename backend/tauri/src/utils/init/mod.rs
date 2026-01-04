@@ -279,6 +279,7 @@ pub fn check_singleton() -> Result<Option<single_instance::SingleInstance>> {
     Ok(None)
 }
 
+#[allow(dead_code)]
 pub fn do_config_migration(old_app_dir: &PathBuf, app_dir: &PathBuf) -> anyhow::Result<()> {
     let copy_option = CopyOptions::new();
     let copy_option = copy_option.overwrite(true);

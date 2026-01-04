@@ -47,6 +47,7 @@ struct DownloaderInner {
     total_size: u64,
     semaphore: Arc<Semaphore>,
     chunks: Vec<Arc<RwLock<ChunkThread>>>,
+    #[allow(dead_code)]
     mode: DownloadMode,
 }
 
@@ -133,7 +134,9 @@ pub enum DownloaderState {
 }
 
 #[derive(Debug, Serialize, Default)]
+#[allow(dead_code)]
 pub enum DownloadMode {
+    #[allow(dead_code)]
     SingleThread,
     #[default]
     MultiThread,
@@ -159,12 +162,15 @@ pub struct ChunkStatus {
     pub speed: f64,
 }
 
+#[allow(dead_code)]
 enum ChunkThreadEvent {
     DecreaseSemaphore(DecreaseSemaphoreReason),
     Finish,
 }
 
+#[allow(dead_code)]
 enum DecreaseSemaphoreReason {
+    #[allow(dead_code)]
     Reason(String),
     Cause(anyhow::Error),
 }

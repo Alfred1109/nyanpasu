@@ -24,7 +24,7 @@ semver = "1.0"
 
 [dependencies]
 # Local Dependencies
-nyanpasu-ipc = { git = "https://github.com/libnyanpasu/nyanpasu-service.git", features = [
+nyanpasu-ipc = { git = "https://github.com/Alfred1109/nyanpasu-service.git", rev = "8f2eada8c8625a6453bdb7a6e617455cf04d857d", features = [
   "client",
   "specta",
 ] } # IPC bridge between the UI process and service process
@@ -92,14 +92,12 @@ reqwest = { workspace = true }
 tokio-tungstenite = "0.28"
 urlencoding = "2.1"
 port_scanner = "0.1.5"
-sysproxy = { git = "https://github.com/libnyanpasu/sysproxy-rs.git", version = "0.3" }
+sysproxy = { git = "https://github.com/Alfred1109/sysproxy-rs.git", rev = "355d9c98e20f894e75f13049d0031d3794e9a74a", version = "0.3" }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
-serde_yaml = { version = "0.10", package = "serde_yaml_ng", branch = "feat/specta", git = "https://github.com/libnyanpasu/serde-yaml-ng.git", features = [
-  "specta",
-] }
+serde_yaml = "0.9.34"
 bincode = { version = "2.0.1", default-features = false, features = [
   "serde",
   "std",
@@ -126,10 +124,10 @@ rs-snowflake = "0.6"
 seahash = "4.1"
 
 # System Utilities
-auto-launch = { git = "https://github.com/libnyanpasu/auto-launch.git", version = "0.5" }
-delay_timer = { version = "0.11", git = "https://github.com/libnyanpasu/delay-timer.git" } # Task scheduler with timer
+auto-launch = { git = "https://github.com/Alfred1109/auto-launch.git", rev = "729d5429dd689067047489af4a0a32f7013854c8", version = "0.5" }
+delay_timer = { version = "0.11", git = "https://github.com/Alfred1109/delay-timer.git", rev = "76615d9b0c1bb830212fe84b5d18ee5444831625" } # Task scheduler with timer
 dunce = "1.0.4"                                                                            # for cross platform path normalization
-runas = { git = "https://github.com/libnyanpasu/rust-runas.git" }
+runas = { git = "https://github.com/Alfred1109/rust-runas.git", rev = "29bdb2501c05b7d78e63628bedbd4a190b71bad3" }
 single-instance = "0.3.3"
 which = "8"
 open = "5.0.1"

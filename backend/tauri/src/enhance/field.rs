@@ -55,6 +55,7 @@ pub const OTHERS_FIELDS: [&str; 31] = [
     "global-client-fingerprint", // meta
 ];
 
+#[allow(dead_code)]
 pub fn use_clash_fields() -> Vec<String> {
     DEFAULT_FIELDS
         .into_iter()
@@ -64,6 +65,7 @@ pub fn use_clash_fields() -> Vec<String> {
         .collect()
 }
 
+#[allow(dead_code)]
 pub fn use_valid_fields(valid: &[String]) -> Vec<String> {
     let others = Vec::from(OTHERS_FIELDS);
 
@@ -77,6 +79,7 @@ pub fn use_valid_fields(valid: &[String]) -> Vec<String> {
 }
 
 /// 使用白名单过滤配置字段
+#[allow(dead_code)]
 pub fn use_whitelist_fields_filter(config: Mapping, filter: &[String], enable: bool) -> Mapping {
     if !enable {
         return config;
@@ -94,6 +97,7 @@ pub fn use_whitelist_fields_filter(config: Mapping, filter: &[String], enable: b
     ret
 }
 
+#[allow(dead_code)]
 pub fn use_lowercase(config: Mapping) -> Mapping {
     let mut ret = Mapping::new();
     for (key, value) in config.into_iter() {
@@ -112,6 +116,7 @@ pub fn use_lowercase(config: Mapping) -> Mapping {
     ret
 }
 
+#[allow(dead_code)]
 pub fn use_sort(config: Mapping, enable_filter: bool) -> Mapping {
     let mut ret = Mapping::new();
 

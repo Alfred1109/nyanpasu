@@ -2,7 +2,6 @@ import { motion } from 'framer-motion'
 import { isObject } from 'lodash-es'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import ClashRs from '@/assets/image/core/clash-rs.png'
 import ClashMeta from '@/assets/image/core/clash.meta.png'
 import Clash from '@/assets/image/core/clash.png'
 import { formatError } from '@/utils'
@@ -15,24 +14,19 @@ import ListItem from '@mui/material/ListItem'
 import ListItemButton from '@mui/material/ListItemButton'
 import Tooltip from '@mui/material/Tooltip'
 import {
-  ClashCore,
   ClashCoresDetail,
   InspectUpdater,
   inspectUpdater,
+  SupportedClashCore,
   useClashCores,
 } from '@nyanpasu/interface'
 import { alpha, cleanDeepClickEvent, cn } from '@nyanpasu/ui'
 
-export const getImage = (core: ClashCore) => {
+export const getImage = (core: SupportedClashCore) => {
   switch (core) {
     case 'mihomo':
     case 'mihomo-alpha': {
       return ClashMeta
-    }
-
-    case 'clash-rs':
-    case 'clash-rs-alpha': {
-      return ClashRs
     }
 
     default: {
@@ -111,8 +105,8 @@ const CardProgress = ({
 export interface ClashCoreItemProps {
   selected: boolean
   data: ClashCoresDetail
-  core: ClashCore
-  onClick: (core: ClashCore) => void
+  core: SupportedClashCore
+  onClick: (core: SupportedClashCore) => void
 }
 
 /**

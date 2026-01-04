@@ -294,8 +294,8 @@ mod utils {
     #[derive(Debug)]
     // TODO: support fn params check and support typescript type erase
     struct DefaultExport {
-        span: Span,
-        is_function: bool,
+        _span: Span,
+        _is_function: bool,
     }
 
     #[derive(Debug, Default)]
@@ -338,11 +338,11 @@ mod utils {
             it: &oxc_ast::ast::ExportDefaultDeclaration<'n>,
         ) {
             self.default_export = Some(DefaultExport {
-                is_function: matches!(
+                _is_function: matches!(
                     it.declaration,
                     oxc_ast::ast::ExportDefaultDeclarationKind::FunctionDeclaration(_)
                 ),
-                span: it.span,
+                _span: it.span,
             });
         }
     }

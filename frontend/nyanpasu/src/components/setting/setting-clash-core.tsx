@@ -7,8 +7,8 @@ import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
 import { Box, Button, List, ListItem } from '@mui/material'
 import {
-  ClashCore,
   ClashCores,
+  SupportedClashCore,
   useClashConnections,
   useClashCores,
   useClashVersion,
@@ -47,7 +47,7 @@ export const SettingClashCore = () => {
         : clashVersion?.version || '-'
   }, [clashVersion])
 
-  const changeClashCore = useLockFn(async (core: ClashCore) => {
+  const changeClashCore = useLockFn(async (core: SupportedClashCore) => {
     try {
       loading.mask = true
       try {
@@ -126,8 +126,14 @@ export const SettingClashCore = () => {
     >
       <List disablePadding>
         {clashCores.data &&
-          Object.entries(clashCores.data).map(([core, item]) => {
-            const show = expand || core === currentCore
+          Object.entries(clashCores.data).map(([core, item], idx) => {
+            const currentIsSupported =
+              !!currentCore &&
+              Object.prototype.hasOwnProperty.call(clashCores.data, currentCore)
+            const show =
+              expand ||
+              core === currentCore ||
+              (!currentIsSupported && idx === 0)
 
             return (
               <motion.div
@@ -153,9 +159,9 @@ export const SettingClashCore = () => {
               >
                 <ClashCoreItem
                   data={item}
-                  core={core as ClashCore}
+                  core={core as SupportedClashCore}
                   selected={core === currentCore}
-                  onClick={() => changeClashCore(core as ClashCore)}
+                  onClick={() => changeClashCore(core as SupportedClashCore)}
                 />
               </motion.div>
             )

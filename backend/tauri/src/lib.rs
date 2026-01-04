@@ -32,7 +32,7 @@ use crate::{
 };
 use anyhow::Context;
 use specta_typescript::{BigIntExportBehavior, Typescript};
-use tauri::{Emitter, Manager};
+use tauri::Emitter;
 use tauri_specta::{collect_commands, collect_events};
 use utils::resolve::{is_window_opened, reset_window_open_counter};
 
@@ -224,6 +224,8 @@ pub fn run() -> std::io::Result<()> {
             // verge
             ipc::get_verge_config,
             ipc::patch_verge_config,
+            ipc::toggle_system_proxy,
+            ipc::toggle_tun_mode,
             // cmds::update_hotkeys,
             // profile
             ipc::get_profiles,
@@ -279,37 +281,41 @@ pub fn run() -> std::io::Result<()> {
 
     #[cfg(debug_assertions)]
     {
-        const SPECTA_BINDINGS_PATH: &str = "../../frontend/interface/src/ipc/bindings.ts";
+        if std::env::var_os("NYANPASU_EXPORT_BINDINGS").is_some() {
+            const SPECTA_BINDINGS_PATH: &str = "../../frontend/interface/src/ipc/bindings.ts";
 
-        match specta_builder.export(
-            Typescript::default()
-                .formatter(specta_typescript::formatter::prettier)
-                .formatter(|file| {
-                    let npx_command = if cfg!(target_os = "windows") {
-                        "npx.cmd"
-                    } else {
-                        "npx"
-                    };
+            match specta_builder.export(
+                Typescript::default()
+                    .formatter(specta_typescript::formatter::prettier)
+                    .formatter(|file| {
+                        let npx_command = if cfg!(target_os = "windows") {
+                            "npx.cmd"
+                        } else {
+                            "npx"
+                        };
 
-                    std::process::Command::new(npx_command)
-                        .arg("prettier")
-                        .arg("--write")
-                        .arg(file)
-                        .output()
-                        .map(|_| ())
-                        .map_err(io::Error::other)
-                })
-                .bigint(BigIntExportBehavior::Number)
-                .header("/* eslint-disable */\n// @ts-nocheck"),
-            SPECTA_BINDINGS_PATH,
-        ) {
-            Ok(_) => {
-                log::debug!("Exported typescript bindings, path: {SPECTA_BINDINGS_PATH}");
-            }
-            Err(e) => {
-                panic!("Failed to export typescript bindings: {e}");
-            }
-        };
+                        std::process::Command::new(npx_command)
+                            .arg("prettier")
+                            .arg("--write")
+                            .arg(file)
+                            .output()
+                            .map(|_| ())
+                            .map_err(io::Error::other)
+                    })
+                    .bigint(BigIntExportBehavior::Number)
+                    .header("/* eslint-disable */\n// @ts-nocheck"),
+                SPECTA_BINDINGS_PATH,
+            ) {
+                Ok(_) => {
+                    log::debug!("Exported typescript bindings, path: {SPECTA_BINDINGS_PATH}");
+                }
+                Err(e) => {
+                    panic!("Failed to export typescript bindings: {e}");
+                }
+            };
+
+            return Ok(());
+        }
     }
 
     let verge = { Config::verge().latest().language.clone().unwrap() };

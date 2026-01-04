@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   CSSProperties,
   ReactNode,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useState,
@@ -67,7 +68,7 @@ export const BaseDialog = ({
 
   const clickPosition = useClickPosition()
 
-  const getClickPosition = () => clickPosition
+  const getClickPosition = useCallback(() => clickPosition, [clickPosition])
 
   useLayoutEffect(() => {
     if (open) {
@@ -76,8 +77,7 @@ export const BaseDialog = ({
         y: getClickPosition()?.y ?? 0,
       })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+  }, [open, getClickPosition])
 
   const handleClose = useLockFn(async () => {
     if (onClose) {

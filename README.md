@@ -9,13 +9,13 @@
 </h3>
 
 <p>
-  <a href="https://github.com/libnyanpasu/clash-nyanpasu/releases/latest"><img src="https://img.shields.io/github/v/release/libnyanpasu/clash-nyanpasu?style=flat-square" alt="Nyanpasu Release" /></a>
-  <a href="https://github.com/libnyanpasu/clash-nyanpasu/releases/pre-release"><img src="https://img.shields.io/github/actions/workflow/status/libnyanpasu/clash-nyanpasu/target-dev-build.yaml?style=flat-square" alt="Dev Build Status" /></a>
-  <a href="https://github.com/libnyanpasu/clash-nyanpasu/stargazers"><img src="https://img.shields.io/github/stars/libnyanpasu/clash-nyanpasu?style=flat-square" alt="Nyanpasu Stars" /></a>
-  <a href="https://github.com/libnyanpasu/clash-nyanpasu/releases/latest"><img src="https://img.shields.io/github/downloads/libnyanpasu/clash-nyanpasu/total?style=flat-square" alt="GitHub Downloads (all assets, all releases)" /></a>
-  <a href="https://github.com/libnyanpasu/clash-nyanpasu/blob/main/LICENSE"><img src="https://img.shields.io/github/license/libnyanpasu/clash-nyanpasu?style=flat-square" alt="Nyanpasu License" /></a>
+  <a href="https://github.com/Alfred1109/clashnyanpasu/releases/latest"><img src="https://img.shields.io/github/v/release/Alfred1109/clashnyanpasu?style=flat-square" alt="Nyanpasu Release" /></a>
+  <a href="https://github.com/Alfred1109/clashnyanpasu/releases/pre-release"><img src="https://img.shields.io/github/actions/workflow/status/Alfred1109/clashnyanpasu/target-dev-build.yaml?style=flat-square" alt="Dev Build Status" /></a>
+  <a href="https://github.com/Alfred1109/clashnyanpasu/stargazers"><img src="https://img.shields.io/github/stars/Alfred1109/clashnyanpasu?style=flat-square" alt="Nyanpasu Stars" /></a>
+  <a href="https://github.com/Alfred1109/clashnyanpasu/releases/latest"><img src="https://img.shields.io/github/downloads/Alfred1109/clashnyanpasu/total?style=flat-square" alt="GitHub Downloads (all assets, all releases)" /></a>
+  <a href="https://github.com/Alfred1109/clashnyanpasu/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Alfred1109/clashnyanpasu?style=flat-square" alt="Nyanpasu License" /></a>
   <a href="https://twitter.com/ClashNyanpasu"><img src="https://img.shields.io/twitter/follow/ClashNyanpasu?style=flat-square" alt="Nyanpasu Twitter" /></a>
-  <a href="https://deepwiki.com/libnyanpasu/clash-nyanpasu"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+  <a href="https://deepwiki.com/Alfred1109/clashnyanpasu"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
 ## Features
@@ -94,7 +94,7 @@ Clash Nyanpasu was based on or inspired by these projects and so on:
 
 ## Contributors
 
-![Contributors](https://contrib.rocks/image?repo=libnyanpasu/clash-nyanpasu)
+![Contributors](https://contrib.rocks/image?repo=Alfred1109/clashnyanpasu)
 
 ## License
 

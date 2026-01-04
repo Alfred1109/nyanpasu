@@ -7,6 +7,8 @@ import { version } from '@root/package.json'
 export const SettingNyanpasuVersion = () => {
   const { t } = useTranslation()
 
+  const displayVersion = version.split('.').slice(0, 2).join('.')
+
   return (
     <BaseCard label={t('Nyanpasu Version')}>
       <List disablePadding>
@@ -30,11 +32,11 @@ export const SettingNyanpasuVersion = () => {
               <LogoSvg className="h-32 w-32" />
 
               <Typography fontWeight={700} noWrap>
-                {'Clash Nyanpasu~(∠・ω< )⌒☆'}&nbsp;
+                {'nyanpasu'}&nbsp;
               </Typography>
 
               <Typography>
-                <b>Version: </b>v{version}
+                <b>Version: </b>v{displayVersion}
               </Typography>
             </Box>
           </Paper>

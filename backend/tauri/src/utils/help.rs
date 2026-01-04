@@ -16,7 +16,6 @@ use std::{
     str::FromStr,
 };
 use tauri::{AppHandle, Manager, process::current_binary};
-use tauri_plugin_shell::ShellExt;
 use tracing::{debug, warn};
 use tracing_attributes::instrument;
 
@@ -110,8 +109,6 @@ pub fn open_file(app: tauri::AppHandle, path: PathBuf) -> Result<()> {
     let code = "code.cmd";
     #[cfg(all(not(windows), not(target_os = "macos")))]
     let code = "code";
-
-    let shell = app.shell();
 
     trace_err!(
         match which::which(code) {

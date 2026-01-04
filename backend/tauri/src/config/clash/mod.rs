@@ -266,6 +266,7 @@ fn test_clash_info() {
 
 #[derive(Default, Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
+#[allow(dead_code)]
 pub struct IClash {
     pub mixed_port: Option<u16>,
     pub allow_lan: Option<bool>,
@@ -281,6 +282,7 @@ pub struct IClash {
 
 #[derive(Default, Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
+#[allow(dead_code)]
 pub struct IClashTUN {
     pub enable: Option<bool>,
     pub stack: Option<String>,
@@ -291,6 +293,7 @@ pub struct IClashTUN {
 
 #[derive(Default, Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
+#[allow(dead_code)]
 pub struct IClashDNS {
     pub enable: Option<bool>,
     pub listen: Option<String>,
@@ -307,6 +310,7 @@ pub struct IClashDNS {
 
 #[derive(Default, Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
+#[allow(dead_code)]
 pub struct IClashFallbackFilter {
     pub geoip: Option<bool>,
     pub geoip_code: Option<String>,

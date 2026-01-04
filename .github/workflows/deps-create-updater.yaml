@@ -84,7 +84,7 @@ jobs:
         uses: robinraju/release-downloader@v1
         with:
           tag: updater
-          repository: libnyanpasu/clash-nyanpasu
+          repository: Alfred1109/clashnyanpasu
           fileName: '*.json'
           token: ${{ secrets.GITHUB_TOKEN }}
           out-file-path: manifest/site/updater

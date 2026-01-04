@@ -14,6 +14,51 @@ on:
 name: CI
 
 jobs:
+  ipc_bindings:
+    name: IPC Bindings Consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Rust
+        run: |
+          rustup toolchain install nightly --profile minimal --no-self-update
+          rustup default nightly
+          rustc --version
+          cargo --version
+
+      - name: Tauri dependencies
+        run: >-
+          sudo apt-get update &&
+          sudo apt-get install -y
+          libgtk-3-dev
+          libayatana-appindicator3-dev
+          libwebkit2gtk-4.1-dev
+          librsvg2-dev
+          libxdo-dev
+          webkit2gtk-driver
+          xvfb
+
+      - name: Install Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Generate IPC bindings
+        run: pnpm gen:ipc
+
+      - name: Ensure bindings are committed
+        run: |
+          git diff --exit-code -- frontend/interface/src/ipc/bindings.ts
+
   lint:
     name: Lint
     strategy:

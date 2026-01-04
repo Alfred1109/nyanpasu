@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/@tauri-apps/cli/config.schema.json",
-  "mainBinaryName": "Clash Nyanpasu",
+  "mainBinaryName": "nyanpasu",
   "bundle": {
     "active": true,
     "targets": "all",
@@ -38,10 +38,10 @@
       "sidecar/mihomo-alpha",
       "sidecar/nyanpasu-service"
     ],
-    "copyright": "© 2025 Clash Nyanpasu All Rights Reserved",
+    "copyright": "© 2025 nyanpasu All Rights Reserved",
     "category": "DeveloperTool",
-    "shortDescription": "Clash Nyanpasu! (∠・ω< )⌒☆",
-    "longDescription": "Clash Nyanpasu! (∠・ω< )⌒☆",
+    "shortDescription": "nyanpasu",
+    "longDescription": "nyanpasu",
     "macOS": {
       "frameworks": [],
       "minimumSystemVersion": "12.6",
@@ -63,17 +63,14 @@
     "beforeDevCommand": "pnpm run web:dev",
     "devUrl": "http://localhost:3000/"
   },
-  "productName": "Clash Nyanpasu",
-  "version": "1.6.0",
+  "productName": "nyanpasu",
+  "version": "3.0.0",
   "identifier": "moe.elaina.clash.nyanpasu",
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlBMUM0NjMxREZCNDRGMjYKUldRbVQ3VGZNVVljbW43N0FlWjA4UkNrbTgxSWxSSXJQcExXNkZjUTlTQkIyYkJzL0tsSWF2d0cK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEU3REM1QTQyODEwRUJCNDcKUldSSHV3NkJRbHJjNTk3NCsyQVdOVy9ORTRCVXhPV0kzdmR2ZUkzRlVyZTlnQkkyeERicmJmbkkK",
       "endpoints": [
-        "https://deno.elaina.moe/updater/update-proxy.json",
-        "https://nyanpasu.surge.sh/updater/update-proxy.json",
-        "https://gh-proxy.com/https://github.com/libnyanpasu/clash-nyanpasu/releases/download/updater/update-proxy.json",
-        "https://github.com/libnyanpasu/clash-nyanpasu/releases/download/updater/update.json"
+        "https://github.com/Alfred1109/clashnyanpasu/releases/download/updater/update.json"
       ]
     }
   },

@@ -2,7 +2,6 @@ import path from 'node:path'
 import fs from 'fs-extra'
 import { merge } from 'lodash-es'
 import {
-  cwd,
   TAURI_APP_DIR,
   TAURI_FIXED_WEBVIEW2_CONFIG_OVERRIDE_PATH,
 } from './utils/env'
@@ -14,11 +13,8 @@ const TAURI_APP_CONF = path.join(TAURI_APP_DIR, 'tauri.conf.json')
 //   TAURI_APP_DIR,
 //   "overrides/nightly.conf.json",
 // );
-const PACKAGE_JSON_PATH = path.join(cwd, 'package.json')
 // blocked by https://github.com/tauri-apps/tauri/issues/8447
 // const WXS_PATH = path.join(TAURI_APP_DIR, "templates", "nightly.wxs");
-
-const isNSIS = process.argv.includes('--nsis') // only build nsis
 const fixedWebview = process.argv.includes('--fixed-webview')
 
 async function main() {
