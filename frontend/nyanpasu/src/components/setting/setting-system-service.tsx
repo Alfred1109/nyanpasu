@@ -54,7 +54,7 @@ export const SettingSystemService = () => {
 
   const isDisabled = query.data?.status === 'not_installed'
   const canControl = query.data?.status === 'running' || query.data?.status === 'stopped'
-  const isLoading = query.isLoading || query.isError || !query.data
+  const isLoading = query.isLoading
 
   const promptDialog = useServerManualPromptDialog()
 

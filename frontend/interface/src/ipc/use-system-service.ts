@@ -15,7 +15,17 @@ export const useSystemService = () => {
   const query = useQuery({
     queryKey: ['system-service'],
     queryFn: async () => {
-      return unwrapResult(await commands.statusService())
+      try {
+        return unwrapResult(await commands.statusService())
+      } catch (error) {
+        // 如果查询失败（通常是服务未安装），返回默认状态
+        return {
+          name: '',
+          version: '',
+          status: 'not_installed' as const,
+          server: null,
+        }
+      }
     },
   })
 
