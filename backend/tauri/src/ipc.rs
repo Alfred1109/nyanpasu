@@ -539,12 +539,12 @@ pub async fn check_tun_permission() -> Result<bool> {
         let current_core = Config::verge().data().clash_core.unwrap_or_default();
         let current_core: nyanpasu_utils::core::CoreType = (&current_core).into();
         let service_state = crate::core::service::ipc::get_ipc_state();
-        
+
         if service_state.is_connected() {
             // 服务模式下不需要权限检查
             return Ok(true);
         }
-        
+
         match crate::utils::dirs::check_core_permission(&current_core) {
             Ok(has_permission) => Ok(has_permission),
             Err(e) => {
@@ -568,7 +568,7 @@ pub async fn grant_tun_permission() -> Result<()> {
     {
         let current_core = Config::verge().data().clash_core.unwrap_or_default();
         let current_core: nyanpasu_utils::core::CoreType = (&current_core).into();
-        
+
         match crate::core::manager::grant_permission(&current_core) {
             Ok(()) => {
                 log::info!(target: "app", "Successfully granted TUN permission to core");
@@ -576,7 +576,10 @@ pub async fn grant_tun_permission() -> Result<()> {
             }
             Err(e) => {
                 log::error!(target: "app", "Failed to grant TUN permission: {e:?}");
-                Err(IpcError::Custom(format!("Failed to grant permission: {}", e)))
+                Err(IpcError::Custom(format!(
+                    "Failed to grant permission: {}",
+                    e
+                )))
             }
         }
     }
@@ -595,7 +598,7 @@ pub async fn check_service_permission() -> Result<bool> {
     if service_state.is_connected() {
         return Ok(true);
     }
-    
+
     // 尝试查询服务状态来检查权限
     match crate::core::service::control::status().await {
         Ok(_) => Ok(true),
@@ -618,10 +621,10 @@ pub async fn grant_service_permission() -> Result<()> {
     #[cfg(unix)]
     {
         use std::process::Command;
-        
+
         // 尝试将用户添加到nyanpasu组
         let current_user = std::env::var("USER").unwrap_or_else(|_| "unknown".to_string());
-        
+
         let sudo = match Command::new("which").arg("pkexec").output() {
             Ok(output) => {
                 if output.stdout.is_empty() {
@@ -632,16 +635,19 @@ pub async fn grant_service_permission() -> Result<()> {
             }
             Err(_) => "sudo",
         };
-        
+
         let shell = format!("usermod -a -G nyanpasu {}", current_user);
         let output = Command::new(sudo).arg("sh").arg("-c").arg(shell).output()?;
-        
+
         if output.status.success() {
             log::info!(target: "app", "Successfully added user to nyanpasu group");
             Ok(())
         } else {
             let stderr = std::str::from_utf8(&output.stderr).unwrap_or("");
-            Err(IpcError::Custom(format!("Failed to grant service permission: {}", stderr)))
+            Err(IpcError::Custom(format!(
+                "Failed to grant service permission: {}",
+                stderr
+            )))
         }
     }
     #[cfg(not(unix))]
@@ -656,7 +662,7 @@ pub async fn grant_service_permission() -> Result<()> {
 #[specta::specta]
 pub async fn check_proxy_permission() -> Result<bool> {
     use sysproxy::Sysproxy;
-    
+
     // 尝试获取当前系统代理设置来测试权限
     match Sysproxy::get_system_proxy() {
         Ok(_) => Ok(true),
@@ -679,16 +685,16 @@ pub async fn grant_proxy_permission() -> Result<()> {
     #[cfg(target_os = "macos")]
     {
         use std::process::Command;
-        
+
         let script = r#"
             tell application "System Events"
                 display dialog "Clash Nyanpasu needs permission to modify system proxy settings. Please grant permission in System Preferences > Security & Privacy > Privacy > Accessibility." buttons {"OK"} default button "OK"
             end tell
         "#;
-        
+
         let _ = Command::new("osascript").arg("-e").arg(script).output();
     }
-    
+
     log::info!(target: "app", "System proxy permission guidance provided");
     Ok(())
 }

@@ -186,7 +186,6 @@ impl Instance {
                                         CommandEvent::Error(e) => {
                                             log::error!(target: "app", "[{core_type}]: {e}");
 
-
                                             let err = anyhow::anyhow!(format!(
                                                 "{}\n{}",
                                                 e,

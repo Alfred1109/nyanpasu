@@ -182,8 +182,7 @@ impl UpdaterManager {
             }
         }
         let mirrors = crate::utils::candy::INTERNAL_MIRRORS;
-        let path =
-            "https://github.com/Alfred1109/clashnyanpasu/raw/main/manifest/version.json";
+        let path = "https://github.com/Alfred1109/clashnyanpasu/raw/main/manifest/version.json";
         let client = crate::utils::candy::get_reqwest_client()?;
         let results = client.mirror_speed_test(mirrors, path).await?;
         let (fastest_mirror, speed) = results.first().ok_or(anyhow!("no mirrors found"))?;
