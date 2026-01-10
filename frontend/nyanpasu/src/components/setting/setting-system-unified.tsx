@@ -3,7 +3,20 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
-import { InputAdornment, List, ListItem, Button, ListItemText, Typography, Divider } from '@mui/material'
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Divider,
+  InputAdornment,
+  List,
+  ListItem,
+  ListItemText,
+  Typography,
+} from '@mui/material'
 import Grid from '@mui/material/Grid'
 import {
   toggleSystemProxy,
@@ -11,7 +24,6 @@ import {
   useSetting,
   useSystemProxy,
   useSystemService,
-  restartSidecar,
 } from '@nyanpasu/interface'
 import {
   BaseCard,
@@ -21,11 +33,8 @@ import {
   SwitchItem,
   TextItem,
 } from '@nyanpasu/ui'
+import { PermissionDialog } from './modules/permission-dialog'
 import { PaperSwitchButton } from './modules/system-proxy'
-import {
-  PermissionDialog,
-  type PermissionType,
-} from './modules/permission-dialog'
 
 const TunModeButton = () => {
   const { t } = useTranslation()
@@ -40,7 +49,7 @@ const TunModeButton = () => {
       setShowPermissionDialog(true)
       return
     }
-    
+
     try {
       await toggleTunMode()
     } catch (error) {
@@ -135,18 +144,18 @@ const SystemProxyButton = () => {
 
 const ServiceModeSection = () => {
   const { t } = useTranslation()
-  const { query, upsert } = useSystemService()
+  const { query, upsert: serviceUpsert } = useSystemService()
   const serviceMode = useSetting('enable_service_mode')
-  const [showPermissionDialog, setShowPermissionDialog] = useState(false)
+  const [showInstallDialog, setShowInstallDialog] = useState(false)
 
-  const isDisabled = query.data?.status === 'not_installed'
+  const isServiceInstalled = query.data?.status !== 'not_installed'
 
   const handleServiceModeToggle = useLockFn(async () => {
-    if (!serviceMode.value && isDisabled) {
-      setShowPermissionDialog(true)
+    if (!serviceMode.value && !isServiceInstalled) {
+      setShowInstallDialog(true)
       return
     }
-    
+
     try {
       await serviceMode.upsert(!serviceMode.value)
     } catch (error) {
@@ -157,21 +166,32 @@ const ServiceModeSection = () => {
     }
   })
 
-  const handlePermissionConfirm = useLockFn(async () => {
-    setShowPermissionDialog(false)
-    // 这里可以引导用户安装服务
-    message(t('Please install the system service first'), {
-      title: t('Info'),
-      kind: 'info',
-    })
+  const handleInstallConfirm = useLockFn(async () => {
+    setShowInstallDialog(false)
+    try {
+      await serviceUpsert.mutateAsync('install')
+      await serviceMode.upsert(true)
+    } catch (error) {
+      message(
+        `${t('Failed to install system service')}\n${formatError(error)}`,
+        {
+          title: t('Error'),
+          kind: 'error',
+        },
+      )
+    }
   })
 
   const getStatusColor = () => {
     switch (query.data?.status) {
-      case 'running': return 'success.main'
-      case 'stopped': return 'warning.main'
-      case 'not_installed': return 'error.main'
-      default: return 'text.secondary'
+      case 'running':
+        return 'success.main'
+      case 'stopped':
+        return 'warning.main'
+      case 'not_installed':
+        return 'error.main'
+      default:
+        return 'text.secondary'
     }
   }
 
@@ -179,17 +199,17 @@ const ServiceModeSection = () => {
     <>
       <SwitchItem
         label={t('Service Mode')}
-        disabled={isDisabled}
+        disabled={false}
         checked={serviceMode.value || false}
         onChange={handleServiceModeToggle}
       />
-      
+
       <ListItem sx={{ pl: 0, pr: 0 }}>
         <ListItemText
           primary={
             <div className="flex items-center gap-2">
               <span>{t('Service Status')}</span>
-              <span 
+              <span
                 style={{ color: getStatusColor() }}
                 className="text-sm font-medium"
               >
@@ -198,27 +218,46 @@ const ServiceModeSection = () => {
             </div>
           }
           secondary={
-            isDisabled ? 
-            t('Service mode provides better stability and permissions') :
-            t('Service is running with elevated privileges')
+            !isServiceInstalled
+              ? t('Service mode provides better stability and permissions')
+              : t('Service is running with elevated privileges')
           }
         />
       </ListItem>
 
-      {isDisabled && (
+      {!isServiceInstalled && (
         <ListItem sx={{ pl: 0, pr: 0 }}>
           <Typography variant="body2" color="text.secondary">
-            {t('Install the system service to enable service mode and avoid permission issues')}
+            {t(
+              'Install the system service to enable service mode and avoid permission issues',
+            )}
           </Typography>
         </ListItem>
       )}
 
-      <PermissionDialog
-        open={showPermissionDialog}
-        onClose={() => setShowPermissionDialog(false)}
-        onConfirm={handlePermissionConfirm}
-        permissionType="service"
-      />
+      <Dialog
+        open={showInstallDialog}
+        onClose={() => setShowInstallDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{t('Install system service')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t(
+              'The system service is not installed. Do you want to install it now to enable service mode?',
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowInstallDialog(false)}>
+            {t('Cancel')}
+          </Button>
+          <Button onClick={handleInstallConfirm} variant="contained">
+            {t('Install')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 }
@@ -235,7 +274,7 @@ const ProxyGuardSection = () => {
         checked={Boolean(proxyGuard.value)}
         onChange={() => proxyGuard.upsert(!proxyGuard.value)}
       />
-      
+
       {proxyGuard.value && (
         <NumberItem
           label={t('Guard Interval')}
@@ -284,7 +323,7 @@ const CurrentSystemProxy = () => {
 
   return (
     <ListItem
-      className="!w-full !flex-col !items-start select-text"
+      className="w-full! flex-col! items-start! select-text"
       sx={{ pl: 0, pr: 0 }}
     >
       <div className="text-base leading-10">{t('Current System Proxy')}</div>
@@ -323,17 +362,17 @@ export const SettingSystemUnified = () => {
         <List disablePadding sx={{ pt: 1 }}>
           {/* 服务模式部分 */}
           <ServiceModeSection />
-          
+
           <Divider sx={{ my: 1 }} />
-          
+
           {/* 代理守护部分 */}
           <ProxyGuardSection />
-          
+
           <Divider sx={{ my: 1 }} />
-          
+
           {/* 代理绕过规则 */}
           <SystemProxyBypass />
-          
+
           {/* 当前系统代理状态 */}
           <CurrentSystemProxy />
         </List>

@@ -1,9 +1,20 @@
 import { useMemoizedFn } from 'ahooks'
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
-import { Button, List, ListItem, ListItemText, Typography } from '@mui/material'
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  List,
+  ListItem,
+  ListItemText,
+  Typography,
+} from '@mui/material'
 import {
   restartSidecar,
   useSetting,
@@ -19,6 +30,12 @@ export const SettingSystemService = () => {
   const { t } = useTranslation()
 
   const { query, upsert } = useSystemService()
+
+  const serviceMode = useSetting('enable_service_mode')
+  const [showInstallDialog, setShowInstallDialog] = useState(false)
+  const [installAction, setInstallAction] = useState<
+    'enable_service_mode' | 'start_service'
+  >('enable_service_mode')
 
   const getInstallButtonString = () => {
     switch (query.data?.status) {
@@ -46,6 +63,10 @@ export const SettingSystemService = () => {
         return t('start')
       }
 
+      case 'not_installed': {
+        return t('start')
+      }
+
       default: {
         return ''
       }
@@ -53,7 +74,10 @@ export const SettingSystemService = () => {
   }
 
   const isDisabled = query.data?.status === 'not_installed'
-  const canControl = query.data?.status === 'running' || query.data?.status === 'stopped'
+  const canControl =
+    query.data?.status === 'running' ||
+    query.data?.status === 'stopped' ||
+    query.data?.status === 'not_installed'
   const isLoading = query.isLoading
 
   const promptDialog = useServerManualPromptDialog()
@@ -95,6 +119,38 @@ export const SettingSystemService = () => {
     })
   })
 
+  const handleInstallForAction = useMemoizedFn(() => {
+    startInstallOrUninstall(async () => {
+      try {
+        await upsert.mutateAsync('install')
+        await restartSidecar()
+
+        if (installAction === 'enable_service_mode') {
+          await serviceMode.upsert(true)
+          return
+        }
+
+        try {
+          await upsert.mutateAsync('start')
+          await restartSidecar()
+        } catch (e) {
+          message(`Start failed: ${formatError(e)}`, {
+            kind: 'error',
+            title: t('Error'),
+          })
+          promptDialog.show('start')
+        }
+      } catch (e) {
+        const errorMessage = `${t('Failed to install')}: ${formatError(e)}`
+        message(errorMessage, {
+          kind: 'error',
+          title: t('Error'),
+        })
+        promptDialog.show('install')
+      }
+    })
+  })
+
   const [serviceControlPending, startServiceControl] = useTransition()
   const handleControlClick = useMemoizedFn(() => {
     startServiceControl(async () => {
@@ -107,6 +163,11 @@ export const SettingSystemService = () => {
           case 'stopped':
             await upsert.mutateAsync('start')
             break
+
+          case 'not_installed':
+            setInstallAction('start_service')
+            setShowInstallDialog(true)
+            return
 
           default:
             break
@@ -128,7 +189,14 @@ export const SettingSystemService = () => {
     })
   })
 
-  const serviceMode = useSetting('enable_service_mode')
+  const handleServiceModeToggle = useMemoizedFn(() => {
+    if (!serviceMode.value && isDisabled) {
+      setInstallAction('enable_service_mode')
+      setShowInstallDialog(true)
+      return
+    }
+    serviceMode.upsert(!serviceMode.value)
+  })
 
   return (
     <BaseCard label={t('System Service')}>
@@ -136,9 +204,9 @@ export const SettingSystemService = () => {
       <List disablePadding>
         <SwitchItem
           label={t('Service Mode')}
-          disabled={isDisabled}
+          disabled={false}
           checked={serviceMode.value || false}
-          onChange={() => serviceMode.upsert(!serviceMode.value)}
+          onChange={handleServiceModeToggle}
         />
 
         {isDisabled && (
@@ -163,7 +231,11 @@ export const SettingSystemService = () => {
                 variant="contained"
                 onClick={handleControlClick}
                 loading={serviceControlPending}
-                disabled={isLoading || installOrUninstallPending || serviceControlPending}
+                disabled={
+                  isLoading ||
+                  installOrUninstallPending ||
+                  serviceControlPending
+                }
               >
                 {getControlButtonString()}
               </Button>
@@ -173,7 +245,9 @@ export const SettingSystemService = () => {
               variant="contained"
               onClick={handleInstallClick}
               loading={installOrUninstallPending}
-              disabled={isLoading || installOrUninstallPending || serviceControlPending}
+              disabled={
+                isLoading || installOrUninstallPending || serviceControlPending
+              }
             >
               {getInstallButtonString()}
             </Button>
@@ -189,6 +263,39 @@ export const SettingSystemService = () => {
           </div>
         </ListItem>
       </List>
+
+      <Dialog
+        open={showInstallDialog}
+        onClose={() => setShowInstallDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{t('Install system service')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t(
+              'The system service is not installed. Do you want to install it now to enable service mode?',
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowInstallDialog(false)}>
+            {t('Cancel')}
+          </Button>
+          <Button
+            onClick={() => {
+              setShowInstallDialog(false)
+              handleInstallForAction()
+            }}
+            variant="contained"
+            disabled={
+              isLoading || installOrUninstallPending || serviceControlPending
+            }
+          >
+            {t('Install')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </BaseCard>
   )
 }

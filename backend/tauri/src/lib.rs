@@ -23,6 +23,7 @@ mod utils;
 mod widget;
 mod window;
 
+#[cfg(debug_assertions)]
 use std::io;
 
 use crate::{
@@ -31,6 +32,7 @@ use crate::{
     utils::{init, resolve},
 };
 use anyhow::Context;
+#[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri::Emitter;
 use tauri_specta::{collect_commands, collect_events};

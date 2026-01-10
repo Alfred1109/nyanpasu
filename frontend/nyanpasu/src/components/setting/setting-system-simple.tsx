@@ -3,7 +3,17 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
-import { List, ListItem, ListItemText } from '@mui/material'
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  List,
+  ListItem,
+  ListItemText,
+} from '@mui/material'
 import Grid from '@mui/material/Grid'
 import {
   toggleSystemProxy,
@@ -123,10 +133,40 @@ const TunModeButton = () => {
 
 export const SettingSystemSimple = () => {
   const { t } = useTranslation()
-  const { query } = useSystemService()
+  const { query, upsert: serviceUpsert } = useSystemService()
   const serviceMode = useSetting('enable_service_mode')
+  const [showInstallDialog, setShowInstallDialog] = useState(false)
 
   const isServiceInstalled = query.data?.status !== 'not_installed'
+
+  const handleServiceModeToggle = useLockFn(async () => {
+    if (!serviceMode.value && !isServiceInstalled) {
+      setShowInstallDialog(true)
+      return
+    }
+
+    try {
+      await serviceMode.upsert(!serviceMode.value)
+    } catch (error) {
+      message(`Service Mode toggle failed! \n Error: ${formatError(error)}`, {
+        title: t('Error'),
+        kind: 'error',
+      })
+    }
+  })
+
+  const handleInstallConfirm = useLockFn(async () => {
+    setShowInstallDialog(false)
+    try {
+      await serviceUpsert.mutateAsync('install')
+      await serviceMode.upsert(true)
+    } catch (error) {
+      message(`${t('Failed to install system service')}\n${formatError(error)}`, {
+        title: t('Error'),
+        kind: 'error',
+      })
+    }
+  })
 
   const getStatusColor = () => {
     switch (query.data?.status) {
@@ -166,9 +206,9 @@ export const SettingSystemSimple = () => {
         {/* 服务模式 */}
         <SwitchItem
           label={t('Service Mode')}
-          disabled={!isServiceInstalled}
+          disabled={false}
           checked={serviceMode.value || false}
-          onChange={() => serviceMode.upsert(!serviceMode.value)}
+          onChange={handleServiceModeToggle}
         />
 
         {/* 状态显示 */}
@@ -195,6 +235,30 @@ export const SettingSystemSimple = () => {
           />
         </ListItem>
       </List>
+
+      <Dialog
+        open={showInstallDialog}
+        onClose={() => setShowInstallDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{t('Install system service')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t(
+              'The system service is not installed. Do you want to install it now to enable service mode?',
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowInstallDialog(false)}>
+            {t('Cancel')}
+          </Button>
+          <Button onClick={handleInstallConfirm} variant="contained">
+            {t('Install')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </BaseCard>
   )
 }

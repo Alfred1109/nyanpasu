@@ -1,9 +1,10 @@
 use crate::{Config, config, utils::dirs};
 use anyhow::{Result, anyhow, bail};
 use parking_lot::Mutex;
+#[cfg(debug_assertions)]
+use std::io::IsTerminal;
 use std::{
     fs,
-    io::IsTerminal,
     sync::{
         OnceLock,
         mpsc::{self, Sender},

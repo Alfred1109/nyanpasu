@@ -3,7 +3,9 @@ use anyhow::{Result, anyhow};
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
-use std::{path::Path, sync::Arc};
+#[cfg(target_os = "linux")]
+use std::path::Path;
+use std::sync::Arc;
 use sysproxy::Sysproxy;
 use tauri::{async_runtime::Mutex as TokioMutex, utils::platform::current_exe};
 

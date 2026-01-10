@@ -4,7 +4,7 @@ use atomic_enum::atomic_enum;
 use once_cell::sync::OnceCell;
 use windows_core::{Error, w};
 use windows_sys::Win32::{
-    Foundation::{HINSTANCE, HWND, LPARAM, WPARAM},
+    Foundation::{HWND, LPARAM, WPARAM},
     System::{
         LibraryLoader::GetModuleHandleW,
         Shutdown::{ShutdownBlockReasonCreate, ShutdownBlockReasonDestroy},
@@ -44,7 +44,6 @@ pub fn setup_shutdown_hook(f: impl Fn() + Send + Sync + 'static) -> anyhow::Resu
 
 struct WindowHandle {
     hwnd: HWND,
-    h_instance: HINSTANCE,
 }
 
 impl Drop for WindowHandle {
@@ -164,7 +163,6 @@ fn setup_shutdown_hook_inner(
 
     let window_handle = WindowHandle {
         hwnd: hidden_window,
-        h_instance,
     };
 
     if let Err(e) = initd_tx.send(()) {

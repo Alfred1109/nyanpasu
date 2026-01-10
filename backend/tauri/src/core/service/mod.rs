@@ -11,6 +11,15 @@ pub mod ipc;
 const SERVICE_NAME: &str = "nyanpasu-service";
 static SERVICE_PATH: Lazy<PathBuf> = Lazy::new(|| {
     let app_path = app_install_dir().unwrap();
+
+    let sidecar_path =
+        app_path
+            .join("sidecar")
+            .join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX));
+    if sidecar_path.exists() {
+        return sidecar_path;
+    }
+
     app_path.join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX))
 });
 

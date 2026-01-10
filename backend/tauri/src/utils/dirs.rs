@@ -237,6 +237,7 @@ pub fn tray_icons_path(mode: &str) -> Result<PathBuf> {
 
 #[cfg(windows)]
 #[deprecated(since = "1.6.0", note = "should use nyanpasu_utils::dirs mod instead")]
+#[allow(dead_code)]
 pub fn service_log_file() -> Result<PathBuf> {
     use chrono::Local;
 
