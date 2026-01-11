@@ -9,6 +9,7 @@ import { atomIsDrawerOnlyIcon } from '@/store'
 import { alpha, cn } from '@nyanpasu/ui'
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { TauriEvent, UnlistenFn } from '@tauri-apps/api/event'
+import { AnimatePresence, motion } from 'framer-motion'
 import { LayoutControl } from '../layout/layout-control'
 import styles from './app-container.module.scss'
 import AppDrawer from './app-drawer'
@@ -73,20 +74,28 @@ export const AppContainer = ({
 
       <div className={styles.container}>
         {OS === 'windows' && (
-          <LayoutControl className="!z-top fixed top-2 right-4" />
+          <LayoutControl className="z-top! fixed top-2 right-4" />
         )}
-        {/* TODO: add a framer motion animation to toggle the maximized state */}
-        {OS === 'macos' && !isMaximized && (
-          <Box
-            className="z-top fixed top-1.5 left-3 h-7 w-[4.5rem] rounded-full"
-            sx={(theme) => ({
-              backgroundColor: alpha(theme.vars.palette.primary.main, 0.1),
-            })}
-          />
-        )}
+        <AnimatePresence>
+          {OS === 'macos' && !isMaximized && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+            >
+              <Box
+                className="z-top fixed top-1.5 left-3 h-7 w-18 rounded-full"
+                sx={(theme) => ({
+                  backgroundColor: alpha(theme.vars.palette.primary.main, 0.1),
+                })}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div
-          className={OS === 'macos' ? 'h-[2.75rem]' : 'h-9'}
+          className={OS === 'macos' ? 'h-11' : 'h-9'}
           data-tauri-drag-region
         />
 

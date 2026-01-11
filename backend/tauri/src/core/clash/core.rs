@@ -122,7 +122,23 @@ impl Instance {
                 core_type,
             }),
             RunType::Elevated => {
-                todo!()
+                // TODO: Implement elevated mode when needed
+                // For now, fallback to normal mode for safety
+                tracing::warn!("Elevated mode not implemented yet, falling back to normal mode");
+                let instance = Arc::new(
+                    CoreInstanceBuilder::default()
+                        .core_type(core_type)
+                        .app_dir(data_dir)
+                        .binary_path(binary)
+                        .config_path(config_path.clone())
+                        .pid_path(pid_path)
+                        .build()?,
+                );
+                Ok(Instance::Child {
+                    child: Mutex::new(instance),
+                    kill_flag: Arc::new(AtomicBool::new(false)),
+                    stated_changed_at: Arc::new(AtomicI64::new(get_current_ts())),
+                })
             }
         }
     }

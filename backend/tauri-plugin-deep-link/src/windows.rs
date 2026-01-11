@@ -73,7 +73,8 @@ static CRASH_COUNT: AtomicU16 = AtomicU16::new(0);
 
 pub fn listen<F: FnMut(String) + Send + 'static>(mut handler: F) -> Result<()> {
     if CRASH_COUNT.load(Ordering::Acquire) > 5 {
-        panic!("Local socket too many crashes");
+        log::error!("Local socket encountered too many crashes ({}), giving up", CRASH_COUNT.load(Ordering::Acquire));
+        return Err(anyhow::anyhow!("Too many socket crashes, connection abandoned for safety"));
     }
 
     std::thread::spawn(move || {

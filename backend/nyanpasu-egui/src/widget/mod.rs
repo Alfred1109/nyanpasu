@@ -6,35 +6,26 @@ use std::path::PathBuf;
 pub use network_statistic_large::NyanpasuNetworkStatisticLargeWidget;
 pub use network_statistic_small::NyanpasuNetworkStatisticSmallWidget;
 
-#[allow(dead_code)]
+/// Get window state path with fallback to system temp directory
 fn get_window_state_path() -> std::io::Result<PathBuf> {
-    let env = std::env::var("NYANPASU_EGUI_WINDOW_STATE_PATH").map_err(|_| {
-        std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            "NYANPASU_EGUI_WINDOW_STATE_PATH is not set",
-        )
-    })?;
-
-    let path = PathBuf::from(env);
+    // Try environment variable first
+    if let Ok(env_path) = std::env::var("NYANPASU_EGUI_WINDOW_STATE_PATH") {
+        let path = PathBuf::from(env_path);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        return Ok(path);
+    }
+    
+    // Fallback to system temp directory
+    let mut path = std::env::temp_dir();
+    path.push("nyanpasu-egui");
+    std::fs::create_dir_all(&path)?;
+    path.push("window_state.json");
     Ok(path)
 }
 
-#[cfg(target_os = "macos")]
-// TODO: move this to nyanpasu-utils
-fn set_application_activation_policy() {
-    use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy};
-    use objc2_foundation::MainThreadMarker;
-    use std::cell::Cell;
-    thread_local! {
-        static MARK: Cell<MainThreadMarker> = Cell::new(MainThreadMarker::new().unwrap());
-    }
-
-    let app = NSApplication::sharedApplication(MARK.get());
-    app.setActivationPolicy(NSApplicationActivationPolicy::Accessory);
-    unsafe {
-        app.activate();
-    }
-}
+// Platform-specific activation policy moved to tauri/src/utils/platform.rs
 
 // pub fn launch_widget<'app, T: Send + Sync + Sized, A: EframeAppCreator<'app, T>>(
 //     name: &str,

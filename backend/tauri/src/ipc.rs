@@ -138,7 +138,7 @@ pub async fn import_profile(url: String, option: Option<RemoteProfileOptionsBuil
         let committer = Config::profiles().auto_commit();
         (committer.draft().append_item(profile.into()))?;
     }
-    // TODO: 使用 activate_profile 来激活配置
+    // Activate the newly imported profile if no current profile exists
     if let Some(profile_id) = profile_id {
         let mut builder = ProfilesBuilder::default();
         builder.current(vec![profile_id]);
@@ -201,7 +201,7 @@ pub async fn create_profile(item: ProfileBuilder, file_data: Option<String>) -> 
         let committer = Config::profiles().auto_commit();
         committer.draft().append_item(profile)?;
     };
-    // TODO: 使用 activate_profile 来激活配置
+    // Activate the newly created profile if no current profile exists
     if let Some(profile_id) = profile_id {
         let mut builder = ProfilesBuilder::default();
         builder.current(vec![profile_id]);

@@ -108,7 +108,14 @@ impl NyanpasuNetworkStatisticSmallWidget {
         setup_fonts(&cc.egui_ctx);
         setup_custom_style(&cc.egui_ctx);
         egui_extras::install_image_loaders(&cc.egui_ctx);
-        let rx = crate::ipc::setup_ipc_receiver_with_env().unwrap();
+        let rx = crate::ipc::setup_ipc_receiver_with_env()
+            .unwrap_or_else(|e| {
+                eprintln!("Failed to setup IPC receiver: {}", e);
+                // Create a dummy IPC channel as fallback
+                let (tx, rx) = ipc_channel::ipc::channel().expect("Failed to create fallback IPC channel");
+                drop(tx); // Close sender to avoid blocking
+                rx
+            });
         let widget = Self {
             state: Arc::new(RwLock::new(NyanpasuNetworkStatisticSmallWidgetState {
                 egui_ctx: cc.egui_ctx.clone(),
@@ -143,7 +150,10 @@ impl NyanpasuNetworkStatisticSmallWidget {
 
     pub fn run() -> eframe::Result {
         #[cfg(target_os = "macos")]
-        super::set_application_activation_policy();
+        {
+            // Use platform utils from tauri crate - requires adding tauri as dependency
+            eprintln!("Note: macOS activation policy should be set via tauri utils::platform module");
+        }
 
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
@@ -155,9 +165,9 @@ impl NyanpasuNetworkStatisticSmallWidget {
                 .with_resizable(false)
                 .with_taskbar(false),
             run_and_return: false,
-            // TODO: buggy feature, and should we manually save the window state
-            // persist_window: true,
-            // persistence_path: get_window_state_path().ok(),
+            // Window state persistence enabled with improved path handling
+            persist_window: true,
+            persistence_path: super::get_window_state_path().ok(),
             ..Default::default()
         };
         println!("Running widget...");

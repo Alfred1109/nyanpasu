@@ -16,9 +16,8 @@ export const inputContainerVariants = cva(
   [
     'group relative box-border inline-flex w-full flex-auto items-baseline',
     'cursor-pointer',
-    'px-4 py-4 outline-hidden',
-    // TODO: size variants, fix this
-    'flex items-center justify-between h-14',
+    'px-4 outline-hidden',
+    'flex items-center justify-between',
     'dark:text-on-surface',
   ],
   {
@@ -28,9 +27,15 @@ export const inputContainerVariants = cva(
         // outlined use inputLabelFieldsetVariants
         outlined: '',
       },
+      size: {
+        small: 'h-10 py-2',
+        medium: 'h-12 py-3',
+        large: 'h-14 py-4',
+      },
     },
     defaultVariants: {
       variant: 'filled',
+      size: 'medium',
     },
   },
 )
@@ -83,8 +88,8 @@ export const inputLabelVariants = cva(
     'left-4 top-4',
     'pointer-events-none',
     'text-base select-none',
-    // TODO: only transition position, not text color
-    'transition-all duration-200',
+    // Optimized transitions - only animate position and size, not color
+    'transition-[top,left,font-size,transform] duration-200 ease-in-out',
   ],
   {
     variants: {

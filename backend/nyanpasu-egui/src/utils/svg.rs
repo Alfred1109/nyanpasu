@@ -3,13 +3,22 @@ use eframe::egui::ColorImage;
 use resvg::tiny_skia::Pixmap;
 use usvg::{Error, Options, Transform, Tree};
 
-// TODO: change hard coded replacement when https://github.com/RazrFalcon/resvg/issues/768 got resolved
+/// Parse SVG with currentColor replacement
+/// Currently uses string replacement as workaround for https://github.com/RazrFalcon/resvg/issues/768
+/// Will be updated when upstream provides native support
 pub fn parse_svg_with_current_color_replace<T: Into<CssColor>>(
     svg: &str,
     color: T,
 ) -> Result<Tree, Error> {
     let color: CssColor = color.into();
-    let svg = svg.replace(r#""currentColor""#, &format!(r#""{}""#, color.to_css_hex()));
+    let color_hex = color.to_css_hex();
+    
+    // More robust color replacement supporting various formats
+    let svg = svg
+        .replace(r#""currentColor""#, &format!(r#""{}""#, color_hex))
+        .replace(r#"'currentColor'"#, &format!(r#"'{}'"#, color_hex))
+        .replace("currentColor", &color_hex);
+    
     Tree::from_str(svg.as_str(), &Options::default())
 }
 
@@ -32,6 +41,23 @@ pub fn render_svg_with_current_color_replace<T: Into<CssColor>>(
 ) -> Result<Pixmap, Error> {
     let tree = parse_svg_with_current_color_replace(svg, color)?;
     render_svg(&tree, width, height)
+}
+
+/// Safe wrapper for SVG rendering that handles errors gracefully
+#[allow(dead_code)] // Keep for future use
+pub fn render_svg_safe<T: Into<CssColor>>(
+    svg: &str,
+    color: T,
+    width: u32,
+    height: u32,
+) -> Option<Pixmap> {
+    match render_svg_with_current_color_replace(svg, color, width, height) {
+        Ok(pixmap) => Some(pixmap),
+        Err(e) => {
+            eprintln!("Failed to render SVG: {}", e);
+            None
+        }
+    }
 }
 
 pub struct SvgWrapper<'a>(pub &'a Pixmap);

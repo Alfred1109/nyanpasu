@@ -48,16 +48,17 @@ export default defineConfig(({ command, mode }) => {
           // @ts-expect-error fucking vite why embedded their own sass types definition????
           importer: [
             new NodePackageImporter(),
-            // TODO: fix this when vite-sass-dts support it, or fix it when we use `@alias`
-            // (...args: string[]) => {
-            //   if (args[0] !== '@/styles') {
-            //     return
-            //   }
-
-            //   return {
-            //     file: `${path.resolve(__dirname, './src/assets/styles')}`,
-            //   }
-            // },
+            // Custom importer for @/styles alias - workaround for vite-sass-dts limitation
+            ((...args: Parameters<Parameters<typeof sass.compile>[1]['importer']>) => {
+              const url = args[0] as string
+              if (url.startsWith('@/styles')) {
+                const relativePath = url.replace('@/styles', './src/assets/styles')
+                return {
+                  file: path.resolve(__dirname, relativePath),
+                }
+              }
+              return null
+            }) as any, // Type assertion needed for sass importer compatibility
           ],
         },
       },

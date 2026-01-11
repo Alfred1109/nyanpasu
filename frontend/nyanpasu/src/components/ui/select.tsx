@@ -19,9 +19,8 @@ export const selectTriggerVariants = cva(
   [
     'group relative box-border inline-flex w-full flex-auto items-baseline',
     'cursor-pointer',
-    'px-4 py-4 outline-hidden',
-    // TODO: size variants, fix this
-    'flex items-center justify-between h-14',
+    'px-4 outline-hidden',
+    'flex items-center justify-between',
     'dark:text-on-surface',
   ],
   {
@@ -31,9 +30,15 @@ export const selectTriggerVariants = cva(
         // outlined use selectValuePlaceholderFieldsetVariants
         outlined: '',
       },
+      size: {
+        small: 'h-10 py-2',
+        medium: 'h-12 py-3',
+        large: 'h-14 py-4',
+      },
     },
     defaultVariants: {
       variant: 'filled',
+      size: 'medium',
     },
   },
 )

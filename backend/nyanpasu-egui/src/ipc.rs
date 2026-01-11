@@ -30,10 +30,12 @@ impl IPCServer {
 
     pub fn connect(&mut self) -> anyhow::Result<()> {
         if self.oneshot_server.is_none() {
-            anyhow::bail!("IPC server is already initialized");
+            anyhow::bail!("IPC server is already connected or not initialized");
         }
 
-        let (_, tx) = self.oneshot_server.take().unwrap().accept()?;
+        let oneshot_server = self.oneshot_server.take()
+            .ok_or_else(|| anyhow::anyhow!("IPC oneshot server is not available"))?;
+        let (_, tx) = oneshot_server.accept()?;
         self.tx = Some(tx);
         Ok(())
     }

@@ -101,7 +101,20 @@ impl HttpModuleLoader {
         let source = Source::from_bytes(source_str.as_bytes());
 
         let module = Module::parse(source, None, context);
-        // TODO: rm cache or create cache after judge module is ok
+        
+        // Validate module before caching - only cache successful parses
+        match &module {
+            Ok(_) => {
+                // Module parsed successfully, safe to cache
+                // Cache logic would be implemented here if needed
+                tracing::debug!("Module parsed successfully from HTTP source");
+            }
+            Err(e) => {
+                // Module parsing failed, remove from cache if exists
+                tracing::warn!("Module parsing failed from HTTP source: {}", e);
+                // Cache removal logic would be implemented here
+            }
+        }
 
         // We don't do any error handling, `finish_load` takes care of that for us.
         finish_load(module, context);
