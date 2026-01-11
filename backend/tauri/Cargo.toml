@@ -122,7 +122,7 @@ rs-snowflake = "0.6"
 # System Utilities
 auto-launch = { git = "https://github.com/Alfred1109/auto-launch.git", rev = "729d5429dd689067047489af4a0a32f7013854c8", version = "0.5" }
 delay_timer = { version = "0.11", git = "https://github.com/Alfred1109/delay-timer.git", rev = "76615d9b0c1bb830212fe84b5d18ee5444831625" } # Task scheduler with timer
-dunce = "1.0.4"                                                                            # for cross platform path normalization
+dunce = "1.0.4"                                                                                                                             # for cross platform path normalization
 runas = { git = "https://github.com/Alfred1109/rust-runas.git", rev = "29bdb2501c05b7d78e63628bedbd4a190b71bad3" }
 single-instance = "0.3.3"
 which = "8"
@@ -166,8 +166,13 @@ display-info = "0.5.0"  # should be removed after upgrading to tauri v2
 
 # OXC (The Oxidation Compiler)
 # We use it to parse and transpile the old script profile to esm based script profile
-# Using umbrella crate for better dependency management
-oxc = { version = "0.96", features = ["parser", "ast", "ast_visit", "allocator", "span", "syntax"] }
+# Using individual crates for better dependency management
+oxc_parser = "0.107"
+oxc_ast = "0.107"
+oxc_ast_visit = "0.107"
+oxc_allocator = "0.107"
+oxc_span = "0.107"
+oxc_syntax = "0.107"
 
 # Lua Integration
 mlua = { version = "0.11", features = [

@@ -280,14 +280,17 @@ impl Runner for JSRunner {
 }
 
 mod utils {
-    use oxc::allocator::Allocator;
-    use oxc::ast_visit::{
+    use oxc_allocator::Allocator;
+    use oxc_ast::ast::{
+        ExportDefaultDeclaration, ExportDefaultDeclarationKind, Function, ModuleExportName,
+    };
+    use oxc_ast_visit::{
         Visit,
         walk::{walk_function, walk_module_export_name},
     };
-    use oxc::parser::Parser;
-    use oxc::span::{SourceType, Span};
-    use oxc::syntax::scope::ScopeFlags;
+    use oxc_parser::Parser;
+    use oxc_span::{SourceType, Span};
+    use oxc_syntax::scope::ScopeFlags;
 
     use std::borrow::Cow;
 
@@ -307,15 +310,15 @@ mod utils {
 
     impl<'n> Visit<'n> for FunctionVisitor<'n> {
         // Visit module exported name to confirm whether exists default export
-        fn visit_module_export_name(&mut self, it: &oxc::ast::ast::ModuleExportName<'n>) {
+        fn visit_module_export_name(&mut self, it: &ModuleExportName<'n>) {
             match it {
-                oxc::ast::ast::ModuleExportName::IdentifierName(id) => {
+                ModuleExportName::IdentifierName(id) => {
                     self.exported_name.push(Cow::Borrowed(id.name.as_str()))
                 }
-                oxc::ast::ast::ModuleExportName::IdentifierReference(id) => {
+                ModuleExportName::IdentifierReference(id) => {
                     self.exported_name.push(Cow::Borrowed(id.name.as_str()))
                 }
-                oxc::ast::ast::ModuleExportName::StringLiteral(s) => {
+                ModuleExportName::StringLiteral(s) => {
                     self.exported_name.push(Cow::Borrowed(s.value.as_str()))
                 }
             }
@@ -323,7 +326,7 @@ mod utils {
         }
 
         // Visit function declaration to save the function name and span and check whether it is default export
-        fn visit_function(&mut self, it: &oxc::ast::ast::Function<'n>, flags: ScopeFlags) {
+        fn visit_function(&mut self, it: &Function<'n>, flags: ScopeFlags) {
             // eprintln!("function: {:#?}", it);
             if let Some(id) = it.id.clone() {
                 self.declared_functions
@@ -333,14 +336,11 @@ mod utils {
         }
 
         // Visit export default declaration to save the default export
-        fn visit_export_default_declaration(
-            &mut self,
-            it: &oxc::ast::ast::ExportDefaultDeclaration<'n>,
-        ) {
+        fn visit_export_default_declaration(&mut self, it: &ExportDefaultDeclaration<'n>) {
             self.default_export = Some(DefaultExport {
                 _is_function: matches!(
                     it.declaration,
-                    oxc::ast::ast::ExportDefaultDeclarationKind::FunctionDeclaration(_)
+                    ExportDefaultDeclarationKind::FunctionDeclaration(_)
                 ),
                 _span: it.span,
             });

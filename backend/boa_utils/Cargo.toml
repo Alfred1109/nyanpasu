@@ -1,10 +1,10 @@
 [package]
 name = "boa_utils"
 version = "0.1.0"
-repository.workspace = true
-edition.workspace = true
-license.workspace = true
-authors.workspace = true
+repository = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+authors = { workspace = true }
 
 [lib]
 doctest = false
@@ -17,6 +17,7 @@ boa_parser = { version = "0.20", features = ["annex-b"] }
 tokio = { workspace = true }
 nyanpasu-utils = { workspace = true }
 reqwest = { workspace = true }
+futures = "0.3"
 futures-util = "0.3"
 futures-concurrency = "7"
 smol = "2"
