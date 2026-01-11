@@ -2,7 +2,6 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import eslintConfigPrettier from 'eslint-config-prettier'
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import react from 'eslint-plugin-react'
 import pluginReactCompiler from 'eslint-plugin-react-compiler'
 import pluginReactHooks from 'eslint-plugin-react-hooks'
@@ -67,7 +66,6 @@ export default tseslint.config(
     extends: [
       ...neostandard({ ts: true, semi: true, noStyle: true }),
       eslintConfigPrettier,
-      eslintPluginPrettierRecommended,
     ],
     rules: {
       'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'off',
@@ -75,12 +73,6 @@ export default tseslint.config(
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
       'react/react-in-jsx-scope': 'off',
-      'prettier/prettier': [
-        'error',
-        {
-          singleQuote: true,
-        },
-      ],
     },
   },
   {
