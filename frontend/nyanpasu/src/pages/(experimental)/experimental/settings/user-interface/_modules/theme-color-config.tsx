@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { m } from '@/paraglide/messages'
-import { Wheel } from '@uiw/react-color'
+import { MuiColorInput } from 'mui-color-input'
 import { SettingsCard, SettingsCardContent } from '../../_modules/settings-card'
 
 export default function ThemeColorConfig() {
@@ -44,12 +44,12 @@ export default function ThemeColorConfig() {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent className="flex flex-col gap-4 rounded-2xl p-4">
-            <Wheel
+            <MuiColorInput
               data-slot="theme-color-config-colorful"
-              color={cachedThemeColor}
-              onChange={(color) => {
-                setCachedThemeColor(color.hex)
-              }}
+              value={cachedThemeColor}
+              format="hex"
+              isAlphaHidden
+              onChange={(color) => setCachedThemeColor(color)}
             />
 
             <Button

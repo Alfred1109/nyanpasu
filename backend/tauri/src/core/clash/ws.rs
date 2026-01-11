@@ -7,7 +7,7 @@ use std::{
 use anyhow::Context;
 use atomic_enum::atomic_enum;
 use backon::Retryable;
-use futures_util::StreamExt;
+use futures::stream::StreamExt;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use specta::Type;
