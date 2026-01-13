@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
 import {
-  Backdrop,
+  Box,
   Button,
   CircularProgress,
   Dialog,
@@ -12,11 +12,14 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
   InputAdornment,
+  LinearProgress,
   List,
   ListItem,
   Typography,
 } from '@mui/material'
+import { Close as CloseIcon, Security as SecurityIcon } from '@mui/icons-material'
 import Grid from '@mui/material/Grid'
 import {
   restartSidecar,
@@ -57,6 +60,51 @@ const withTimeout = async <T,>(promise: Promise<T>, ms: number) => {
 }
 
 type ModeAction = 'system_proxy' | 'tun'
+
+enum InstallStage {
+  PREPARING = 'preparing',
+  WAITING_UAC = 'waiting_uac',
+  INSTALLING = 'installing', 
+  STARTING = 'starting',
+  CONFIGURING = 'configuring'
+}
+
+const getStageProgress = (stage: InstallStage): number => {
+  switch (stage) {
+    case InstallStage.PREPARING: return 10
+    case InstallStage.WAITING_UAC: return 25
+    case InstallStage.INSTALLING: return 50
+    case InstallStage.STARTING: return 75
+    case InstallStage.CONFIGURING: return 90
+    default: return 0
+  }
+}
+
+const getStageText = (stage: InstallStage, t: (key: string) => string): string => {
+  switch (stage) {
+    case InstallStage.PREPARING: return t('Preparing service installation...')
+    case InstallStage.WAITING_UAC: return t('Waiting for UAC permission confirmation')
+    case InstallStage.INSTALLING: return t('Installing service...')
+    case InstallStage.STARTING: return t('Starting service...')
+    case InstallStage.CONFIGURING: return t('Configuring system proxy...')
+    default: return t('Processing...')
+  }
+}
+
+const getStageDescription = (stage: InstallStage, t: (key: string) => string): string => {
+  switch (stage) {
+    case InstallStage.WAITING_UAC: 
+      return t('Please confirm the Windows User Account Control (UAC) permission prompt. If you don\'t see it, check your taskbar or other windows.')
+    case InstallStage.INSTALLING:
+      return t('Installing the system service with administrator privileges...')
+    case InstallStage.STARTING:
+      return t('Starting the service and establishing connection...')
+    case InstallStage.CONFIGURING:
+      return t('Applying system proxy configuration...')
+    default:
+      return ''
+  }
+}
 
 const TunModeButton = ({
   serviceStatus,
@@ -251,7 +299,9 @@ export const SettingSystemProxy = () => {
   const [showInstallDialog, setShowInstallDialog] = useState(false)
   const [showUninstallDialog, setShowUninstallDialog] = useState(false)
   const [serviceActionPending, setServiceActionPending] = useState(false)
-  const [serviceActionText, setServiceActionText] = useState<string>('')
+  const [installStage, setInstallStage] = useState<InstallStage | null>(null)
+  const [canCancel, setCanCancel] = useState(false)
+  const [cancelRequested, setCancelRequested] = useState(false)
   const [pendingModeAction, setPendingModeAction] = useState<ModeAction | null>(
     null,
   )
@@ -288,16 +338,44 @@ export const SettingSystemProxy = () => {
     setShowInstallDialog(true)
   }
 
+  const handleCancel = useLockFn(async () => {
+    setCancelRequested(true)
+    setCanCancel(false)
+    setServiceActionPending(false)
+    setInstallStage(null)
+    setPendingModeAction(null)
+  })
+
   const handleInstallConfirm = useLockFn(async () => {
     setShowInstallDialog(false)
+    setCancelRequested(false)
+    
     try {
       setServiceActionPending(true)
-      setServiceActionText(t('install'))
+      setCanCancel(false)
+      
+      // Stage 1: Preparing
+      setInstallStage(InstallStage.PREPARING)
+      await new Promise(resolve => setTimeout(resolve, 800))
+      
+      if (cancelRequested) return
+      
+      // Stage 2: Waiting for UAC (with cancel option)
+      setInstallStage(InstallStage.WAITING_UAC)
+      setCanCancel(true)
+      
       await withTimeout(serviceUpsert.mutateAsync('install'), 60_000)
+      
+      if (cancelRequested) return
+      setCanCancel(false)
+      
+      // Stage 3: Installing
+      setInstallStage(InstallStage.INSTALLING)
       await restartSidecar()
-
+      
       let currentStatus: string | undefined = query.data?.status
       for (let i = 0; i < 10; i++) {
+        if (cancelRequested) return
         const result = await query.refetch()
         currentStatus = result.data?.status
         if (currentStatus !== 'not_installed') {
@@ -305,28 +383,33 @@ export const SettingSystemProxy = () => {
         }
         await new Promise((resolve) => setTimeout(resolve, 500))
       }
-
+      
       if (currentStatus === 'not_installed') {
         throw new Error('service_not_installed')
       }
-
+      
       if (pendingModeAction) {
-        setServiceActionText(t('start'))
+        // Stage 4: Starting
+        setInstallStage(InstallStage.STARTING)
         await withTimeout(serviceUpsert.mutateAsync('start'), 30_000)
         await restartSidecar()
-
+        
+        if (cancelRequested) return
+        
+        // Stage 5: Configuring
+        setInstallStage(InstallStage.CONFIGURING)
         if (pendingModeAction === 'system_proxy') {
-          setServiceActionText(t('System Proxy'))
           await withTimeout(toggleSystemProxy(), 30_000)
         }
         if (pendingModeAction === 'tun') {
-          setServiceActionText(t('TUN Mode'))
           await withTimeout(toggleTunMode(), 30_000)
         }
       }
-
+      
       await query.refetch()
     } catch (error) {
+      if (cancelRequested) return
+      
       if (error instanceof Error && error.message === 'timeout') {
         message(t('Operation timed out, it may be waiting for UAC/permission prompt'), {
           title: t('Error'),
@@ -340,19 +423,21 @@ export const SettingSystemProxy = () => {
         })
         promptDialog.show('install')
       } else {
-      message(
-        `${t('Failed to install system service')}\n${formatError(error)}`,
-        {
-          title: t('Error'),
-          kind: 'error',
-        },
-      )
-      promptDialog.show('install')
+        message(
+          `${t('Failed to install system service')}\n${formatError(error)}`,
+          {
+            title: t('Error'),
+            kind: 'error',
+          },
+        )
+        promptDialog.show('install')
       }
     } finally {
       setPendingModeAction(null)
       setServiceActionPending(false)
-      setServiceActionText('')
+      setInstallStage(null)
+      setCanCancel(false)
+      setCancelRequested(false)
     }
   })
 
@@ -360,7 +445,7 @@ export const SettingSystemProxy = () => {
     setShowUninstallDialog(false)
     try {
       setServiceActionPending(true)
-      setServiceActionText(t('uninstall'))
+      setInstallStage(InstallStage.INSTALLING) // Use installing stage for uninstall too
 
       if (systemProxy.value) {
         await toggleSystemProxy()
@@ -388,7 +473,7 @@ export const SettingSystemProxy = () => {
       }
     } finally {
       setServiceActionPending(false)
-      setServiceActionText('')
+      setInstallStage(null)
     }
   })
 
@@ -400,17 +485,62 @@ export const SettingSystemProxy = () => {
       }
     >
       <ServerManualPromptDialogWrapper />
-      <Backdrop
-        open={serviceActionPending}
-        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
-      >
-        <div className="flex flex-col items-center gap-3">
-          <CircularProgress color="inherit" />
-          <Typography variant="body2">
-            {serviceActionText || t('Processing')}
-          </Typography>
-        </div>
-      </Backdrop>
+      
+      {serviceActionPending && installStage && (
+        <Box
+          sx={{
+            bgcolor: 'background.default',
+            border: 1,
+            borderColor: 'divider',
+            borderRadius: 1,
+            p: 2,
+            mb: 2,
+            position: 'relative'
+          }}
+        >
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="subtitle1" color="text.primary">
+              {t('Installing Service')}
+            </Typography>
+            {canCancel && (
+              <IconButton onClick={handleCancel} size="small">
+                <CloseIcon />
+              </IconButton>
+            )}
+          </Box>
+          
+          <Box display="flex" alignItems="center" gap={2} mb={2}>
+            {installStage === InstallStage.WAITING_UAC ? (
+              <SecurityIcon color="warning" sx={{ fontSize: 20 }} />
+            ) : (
+              <CircularProgress size={20} />
+            )}
+            <Typography variant="body2" color="text.primary">
+              {getStageText(installStage, t)}
+            </Typography>
+          </Box>
+          
+          <LinearProgress 
+            variant="determinate" 
+            value={getStageProgress(installStage)} 
+            sx={{ mb: 1.5, height: 6, borderRadius: 3 }}
+          />
+          
+          {getStageDescription(installStage, t) && (
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+              {getStageDescription(installStage, t)}
+            </Typography>
+          )}
+          
+          {installStage === InstallStage.WAITING_UAC && (
+            <Box mt={1.5}>
+              <Typography variant="body2" color="warning.main" sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
+                ⚠️ {t('Please check for UAC permission dialog')}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      )}
 
       <Grid container spacing={2}>
         <Grid size={{ xs: 6 }}>

@@ -7,6 +7,46 @@ use super::SERVICE_PATH;
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
 
+#[cfg(windows)]
+use std::ffi::{OsStr, OsString as WinOsString};
+#[cfg(windows)]
+use std::os::windows::ffi::OsStrExt;
+#[cfg(windows)]
+use std::ptr;
+#[cfg(windows)]
+use winapi::um::shellapi::ShellExecuteW;
+#[cfg(windows)]
+use winapi::um::winuser::{SW_HIDE, SW_SHOW};
+
+#[cfg(windows)]
+fn run_elevated(program: &std::path::Path, args: &[OsString], show: bool) -> Result<std::process::ExitStatus, std::io::Error> {
+    let program_wide: Vec<u16> = OsStr::new(program).encode_wide().chain(Some(0)).collect();
+    let args_str = args.iter()
+        .map(|arg| format!("{}", arg.to_string_lossy()))
+        .collect::<Vec<_>>()
+        .join(" ");
+    let args_wide: Vec<u16> = OsStr::new(&args_str).encode_wide().chain(Some(0)).collect();
+    
+    let result = unsafe {
+        ShellExecuteW(
+            ptr::null_mut(),
+            OsStr::new("runas").encode_wide().chain(Some(0)).collect::<Vec<u16>>().as_ptr(),
+            program_wide.as_ptr(),
+            if args_str.is_empty() { ptr::null() } else { args_wide.as_ptr() },
+            ptr::null(),
+            if show { SW_SHOW } else { SW_HIDE }
+        )
+    };
+    
+    if result as usize > 32 {
+        // ShellExecuteW returns a handle > 32 on success
+        // Since we can't easily wait for the process, return success
+        Ok(std::process::ExitStatus::from_raw(0))
+    } else {
+        Err(std::io::Error::from_raw_os_error(result as i32))
+    }
+}
+
 pub async fn get_service_install_args() -> Result<Vec<OsString>, anyhow::Error> {
     let user = {
         #[cfg(windows)]
@@ -54,18 +94,15 @@ pub async fn get_service_install_args() -> Result<Vec<OsString>, anyhow::Error> 
 pub async fn install_service() -> anyhow::Result<()> {
     let args = get_service_install_args().await?;
     let child = tokio::task::spawn_blocking(move || {
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(windows)]
+        {
+            run_elevated(SERVICE_PATH.as_path(), &args, true)
+        }
+        #[cfg(all(not(windows), not(target_os = "macos")))]
         {
             let mut cmd = RunasCommand::new(SERVICE_PATH.as_path());
             cmd.args(&args);
-            #[cfg(windows)]
-            {
-                cmd.gui(true).show(true);
-            }
-            #[cfg(not(windows))]
-            {
-                cmd.gui(false).show(false);
-            }
+            cmd.gui(false).show(false);
             cmd.status()
         }
         #[cfg(target_os = "macos")]
@@ -107,25 +144,21 @@ pub async fn install_service() -> anyhow::Result<()> {
 
 pub async fn update_service() -> anyhow::Result<()> {
     let child = tokio::task::spawn_blocking(move || {
-        const ARGS: &[&str] = &["update"];
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(windows)]
+        {
+            run_elevated(SERVICE_PATH.as_path(), &["update".into()], true)
+        }
+        #[cfg(all(not(windows), not(target_os = "macos")))]
         {
             let mut cmd = RunasCommand::new(SERVICE_PATH.as_path());
-            cmd.args(ARGS);
-            #[cfg(windows)]
-            {
-                cmd.gui(true).show(true);
-            }
-            #[cfg(not(windows))]
-            {
-                cmd.gui(false).show(false);
-            }
+            cmd.args(&["update"]);
+            cmd.gui(false).show(false);
             cmd.status()
         }
         #[cfg(target_os = "macos")]
         {
             use crate::utils::sudo::sudo;
-            match sudo(SERVICE_PATH.to_string_lossy(), ARGS) {
+            match sudo(SERVICE_PATH.to_string_lossy(), &["update"]) {
                 Ok(()) => Ok(std::process::ExitStatus::from_raw(0)),
                 Err(e) => {
                     tracing::error!("failed to update service: {}", e);
@@ -156,26 +189,21 @@ pub async fn update_service() -> anyhow::Result<()> {
 
 pub async fn uninstall_service() -> anyhow::Result<()> {
     let child = tokio::task::spawn_blocking(move || {
-        const ARGS: &[&str] = &["uninstall"];
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(windows)]
+        {
+            run_elevated(SERVICE_PATH.as_path(), &["uninstall".into()], true)
+        }
+        #[cfg(all(not(windows), not(target_os = "macos")))]
         {
             let mut cmd = RunasCommand::new(SERVICE_PATH.as_path());
-            cmd.args(ARGS);
-            #[cfg(windows)]
-            {
-                cmd.gui(true).show(true);
-            }
-            #[cfg(not(windows))]
-            {
-                cmd.gui(false).show(false);
-            }
+            cmd.args(&["uninstall"]);
+            cmd.gui(false).show(false);
             cmd.status()
         }
         #[cfg(target_os = "macos")]
         {
             use crate::utils::sudo::sudo;
-            const ARGS: &[&str] = &["uninstall"];
-            match sudo(SERVICE_PATH.to_string_lossy(), ARGS) {
+            match sudo(SERVICE_PATH.to_string_lossy(), &["uninstall"]) {
                 Ok(()) => Ok(std::process::ExitStatus::from_raw(0)),
                 Err(e) => {
                     tracing::error!("failed to uninstall service: {}", e);
@@ -219,18 +247,14 @@ pub async fn start_service() -> anyhow::Result<()> {
                     .status()
             };
 
-            #[cfg(not(all(unix, not(target_os = "macos"))))]
+            #[cfg(windows)]
+            let status = run_elevated(SERVICE_PATH.as_path(), &["start".into()], true);
+
+            #[cfg(all(not(windows), not(all(unix, not(target_os = "macos")))))]
             let status = {
                 let mut cmd = RunasCommand::new(SERVICE_PATH.as_path());
                 cmd.args(&["start"]);
-                #[cfg(windows)]
-                {
-                    cmd.gui(true).show(true);
-                }
-                #[cfg(not(windows))]
-                {
-                    cmd.gui(false).show(false);
-                }
+                cmd.gui(false).show(false);
                 cmd.status()
             };
 
@@ -274,29 +298,24 @@ pub async fn start_service() -> anyhow::Result<()> {
 
 pub async fn stop_service() -> anyhow::Result<()> {
     let child = tokio::task::spawn_blocking(move || {
-        const ARGS: &[&str] = &["stop"];
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(windows)]
+        {
+            run_elevated(SERVICE_PATH.as_path(), &["stop".into()], true)
+        }
+        #[cfg(all(not(windows), not(target_os = "macos")))]
         {
             let mut cmd = RunasCommand::new(SERVICE_PATH.as_path());
-            cmd.args(ARGS);
-            #[cfg(windows)]
-            {
-                cmd.gui(true).show(true);
-            }
-            #[cfg(not(windows))]
-            {
-                cmd.gui(false).show(false);
-            }
+            cmd.args(&["stop"]);
+            cmd.gui(false).show(false);
             cmd.status()
         }
         #[cfg(target_os = "macos")]
         {
             use crate::utils::sudo::sudo;
-            const ARGS: &[&str] = &["restart"];
-            match sudo(SERVICE_PATH.to_string_lossy(), ARGS) {
+            match sudo(SERVICE_PATH.to_string_lossy(), &["stop"]) {
                 Ok(()) => Ok(std::process::ExitStatus::from_raw(0)),
                 Err(e) => {
-                    tracing::error!("failed to install service: {}", e);
+                    tracing::error!("failed to stop service: {}", e);
                     Err(e)
                 }
             }
