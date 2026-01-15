@@ -5,6 +5,8 @@ import { coreTypeAtom } from '@/store/clash'
 import { useSetting } from '@nyanpasu/interface'
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 export function useCoreType() {
   const [coreType, setCoreType] = useAtom(coreTypeAtom)
 
@@ -19,6 +21,8 @@ export function useCoreType() {
 
 export function useNyanpasuStorageSubscribers() {
   useEffect(() => {
+    if (!isInTauri) return
+
     let unlisten: UnlistenFn | null = null
     listen<[string, string | null]>('storage_value_changed', (event) => {
       const [key, value] = event.payload
@@ -34,5 +38,5 @@ export function useNyanpasuStorageSubscribers() {
         unlisten()
       }
     }
-  })
+  }, [])
 }

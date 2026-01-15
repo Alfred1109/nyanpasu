@@ -22,35 +22,14 @@ import {
   useSystemService,
 } from '@nyanpasu/interface'
 import { BaseCard, SwitchItem } from '@nyanpasu/ui'
-import { PermissionDialog } from './modules/permission-dialog'
 import { PaperSwitchButton } from './modules/system-proxy'
 
 const SystemProxyButton = () => {
   const { t } = useTranslation()
-  const [showPermissionDialog, setShowPermissionDialog] = useState(false)
 
   const systemProxy = useSetting('enable_system_proxy')
-  const serviceMode = useSetting('enable_service_mode')
 
   const handleSystemProxy = useLockFn(async () => {
-    // 如果要启用系统代理且不在服务模式下，先检查权限
-    if (!systemProxy.value && !serviceMode.value) {
-      setShowPermissionDialog(true)
-      return
-    }
-
-    try {
-      await toggleSystemProxy()
-    } catch (error) {
-      message(`Activation System Proxy failed!`, {
-        title: t('Error'),
-        kind: 'error',
-      })
-    }
-  })
-
-  const handlePermissionConfirm = useLockFn(async () => {
-    setShowPermissionDialog(false)
     try {
       await toggleSystemProxy()
     } catch (error) {
@@ -68,42 +47,16 @@ const SystemProxyButton = () => {
         checked={Boolean(systemProxy.value)}
         onClick={handleSystemProxy}
       />
-      <PermissionDialog
-        open={showPermissionDialog}
-        onClose={() => setShowPermissionDialog(false)}
-        onConfirm={handlePermissionConfirm}
-        permissionType="proxy"
-      />
     </>
   )
 }
 
 const TunModeButton = () => {
   const { t } = useTranslation()
-  const [showPermissionDialog, setShowPermissionDialog] = useState(false)
 
   const tunMode = useSetting('enable_tun_mode')
-  const serviceMode = useSetting('enable_service_mode')
 
   const handleTunMode = useLockFn(async () => {
-    // 如果要启用TUN模式且不在服务模式下，先检查权限
-    if (!tunMode.value && !serviceMode.value) {
-      setShowPermissionDialog(true)
-      return
-    }
-
-    try {
-      await toggleTunMode()
-    } catch (error) {
-      message(`Activation TUN Mode failed! \n Error: ${formatError(error)}`, {
-        title: t('Error'),
-        kind: 'error',
-      })
-    }
-  })
-
-  const handlePermissionConfirm = useLockFn(async () => {
-    setShowPermissionDialog(false)
     try {
       await toggleTunMode()
     } catch (error) {
@@ -120,12 +73,6 @@ const TunModeButton = () => {
         label={t('TUN Mode')}
         checked={Boolean(tunMode.value)}
         onClick={handleTunMode}
-      />
-      <PermissionDialog
-        open={showPermissionDialog}
-        onClose={() => setShowPermissionDialog(false)}
-        onConfirm={handlePermissionConfirm}
-        permissionType="tun"
       />
     </>
   )

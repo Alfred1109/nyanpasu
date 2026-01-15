@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { commands } from './bindings'
 import { CLASH_INFO_QUERY_KEY } from './consts'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 /**
  * A hook that retrieves and returns clash information using react-query.
  *
@@ -16,6 +18,7 @@ import { CLASH_INFO_QUERY_KEY } from './consts'
 export const useClashInfo = () => {
   const query = useQuery({
     queryKey: [CLASH_INFO_QUERY_KEY],
+    enabled: isInTauri,
     queryFn: async () => {
       return unwrapResult(await commands.getClashInfo())
     },

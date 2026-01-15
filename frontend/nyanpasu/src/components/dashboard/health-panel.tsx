@@ -6,6 +6,8 @@ import TimingPanel from './modules/timing-panel'
 
 const REFRESH_SECONDS = 5
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 export const HealthPanel = () => {
   const [health, setHealth] = useState({
     Google: 0,
@@ -24,16 +26,28 @@ export const HealthPanel = () => {
   const [refreshCount, setRefreshCount] = useState(0)
 
   useInterval(async () => {
-    setHealth(healthCache.current)
+    try {
+      setHealth(healthCache.current)
 
-    setRefreshCount(refreshCount + REFRESH_SECONDS)
+      setRefreshCount(refreshCount + REFRESH_SECONDS)
 
-    healthCache.current = {
-      Google: await timing.Google(),
-      GitHub: await timing.GitHub(),
-      BingCN: await timing.BingCN(),
-      Baidu: await timing.Baidu(),
-    }
+      if (!isInTauri) {
+        healthCache.current = {
+          Google: 0,
+          GitHub: 0,
+          BingCN: 0,
+          Baidu: 0,
+        }
+        return
+      }
+
+      healthCache.current = {
+        Google: await timing.Google(),
+        GitHub: await timing.GitHub(),
+        BingCN: await timing.BingCN(),
+        Baidu: await timing.Baidu(),
+      }
+    } catch {}
   }, 1000 * REFRESH_SECONDS)
 
   return (

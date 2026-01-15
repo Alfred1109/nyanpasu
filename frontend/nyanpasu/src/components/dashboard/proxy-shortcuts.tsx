@@ -1,6 +1,6 @@
 import { useLockFn } from 'ahooks'
 import { useAtomValue } from 'jotai'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { atomIsDrawer } from '@/store'
 import { formatError } from '@/utils'
@@ -16,11 +16,6 @@ import {
   useSystemProxy,
 } from '@nyanpasu/interface'
 import { PaperSwitchButton } from '../setting/modules/system-proxy'
-import { TunPermissionDialog } from '../setting/modules/tun-permission-dialog'
-import {
-  PermissionDialog,
-  type PermissionType,
-} from '../setting/modules/permission-dialog'
 
 const TitleComp = () => {
   const { t } = useTranslation()
@@ -79,21 +74,9 @@ export const ProxyShortcuts = () => {
   const { t } = useTranslation()
 
   const isDrawer = useAtomValue(atomIsDrawer)
-  const [showTunPermissionDialog, setShowTunPermissionDialog] = useState(false)
-  const [showPermissionDialog, setShowPermissionDialog] = useState(false)
-  const [permissionType, setPermissionType] = useState<PermissionType>('proxy')
-
   const systemProxy = useSetting('enable_system_proxy')
 
   const handleSystemProxy = useLockFn(async () => {
-    // 如果要启用系统代理，先检查权限
-    if (!systemProxy.value) {
-      setPermissionType('proxy')
-      setShowPermissionDialog(true)
-      return
-    }
-
-    // 关闭系统代理直接执行
     try {
       await toggleSystemProxy()
     } catch (error) {
@@ -107,44 +90,10 @@ export const ProxyShortcuts = () => {
   const tunMode = useSetting('enable_tun_mode')
 
   const handleTunMode = useLockFn(async () => {
-    // 如果要启用TUN模式，先显示权限确认对话框
-    if (!tunMode.value) {
-      setShowTunPermissionDialog(true)
-      return
-    }
-
-    // 关闭TUN模式直接执行
     try {
       await toggleTunMode()
     } catch (error) {
       message(`Activation TUN Mode failed! \n Error: ${formatError(error)}`, {
-        title: t('Error'),
-        kind: 'error',
-      })
-    }
-  })
-
-  const handleTunPermissionConfirm = useLockFn(async () => {
-    setShowTunPermissionDialog(false)
-    try {
-      await toggleTunMode()
-    } catch (error) {
-      message(`Activation TUN Mode failed! \n Error: ${formatError(error)}`, {
-        title: t('Error'),
-        kind: 'error',
-      })
-    }
-  })
-
-  const handlePermissionConfirm = useLockFn(async () => {
-    setShowPermissionDialog(false)
-    try {
-      if (permissionType === 'proxy') {
-        await toggleSystemProxy()
-      }
-      // 可以扩展支持其他权限类型
-    } catch (error) {
-      message(`Activation failed! \n Error: ${formatError(error)}`, {
         title: t('Error'),
         kind: 'error',
       })
@@ -191,19 +140,6 @@ export const ProxyShortcuts = () => {
           </div>
         </div>
       </Paper>
-
-      <TunPermissionDialog
-        open={showTunPermissionDialog}
-        onClose={() => setShowTunPermissionDialog(false)}
-        onConfirm={handleTunPermissionConfirm}
-      />
-
-      <PermissionDialog
-        open={showPermissionDialog}
-        onClose={() => setShowPermissionDialog(false)}
-        onConfirm={handlePermissionConfirm}
-        permissionType={permissionType}
-      />
     </Grid>
   )
 }

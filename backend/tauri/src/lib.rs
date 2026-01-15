@@ -71,6 +71,9 @@ pub fn run() -> std::io::Result<()> {
     #[cfg(feature = "deadlock-detection")]
     deadlock_detection();
 
+    let export_bindings =
+        cfg!(debug_assertions) && std::env::var_os("NYANPASU_EXPORT_BINDINGS").is_some();
+
     // Should be in first place in order prevent single instance check block everything
     // Custom scheme check
     #[cfg(not(target_os = "macos"))]
@@ -82,263 +85,278 @@ pub fn run() -> std::io::Result<()> {
     #[cfg(target_os = "macos")]
     let custom_scheme: Option<url::Url> = None;
 
-    if custom_scheme.is_none() {
-        // Parse commands
-        cmds::parse().unwrap();
-    };
-    #[cfg(feature = "verge-dev")]
-    tauri_plugin_deep_link::prepare("moe.elaina.clash.nyanpasu.dev");
-
-    #[cfg(not(feature = "verge-dev"))]
-    tauri_plugin_deep_link::prepare("moe.elaina.clash.nyanpasu");
-
     // 单例检测 with robust logging
-    let single_instance_result = utils::init::check_singleton();
-    match &single_instance_result {
-        Ok(Some(_)) => {
-            tracing::info!(target: "app", "Acquired single-instance lock");
-        }
-        Ok(None) => {
-            tracing::warn!(target: "app", "Another instance is running; exiting");
-            std::process::exit(0);
-        }
-        Err(e) => {
-            tracing::error!(target: "app", "Failed to check single-instance lock: {e:?}");
-            // Policy: continue startup in best-effort mode
-        }
-    }
-    // Use system locale as default
-    let locale = {
-        let locale = utils::help::get_system_locale();
-        utils::help::mapping_to_i18n_key(&locale)
+    let single_instance_result = if export_bindings {
+        Ok(None)
+    } else {
+        utils::init::check_singleton()
     };
-    rust_i18n::set_locale(locale);
 
-    if single_instance_result
-        .as_ref()
-        .is_ok_and(|instance| instance.is_some())
-        && let Err(e) = init::run_pending_migrations()
-    {
-        // Try to open migration log files
-        if let Ok(data_dir) = crate::utils::dirs::app_data_dir() {
-            let _ = crate::utils::open::that(data_dir.join("migration.log"));
-        }
-
-        utils::dialog::panic_dialog(&format!(
-            "Failed to finish migration event: {e}\nYou can see the detailed information at migration.log in your local data dir.\nYou're supposed to submit it as the attachment of new issue.",
-        ));
-        std::process::exit(1);
-    }
-
-    crate::log_err!(init::init_config());
-
-    // Panic Hook to show a panic dialog and save logs
-    std::panic::set_hook(Box::new(move |panic_info| {
-        use std::backtrace::{Backtrace, BacktraceStatus};
-        let payload = panic_info.payload();
-
-        #[allow(clippy::manual_map)]
-        let payload = if let Some(s) = payload.downcast_ref::<&str>() {
-            Some(&**s)
-        } else if let Some(s) = payload.downcast_ref::<String>() {
-            Some(s.as_str())
-        } else {
-            None
+    if !export_bindings {
+        if custom_scheme.is_none() {
+            // Parse commands
+            cmds::parse().unwrap();
         };
-
-        let location = panic_info.location().map(|l| l.to_string());
-        let (backtrace, note) = {
-            let backtrace = Backtrace::force_capture();
-            let note = (backtrace.status() == BacktraceStatus::Disabled)
-                .then_some("run with RUST_BACKTRACE=1 environment variable to display a backtrace");
-            (Some(backtrace), note)
-        };
-
-        tracing::error!(
-            panic.payload = payload,
-            panic.location = location,
-            panic.backtrace = backtrace.as_ref().map(tracing::field::display),
-            panic.note = note,
-            "A panic occurred",
-        );
-
-        // This is a workaround for the upstream issue: https://github.com/tauri-apps/tauri/issues/10546
-        if let Some(s) = payload.as_ref()
-            && s.contains("PostMessage failed ; is the messages queue full?")
+        // Disable deep-link in debug builds to prevent crashes during development
+        #[cfg(not(debug_assertions))]
         {
-            return;
+            #[cfg(feature = "verge-dev")]
+            tauri_plugin_deep_link::prepare("moe.elaina.clash.nyanpasu.dev");
+
+            #[cfg(not(feature = "verge-dev"))]
+            tauri_plugin_deep_link::prepare("moe.elaina.clash.nyanpasu");
         }
 
-        // FIXME: maybe move this logic to a util function?
-        let msg = format!(
-            "Oops, we encountered some issues and program will exit immediately.\n\npayload: {payload:#?}\nlocation: {location:?}\nbacktrace: {backtrace:#?}\n\n",
-        );
-        let child = std::process::Command::new(tauri::utils::platform::current_exe().unwrap())
-            .arg("panic-dialog")
-            .arg(msg.as_str())
-            .spawn();
-        // fallback to show a dialog directly
-        if child.is_err() {
-            utils::dialog::panic_dialog(msg.as_str());
-        }
-
-        match Handle::global().app_handle.lock().as_ref() {
-            Some(app_handle) => {
-                app_handle.exit(1);
+        match &single_instance_result {
+            Ok(Some(_)) => {
+                tracing::info!(target: "app", "Acquired single-instance lock");
             }
-            None => {
-                log::error!("app handle is not initialized");
-                std::process::exit(1);
+            Ok(None) => {
+                tracing::warn!(target: "app", "Another instance is running; exiting");
+                std::process::exit(0);
+            }
+            Err(e) => {
+                tracing::error!(target: "app", "Failed to check single-instance lock: {e:?}");
+                // Policy: continue startup in best-effort mode
             }
         }
-    }));
+        // Use system locale as default
+        let locale = {
+            let locale = utils::help::get_system_locale();
+            utils::help::mapping_to_i18n_key(&locale)
+        };
+        rust_i18n::set_locale(locale);
 
-    // setup specta
-    let specta_builder = tauri_specta::Builder::<tauri::Wry>::new()
-        .commands(collect_commands![
-            // common
-            ipc::get_sys_proxy,
-            ipc::open_app_config_dir,
-            ipc::open_app_data_dir,
-            ipc::open_logs_dir,
-            ipc::open_web_url,
-            ipc::open_core_dir,
-            // cmds::kill_sidecar,
-            ipc::restart_sidecar,
-            // clash
-            ipc::get_clash_info,
-            ipc::get_clash_logs,
-            ipc::patch_clash_config,
-            ipc::change_clash_core,
-            ipc::get_runtime_config,
-            ipc::get_runtime_yaml,
-            ipc::get_runtime_exists,
-            ipc::get_postprocessing_output,
-            ipc::clash_api_get_proxy_delay,
-            ipc::uwp::invoke_uwp_tool,
-            // updater
-            ipc::fetch_latest_core_versions,
-            ipc::update_core,
-            ipc::inspect_updater,
-            ipc::get_core_version,
-            // utils
-            ipc::collect_logs,
-            // verge
-            ipc::get_verge_config,
-            ipc::patch_verge_config,
-            ipc::toggle_system_proxy,
-            ipc::toggle_tun_mode,
-            ipc::check_tun_permission,
-            ipc::grant_tun_permission,
-            ipc::check_service_permission,
-            ipc::grant_service_permission,
-            ipc::check_proxy_permission,
-            ipc::grant_proxy_permission,
-            ipc::check_autostart_permission,
-            ipc::grant_autostart_permission,
-            // cmds::update_hotkeys,
-            // profile
-            ipc::get_profiles,
-            ipc::enhance_profiles,
-            ipc::patch_profiles_config,
-            ipc::view_profile,
-            ipc::patch_profile,
-            ipc::create_profile,
-            ipc::import_profile,
-            ipc::reorder_profile,
-            ipc::reorder_profiles_by_list,
-            ipc::update_profile,
-            ipc::delete_profile,
-            ipc::read_profile_file,
-            ipc::save_profile_file,
-            ipc::save_window_size_state,
-            ipc::get_custom_app_dir,
-            ipc::set_custom_app_dir,
-            // simplified service management
-            crate::core::privilege::simple_service::get_simple_service_status,
-            crate::core::privilege::simple_service::install_service_simple,
-            crate::core::privilege::simple_service::uninstall_service_simple,
-            crate::core::privilege::simple_service::check_service_recommendation,
-            crate::core::privilege::simple_service::get_service_action,
-            // privilege management
-            crate::core::privilege::ipc_commands::get_privilege_status,
-            crate::core::privilege::ipc_commands::get_current_privilege_mode,
-            crate::core::privilege::ipc_commands::execute_privilege_operation,
-            crate::core::privilege::ipc_commands::precheck_privilege_operation,
-            crate::core::privilege::ipc_commands::get_privilege_recommendations,
-            crate::core::privilege::ipc_commands::auto_setup_service_mode,
-            crate::core::privilege::ipc_commands::check_service_mode_availability,
-            crate::core::privilege::ipc_commands::test_privilege_system,
-            ipc::is_portable,
-            ipc::get_proxies,
-            ipc::select_proxy,
-            ipc::update_proxy_provider,
-            ipc::restart_application,
-            ipc::collect_envs,
-            ipc::get_server_port,
-            ipc::set_tray_icon,
-            ipc::is_tray_icon_set,
-            ipc::get_core_status,
-            ipc::url_delay_test,
-            ipc::get_ipsb_asn,
-            ipc::open_that,
-            ipc::is_appimage,
-            ipc::get_service_install_prompt,
-            ipc::cleanup_processes,
-            ipc::get_storage_item,
-            ipc::set_storage_item,
-            ipc::remove_storage_item,
-            ipc::mutate_proxies,
-            ipc::get_core_dir,
-            // clash layer
-            ipc::get_clash_ws_connections_state,
-            // updater layer
-            ipc::check_update,
-        ])
-        .events(collect_events![core::clash::ClashConnectionsEvent]);
+        if single_instance_result
+            .as_ref()
+            .is_ok_and(|instance| instance.is_some())
+            && let Err(e) = init::run_pending_migrations()
+        {
+            // Try to open migration log files
+            if let Ok(data_dir) = crate::utils::dirs::app_data_dir() {
+                let _ = crate::utils::open::that(data_dir.join("migration.log"));
+            }
 
-    #[cfg(debug_assertions)]
-    {
-        if std::env::var_os("NYANPASU_EXPORT_BINDINGS").is_some() {
-            const SPECTA_BINDINGS_PATH: &str = "../../frontend/interface/src/ipc/bindings.ts";
+            utils::dialog::panic_dialog(&format!(
+                "Failed to finish migration event: {e}\nYou can see the detailed information at migration.log in your local data dir.\nYou're supposed to submit it as the attachment of new issue.",
+            ));
+            std::process::exit(1);
+        }
 
-            match specta_builder.export(
-                Typescript::default()
-                    .formatter(specta_typescript::formatter::prettier)
-                    .formatter(|file| {
-                        let npx_command = if cfg!(target_os = "windows") {
-                            "npx.cmd"
-                        } else {
-                            "npx"
-                        };
+        crate::log_err!(init::init_config());
 
-                        std::process::Command::new(npx_command)
-                            .arg("prettier")
-                            .arg("--write")
-                            .arg(file)
-                            .output()
-                            .map(|_| ())
-                            .map_err(io::Error::other)
-                    })
-                    .bigint(BigIntExportBehavior::Number)
-                    .header("/* eslint-disable */\n// @ts-nocheck"),
-                SPECTA_BINDINGS_PATH,
-            ) {
-                Ok(_) => {
-                    log::debug!("Exported typescript bindings, path: {SPECTA_BINDINGS_PATH}");
-                }
-                Err(e) => {
-                    panic!("Failed to export typescript bindings: {e}");
-                }
+        // Panic Hook to show a panic dialog and save logs
+        std::panic::set_hook(Box::new(move |panic_info| {
+            use std::backtrace::{Backtrace, BacktraceStatus};
+            let payload = panic_info.payload();
+
+            #[allow(clippy::manual_map)]
+            let payload = if let Some(s) = payload.downcast_ref::<&str>() {
+                Some(&**s)
+            } else if let Some(s) = payload.downcast_ref::<String>() {
+                Some(s.as_str())
+            } else {
+                None
             };
 
-            return Ok(());
-        }
+            let location = panic_info.location().map(|l| l.to_string());
+            let (backtrace, note) = {
+                let backtrace = Backtrace::force_capture();
+                let note = (backtrace.status() == BacktraceStatus::Disabled).then_some(
+                    "run with RUST_BACKTRACE=1 environment variable to display a backtrace",
+                );
+                (Some(backtrace), note)
+            };
+
+            tracing::error!(
+                panic.payload = payload,
+                panic.location = location,
+                panic.backtrace = backtrace.as_ref().map(tracing::field::display),
+                panic.note = note,
+                "A panic occurred",
+            );
+
+            // This is a workaround for the upstream issue: https://github.com/tauri-apps/tauri/issues/10546
+            if let Some(s) = payload.as_ref()
+                && s.contains("PostMessage failed ; is the messages queue full?")
+            {
+                return;
+            }
+
+            // FIXME: maybe move this logic to a util function?
+            let msg = format!(
+                "Oops, we encountered some issues and program will exit immediately.\n\npayload: {payload:#?}\nlocation: {location:?}\nbacktrace: {backtrace:#?}\n\n",
+            );
+            let child = std::process::Command::new(tauri::utils::platform::current_exe().unwrap())
+                .arg("panic-dialog")
+                .arg(msg.as_str())
+                .spawn();
+            // fallback to show a dialog directly
+            if child.is_err() {
+                utils::dialog::panic_dialog(msg.as_str());
+            }
+
+            match Handle::global().app_handle.lock().as_ref() {
+                Some(app_handle) => {
+                    app_handle.exit(1);
+                }
+                None => {
+                    log::error!("app handle is not initialized");
+                    std::process::exit(1);
+                }
+            }
+        }));
     }
 
-    let verge = { Config::verge().latest().language.clone().unwrap() };
-    rust_i18n::set_locale(verge.as_str());
+    // setup specta
+    let specta_builder = tauri_specta::Builder::<tauri::Wry>::new().commands(collect_commands![
+        // common
+        ipc::get_sys_proxy,
+        ipc::open_app_config_dir,
+        ipc::open_app_data_dir,
+        ipc::open_logs_dir,
+        ipc::open_web_url,
+        ipc::open_core_dir,
+        // cmds::kill_sidecar,
+        ipc::restart_sidecar,
+        // clash
+        ipc::get_clash_info,
+        ipc::get_clash_logs,
+        ipc::patch_clash_config,
+        ipc::change_clash_core,
+        ipc::get_runtime_config,
+        ipc::get_runtime_yaml,
+        ipc::get_runtime_exists,
+        ipc::get_postprocessing_output,
+        ipc::clash_api_get_proxy_delay,
+        ipc::uwp::invoke_uwp_tool,
+        // updater
+        ipc::fetch_latest_core_versions,
+        ipc::update_core,
+        ipc::inspect_updater,
+        ipc::get_core_version,
+        // utils
+        ipc::collect_logs,
+        // verge
+        ipc::get_verge_config,
+        ipc::patch_verge_config,
+        ipc::toggle_system_proxy,
+        ipc::toggle_tun_mode,
+        ipc::check_tun_permission,
+        ipc::grant_tun_permission,
+        ipc::check_service_permission,
+        ipc::grant_service_permission,
+        ipc::check_proxy_permission,
+        ipc::grant_proxy_permission,
+        ipc::check_autostart_permission,
+        ipc::grant_autostart_permission,
+        // cmds::update_hotkeys,
+        // profile
+        ipc::get_profiles,
+        ipc::enhance_profiles,
+        ipc::patch_profiles_config,
+        ipc::view_profile,
+        ipc::patch_profile,
+        ipc::create_profile,
+        ipc::import_profile,
+        ipc::reorder_profile,
+        ipc::reorder_profiles_by_list,
+        ipc::update_profile,
+        ipc::delete_profile,
+        ipc::read_profile_file,
+        ipc::save_profile_file,
+        ipc::save_window_size_state,
+        ipc::get_custom_app_dir,
+        ipc::set_custom_app_dir,
+        // simplified service management
+        crate::core::privilege::simple_service::service_status,
+        crate::core::privilege::simple_service::service_install,
+        crate::core::privilege::simple_service::service_uninstall,
+        crate::core::privilege::simple_service::service_start,
+        crate::core::privilege::simple_service::service_stop,
+        crate::core::privilege::simple_service::service_restart,
+        crate::core::privilege::simple_service::service_status_summary,
+        crate::core::privilege::simple_service::service_setup,
+        crate::core::privilege::simple_service::service_remove,
+        crate::core::privilege::simple_service::service_recommendation,
+        crate::core::privilege::simple_service::service_action,
+        // privilege management
+        crate::core::privilege::ipc_commands::get_privilege_status,
+        crate::core::privilege::ipc_commands::get_current_privilege_mode,
+        crate::core::privilege::ipc_commands::execute_privilege_operation,
+        crate::core::privilege::ipc_commands::precheck_privilege_operation,
+        crate::core::privilege::ipc_commands::get_privilege_recommendations,
+        crate::core::privilege::ipc_commands::auto_setup_service_mode,
+        crate::core::privilege::ipc_commands::check_service_mode_availability,
+        crate::core::privilege::ipc_commands::test_privilege_system,
+        ipc::is_portable,
+        ipc::get_proxies,
+        ipc::select_proxy,
+        ipc::update_proxy_provider,
+        ipc::restart_application,
+        ipc::collect_envs,
+        ipc::get_server_port,
+        ipc::set_tray_icon,
+        ipc::is_tray_icon_set,
+        ipc::get_core_status,
+        ipc::url_delay_test,
+        ipc::get_ipsb_asn,
+        ipc::open_that,
+        ipc::is_appimage,
+        ipc::get_service_install_prompt,
+        ipc::cleanup_processes,
+        ipc::get_storage_item,
+        ipc::set_storage_item,
+        ipc::remove_storage_item,
+        ipc::mutate_proxies,
+        ipc::get_core_dir,
+        // clash layer
+        ipc::get_clash_ws_connections_state,
+        // updater layer
+    ]);
 
+    let specta_builder =
+        specta_builder.events(collect_events![crate::core::clash::ClashConnectionsEvent,]);
+
+    #[cfg(debug_assertions)]
+    if export_bindings {
+        let specta_bindings_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../frontend/interface/src/ipc/bindings.ts");
+
+        match specta_builder.export(
+            Typescript::default()
+                .formatter(specta_typescript::formatter::prettier)
+                .formatter(|file| {
+                    let npx_command = if cfg!(target_os = "windows") {
+                        "npx.cmd"
+                    } else {
+                        "npx"
+                    };
+                    std::process::Command::new(npx_command)
+                        .arg("prettier")
+                        .arg("--write")
+                        .arg(file)
+                        .stdout(io::stdout())
+                        .spawn()
+                        .unwrap();
+                    Ok(())
+                })
+                .bigint(BigIntExportBehavior::Number)
+                .header("/* eslint-disable */\n// @ts-nocheck"),
+            &specta_bindings_path,
+        ) {
+            Ok(_) => {
+                log::debug!(
+                    "Exported typescript bindings, path: {}",
+                    specta_bindings_path.display()
+                );
+            }
+            Err(e) => {
+                panic!("Failed to export typescript bindings: {e}");
+            }
+        }
+        return Ok(());
+    }
     // show a dialog to print the single instance error
     // Hold the guard until the end of the program if acquired
     let _singleton = match single_instance_result {
@@ -406,18 +424,27 @@ pub fn run() -> std::io::Result<()> {
                     .unwrap();
             }
             // This operation should terminate the app if app is called by custom scheme and this instance is not the primary instance
-            log_err!(tauri_plugin_deep_link::register(
-                &["clash-nyanpasu", "clash"],
-                move |request| {
-                    log::info!(target: "app", "scheme request received: {:?}", &request);
-                    resolve::create_window(&handle.clone()); // create window if not exists
-                    while !is_window_opened() {
-                        log::info!(target: "app", "waiting for window open");
-                        std::thread::sleep(std::time::Duration::from_millis(100));
-                    }
-                    handle.emit("scheme-request-received", request).unwrap();
+            // Disable deep-link registration in debug builds to prevent crashes during development
+            #[cfg(not(debug_assertions))]
+            {
+                if let Err(e) =
+                    tauri_plugin_deep_link::register(&["clash-nyanpasu", "clash"], move |request| {
+                        log::info!(target: "app", "scheme request received: {:?}", &request);
+                        resolve::create_window(&handle.clone()); // create window if not exists
+                        while !is_window_opened() {
+                            log::info!(target: "app", "waiting for window open");
+                            std::thread::sleep(std::time::Duration::from_millis(100));
+                        }
+                        handle.emit("scheme-request-received", request).unwrap();
+                    })
+                {
+                    log::warn!(target: "app", "Failed to register deep link: {}", e);
                 }
-            ));
+            }
+            #[cfg(debug_assertions)]
+            {
+                log::info!(target: "app", "Deep-link registration disabled in debug build");
+            }
             std::thread::spawn(move || {
                 nyanpasu_utils::runtime::block_on(async move {
                     server::run(*server::SERVER_PORT)

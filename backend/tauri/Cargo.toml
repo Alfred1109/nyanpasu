@@ -74,9 +74,9 @@ colored = "3"
 clap = { version = "4.5.4", features = ["derive"] }
 
 # GUI Utilities
-rfd = { version = "0.15", default-features = false, features = [
+rfd = { version = "0.15.0", default-features = false, features = [
+  "xdg-portal",
   "tokio",
-  "gtk3",
   "common-controls-v6",
 ] } # cross platform dialog
 
@@ -238,6 +238,7 @@ objc2-foundation = { version = "0.3.1", features = ["NSGeometry"] }
 nix = { version = "0.30.0", features = ["user", "fs"] }
 
 [target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["shellapi", "winuser"] }
 deelevate = "0.2.0"
 winreg = { version = "0.55", features = ["transactions"] }
 windows-registry = "0.5.1"

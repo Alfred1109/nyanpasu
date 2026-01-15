@@ -3,19 +3,20 @@ import { Box } from '@mui/material'
 import Paper from '@mui/material/Paper'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import 'allotment/dist/style.css'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useAtomValue } from 'jotai'
 import { ReactNode, useEffect, useRef } from 'react'
 import { atomIsDrawerOnlyIcon } from '@/store'
 import { alpha, cn } from '@nyanpasu/ui'
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { TauriEvent, UnlistenFn } from '@tauri-apps/api/event'
-import { AnimatePresence, motion } from 'framer-motion'
 import { LayoutControl } from '../layout/layout-control'
 import styles from './app-container.module.scss'
 import AppDrawer from './app-drawer'
 import DrawerContent from './drawer-content'
 
-const appWindow = getCurrentWebviewWindow()
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+const appWindow = isInTauri ? getCurrentWebviewWindow() : null
 
 const OS = getSystem()
 
@@ -26,15 +27,22 @@ export const AppContainer = ({
   children?: ReactNode
   isDrawer?: boolean
 }) => {
-  const { data: isMaximized } = useSuspenseQuery({
+  const { data: isMaximized = false } = useQuery({
     queryKey: ['isMaximized'],
-    queryFn: () => appWindow.isMaximized(),
+    queryFn: async () => {
+      if (!appWindow) return false
+      return appWindow.isMaximized()
+    },
+    enabled: !!appWindow,
+    initialData: false,
   })
   const queryClient = useQueryClient()
   const unlistenRef = useRef<UnlistenFn | null>(null)
   const onlyIcon = useAtomValue(atomIsDrawerOnlyIcon)
 
   useEffect(() => {
+    if (!appWindow) return
+
     appWindow
       .listen(TauriEvent.WINDOW_RESIZED, () => {
         queryClient.invalidateQueries({ queryKey: ['isMaximized'] })
@@ -57,7 +65,7 @@ export const AppContainer = ({
       className={styles.layout}
       onPointerDown={(e: React.PointerEvent) => {
         if ((e.target as HTMLElement)?.dataset?.windrag) {
-          appWindow.startDragging()
+          appWindow?.startDragging()
         }
       }}
       onContextMenu={(e) => {
@@ -73,7 +81,7 @@ export const AppContainer = ({
       )}
 
       <div className={styles.container}>
-        {OS === 'windows' && (
+        {OS === 'windows' && appWindow && (
           <LayoutControl className="z-top! fixed top-2 right-4" />
         )}
         <AnimatePresence>

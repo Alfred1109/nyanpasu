@@ -1,5 +1,7 @@
-import { useQuery, UseQueryOptions } from '@tanstack/react-query'
 import { getIpsbASN } from '@/service'
+import { useQuery, UseQueryOptions } from '@tanstack/react-query'
+
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
 
 export interface IPSBResponse {
   organization: string
@@ -16,9 +18,12 @@ export interface IPSBResponse {
   country_code: string
 }
 
-export const useIPSB = (config?: Partial<UseQueryOptions<IPSBResponse>>) => {
-  return useQuery<IPSBResponse>({
+export const useIPSB = (
+  config?: Partial<UseQueryOptions<IPSBResponse | null>>,
+) => {
+  return useQuery<IPSBResponse | null>({
     queryKey: ['https://api.ip.sb/geoip'],
+    enabled: isInTauri,
     queryFn: () => getIpsbASN(),
     ...config,
   })

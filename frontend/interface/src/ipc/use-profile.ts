@@ -9,6 +9,8 @@ import {
 } from './bindings'
 import { RROFILES_QUERY_KEY } from './consts'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 type URLImportParams = Parameters<typeof commands.importProfile>
 
 type ManualImportParams = Parameters<typeof commands.createProfile>
@@ -107,6 +109,7 @@ export const useProfile = (options?: { without_helper_fn?: boolean }) => {
    */
   const query = useQuery({
     queryKey: [RROFILES_QUERY_KEY],
+    enabled: isInTauri,
     queryFn: async () => {
       const result = unwrapResult(await commands.getProfiles())
 

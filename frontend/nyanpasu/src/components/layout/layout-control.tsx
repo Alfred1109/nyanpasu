@@ -11,12 +11,14 @@ import {
 import { Button, ButtonProps } from '@mui/material'
 import { saveWindowSizeState, useSetting } from '@nyanpasu/interface'
 import { alpha, cn } from '@nyanpasu/ui'
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { listen, TauriEvent, UnlistenFn } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { platform as getPlatform } from '@tauri-apps/plugin-os'
 
-const appWindow = getCurrentWebviewWindow()
+// Check if we're in Tauri environment before calling Tauri APIs
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+const appWindow = isInTauri ? getCurrentWebviewWindow() : null
 
 const CtrlButton = (props: ButtonProps) => {
   return (
@@ -34,15 +36,23 @@ const CtrlButton = (props: ButtonProps) => {
 export const LayoutControl = ({ className }: { className?: string }) => {
   const { value: alwaysOnTop, upsert } = useSetting('always_on_top')
 
-  const { data: isMaximized } = useSuspenseQuery({
+  const { data: isMaximized = false } = useQuery({
     queryKey: ['isMaximized'],
-    queryFn: () => appWindow.isMaximized(),
+    queryFn: async () => {
+      if (!appWindow) return false
+      return appWindow.isMaximized()
+    },
+    enabled: !!appWindow,
+    initialData: false,
   })
+
   const queryClient = useQueryClient()
   const unlistenRef = useRef<UnlistenFn | null>(null)
   const platform = useRef(getPlatform())
 
   useEffect(() => {
+    if (!appWindow) return
+
     listen(TauriEvent.WINDOW_RESIZED, () => {
       queryClient.invalidateQueries({ queryKey: ['isMaximized'] })
     })
@@ -55,6 +65,7 @@ export const LayoutControl = ({ className }: { className?: string }) => {
   }, [queryClient])
 
   const toggleAlwaysOnTop = useMemoizedFn(async () => {
+    if (!appWindow) return
     await upsert(!alwaysOnTop)
     await appWindow.setAlwaysOnTop(!alwaysOnTop)
   })
@@ -72,13 +83,14 @@ export const LayoutControl = ({ className }: { className?: string }) => {
         )}
       </CtrlButton>
 
-      <CtrlButton onClick={() => appWindow.minimize()}>
+      <CtrlButton disabled={!appWindow} onClick={() => appWindow?.minimize()}>
         <HorizontalRuleRounded fontSize="small" />
       </CtrlButton>
 
       <CtrlButton
+        disabled={!appWindow}
         onClick={() => {
-          appWindow.toggleMaximize().then((isMaximized) => {
+          appWindow?.toggleMaximize().then(() => {
             queryClient.invalidateQueries({ queryKey: ['isMaximized'] })
           })
         }}
@@ -96,7 +108,9 @@ export const LayoutControl = ({ className }: { className?: string }) => {
       </CtrlButton>
 
       <CtrlButton
+        disabled={!appWindow}
         onClick={() => {
+          if (!appWindow) return
           if (platform.current === 'windows') {
             saveWindowSizeState().finally(() => {
               appWindow.close()

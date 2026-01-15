@@ -2,10 +2,14 @@ import { useEffect, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 export const SchemeProvider = () => {
   const navigate = useNavigate()
   const unlistenRef = useRef<UnlistenFn | null>(null)
   useEffect(() => {
+    if (!isInTauri) return
+
     const run = async () => {
       unlistenRef.current = await listen('scheme-request-received', (req) => {
         const message: string = req.payload as string

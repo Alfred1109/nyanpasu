@@ -11,6 +11,8 @@ import {
   sendNotification,
 } from '@tauri-apps/plugin-notification'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 let permissionGranted: boolean | null = null
 let portable: boolean | null = null
 let pluginAvailable: boolean | null = null
@@ -62,6 +64,12 @@ export const notification = async ({
   if (!title) {
     throw new Error('missing message argument!')
   }
+
+  if (!isInTauri) {
+    Notice[type](`${title} ${body ? `: ${body}` : ''}`)
+    return
+  }
+
   if (portable === null) {
     try {
       portable = (await isPortable()) ?? false
@@ -92,6 +100,11 @@ export const message = async (
   value: string,
   options?: string | MessageDialogOptions | undefined,
 ) => {
+  if (!isInTauri) {
+    Notice.info(value)
+    return
+  }
+
   if (typeof options === 'object') {
     await tauriMessage(value, {
       ...options,

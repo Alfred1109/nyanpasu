@@ -18,6 +18,8 @@ import { unwrapResult } from '../utils'
 import { ManifestVersion } from './core'
 import { EnvInfos, InspectUpdater, SystemProxy, VergeConfig } from './types'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 export const getNyanpasuConfig = async () => {
   return unwrapResult(await commands.getVergeConfig()) as VergeConfig
 }
@@ -27,11 +29,31 @@ export const patchNyanpasuConfig = async (payload: VergeConfig) => {
 }
 
 export const toggleSystemProxy = async () => {
-  return unwrapResult(await commands.toggleSystemProxy())
+  const result = unwrapResult(await commands.toggleSystemProxy())
+
+  // Trigger a small delay to allow backend to emit mutation event
+  setTimeout(() => {
+    // Force a page refresh to update UI state if needed
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nyanpasu-setting-changed'))
+    }
+  }, 100)
+
+  return result
 }
 
 export const toggleTunMode = async () => {
-  return unwrapResult(await commands.toggleTunMode())
+  const result = unwrapResult(await commands.toggleTunMode())
+
+  // Trigger a small delay to allow backend to emit mutation event
+  setTimeout(() => {
+    // Force a page refresh to update UI state if needed
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nyanpasu-setting-changed'))
+    }
+  }, 100)
+
+  return result
 }
 
 export const getClashInfo = async () => {
@@ -160,7 +182,11 @@ export const getSystemProxy = async () => {
 
 export const statusService = async () => {
   try {
-    const result = unwrapResult(await commands.statusService()) as StatusInfo
+    const res = await commands.serviceStatus()
+    if (res.status === 'error') {
+      throw res.error
+    }
+    const result = res.data as StatusInfo
     return result.status
   } catch (e) {
     console.error(e)
@@ -169,23 +195,33 @@ export const statusService = async () => {
 }
 
 export const installService = async () => {
-  return unwrapResult(await commands.installService())
+  const res = await commands.serviceInstall()
+  if (res.status === 'error') throw res.error
+  return res.data
 }
 
 export const uninstallService = async () => {
-  return unwrapResult(await commands.uninstallService())
+  const res = await commands.serviceUninstall()
+  if (res.status === 'error') throw res.error
+  return res.data
 }
 
 export const startService = async () => {
-  return unwrapResult(await commands.startService())
+  const res = await commands.serviceStart()
+  if (res.status === 'error') throw res.error
+  return res.data
 }
 
 export const stopService = async () => {
-  return unwrapResult(await commands.stopService())
+  const res = await commands.serviceStop()
+  if (res.status === 'error') throw res.error
+  return res.data
 }
 
 export const restartService = async () => {
-  return unwrapResult(await commands.restartService())
+  const res = await commands.serviceRestart()
+  if (res.status === 'error') throw res.error
+  return res.data
 }
 
 export const openAppConfigDir = async () => {
@@ -201,6 +237,9 @@ export const openCoreDir = async () => {
 }
 
 export const getCoreDir = async () => {
+  if (!isInTauri) {
+    return ''
+  }
   return unwrapResult(await commands.getCoreDir())
 }
 
@@ -280,10 +319,16 @@ export const getCoreStatus = async () => {
 }
 
 export const urlDelayTest = async (url: string, expectedStatus: number) => {
+  if (!isInTauri) {
+    return null
+  }
   return unwrapResult(await commands.urlDelayTest(url, expectedStatus))
 }
 
 export const getIpsbASN = async () => {
+  if (!isInTauri) {
+    return null
+  }
   return unwrapResult(await commands.getIpsbAsn()) as unknown as IPSBResponse
 }
 
@@ -296,6 +341,9 @@ export const isAppImage = async () => {
 }
 
 export const getServiceInstallPrompt = async () => {
+  if (!isInTauri) {
+    return ''
+  }
   return unwrapResult(await commands.getServiceInstallPrompt())
 }
 

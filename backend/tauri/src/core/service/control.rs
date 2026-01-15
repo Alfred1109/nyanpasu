@@ -2,15 +2,19 @@ use crate::utils::dirs::{app_config_dir, app_data_dir, app_install_dir};
 use runas::Command as RunasCommand;
 use std::ffi::OsString;
 
+use nyanpasu_ipc::types::ServiceStatus;
+
 use super::SERVICE_PATH;
 
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
 
 #[cfg(windows)]
-use std::ffi::{OsStr, OsString as WinOsString};
+use std::ffi::OsStr;
 #[cfg(windows)]
 use std::os::windows::ffi::OsStrExt;
+#[cfg(windows)]
+use std::os::windows::process::ExitStatusExt;
 #[cfg(windows)]
 use std::ptr;
 #[cfg(windows)]
@@ -19,25 +23,72 @@ use winapi::um::shellapi::ShellExecuteW;
 use winapi::um::winuser::{SW_HIDE, SW_SHOW};
 
 #[cfg(windows)]
-fn run_elevated(program: &std::path::Path, args: &[OsString], show: bool) -> Result<std::process::ExitStatus, std::io::Error> {
+fn escape_windows_cmd_arg(arg: &OsString) -> String {
+    let s = arg.to_string_lossy();
+    if !s.chars().any(|c| c.is_whitespace() || c == '"') {
+        return s.into_owned();
+    }
+
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+
+    let mut backslashes = 0usize;
+    for ch in s.chars() {
+        match ch {
+            '\\' => {
+                backslashes += 1;
+            }
+            '"' => {
+                out.extend(std::iter::repeat('\\').take(backslashes * 2 + 1));
+                out.push('"');
+                backslashes = 0;
+            }
+            _ => {
+                out.extend(std::iter::repeat('\\').take(backslashes));
+                out.push(ch);
+                backslashes = 0;
+            }
+        }
+    }
+
+    out.extend(std::iter::repeat('\\').take(backslashes * 2));
+    out.push('"');
+    out
+}
+
+#[cfg(windows)]
+fn run_elevated(
+    program: &std::path::Path,
+    args: &[OsString],
+    show: bool,
+) -> Result<std::process::ExitStatus, std::io::Error> {
     let program_wide: Vec<u16> = OsStr::new(program).encode_wide().chain(Some(0)).collect();
-    let args_str = args.iter()
-        .map(|arg| format!("{}", arg.to_string_lossy()))
+    let args_str = args
+        .iter()
+        .map(escape_windows_cmd_arg)
         .collect::<Vec<_>>()
         .join(" ");
     let args_wide: Vec<u16> = OsStr::new(&args_str).encode_wide().chain(Some(0)).collect();
-    
+
     let result = unsafe {
         ShellExecuteW(
             ptr::null_mut(),
-            OsStr::new("runas").encode_wide().chain(Some(0)).collect::<Vec<u16>>().as_ptr(),
+            OsStr::new("runas")
+                .encode_wide()
+                .chain(Some(0))
+                .collect::<Vec<u16>>()
+                .as_ptr(),
             program_wide.as_ptr(),
-            if args_str.is_empty() { ptr::null() } else { args_wide.as_ptr() },
+            if args_str.is_empty() {
+                ptr::null()
+            } else {
+                args_wide.as_ptr()
+            },
             ptr::null(),
-            if show { SW_SHOW } else { SW_HIDE }
+            if show { SW_SHOW } else { SW_HIDE },
         )
     };
-    
+
     if result as usize > 32 {
         // ShellExecuteW returns a handle > 32 on success
         // Since we can't easily wait for the process, return success
@@ -92,7 +143,18 @@ pub async fn get_service_install_args() -> Result<Vec<OsString>, anyhow::Error> 
 }
 
 pub async fn install_service() -> anyhow::Result<()> {
+    if let Ok(info) = status().await {
+        if !matches!(info.status, ServiceStatus::NotInstalled) {
+            return Ok(());
+        }
+    }
     let args = get_service_install_args().await?;
+    if !SERVICE_PATH.as_path().exists() {
+        anyhow::bail!(
+            "nyanpasu-service executable not found at: {}",
+            SERVICE_PATH.display()
+        );
+    }
     let child = tokio::task::spawn_blocking(move || {
         #[cfg(windows)]
         {
@@ -413,6 +475,12 @@ pub async fn restart_service() -> anyhow::Result<()> {
 
 #[tracing::instrument]
 pub async fn status<'a>() -> anyhow::Result<nyanpasu_ipc::types::StatusInfo<'a>> {
+    if !SERVICE_PATH.as_path().exists() {
+        anyhow::bail!(
+            "nyanpasu-service executable not found at: {}",
+            SERVICE_PATH.display()
+        );
+    }
     let mut cmd = tokio::process::Command::new(SERVICE_PATH.as_path());
     cmd.args(["status", "--json"]);
     #[cfg(windows)]

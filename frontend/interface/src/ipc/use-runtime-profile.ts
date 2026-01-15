@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { unwrapResult } from '../utils'
 import { commands } from './bindings'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 /**
  * Custom hook for retrieving the runtime profile.
  *
@@ -14,6 +16,7 @@ import { commands } from './bindings'
 export const useRuntimeProfile = () => {
   const query = useQuery({
     queryKey: ['runtime-profile'],
+    enabled: isInTauri,
     queryFn: async () => {
       return unwrapResult(await commands.getRuntimeYaml())
     },

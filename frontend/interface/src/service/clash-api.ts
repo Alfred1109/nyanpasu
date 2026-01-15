@@ -3,6 +3,8 @@ import { useMemo } from 'react'
 import type { ProxyGroupItem, SubscriptionInfo } from '../ipc/bindings'
 import { useClashInfo } from '../ipc/use-clash-info'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 const prepareServer = (server?: string) => {
   if (server?.startsWith(':')) {
     return `127.0.0.1${server}`
@@ -68,11 +70,35 @@ export type ClashRule = {
 }
 
 export const useClashAPI = () => {
+  if (!isInTauri) {
+    return {
+      configs: async () => ({}) as ClashConfig,
+      patchConfigs: async () => ({}) as ClashConfig,
+      putConfigs: async () => ({}) as ClashConfig,
+      deleteConnections: async () => undefined,
+      version: async () => ({ version: 'N/A' }) as ClashVersion,
+      proxiesDelay: async () => ({ delay: 0 }),
+      groupDelay: async () => ({}) as Record<string, number>,
+      proxies: async () => ({ proxies: [] as ClashProxyGroupItem[] }),
+      putProxies: async () => undefined,
+      rules: async () => ({ rules: [] as ClashRule[] }),
+      providersRules: async () => ({
+        providers: {} as Record<string, ClashProviderRule>,
+      }),
+      putProvidersRules: async () => undefined,
+      providersProxies: async () => ({
+        providers: {} as Record<string, ClashProviderProxies>,
+      }),
+      putProvidersProxies: async () => undefined,
+    }
+  }
+
   const { data } = useClashInfo()
 
   const request = useMemo(() => {
+    const server = prepareServer(data?.server) ?? '127.0.0.1:9090'
     return ofetch.create({
-      baseURL: `http://${prepareServer(data?.server)}`,
+      baseURL: `http://${server}`,
       headers: data?.secret
         ? { Authorization: `Bearer ${data?.secret}` }
         : undefined,

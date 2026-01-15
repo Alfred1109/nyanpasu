@@ -1,3 +1,4 @@
+import { useLocalStorageState } from 'ahooks'
 import { isEqual, kebabCase } from 'lodash-es'
 import {
   createContext,
@@ -15,9 +16,10 @@ import {
 } from '@material/material-color-utilities'
 import { useSetting } from '@nyanpasu/interface'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useLocalStorageState } from 'ahooks'
 
-const appWindow = getCurrentWebviewWindow()
+// Check if we're in Tauri environment before calling Tauri APIs
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+const appWindow = isInTauri ? getCurrentWebviewWindow() : null
 
 export const DEFAULT_COLOR = '#1867C0'
 
@@ -103,22 +105,20 @@ export function ExperimentalThemeProvider({ children }: PropsWithChildren) {
 
   const themeColor = useSetting('theme_color')
 
-  const [cachedThemePalette, setCachedThemePalette] = useLocalStorageState<Theme>(
-    THEME_PALETTE_KEY,
-    {
+  const [cachedThemePalette, setCachedThemePalette] =
+    useLocalStorageState<Theme>(THEME_PALETTE_KEY, {
       defaultValue: themeFromSourceColor(
         // use default color if theme color is not set
         argbFromHex(themeColor.value || DEFAULT_COLOR),
       ),
-    }
-  )
+    })
 
-  const [cachedThemeCssVars, setCachedThemeCssVars] = useLocalStorageState<string>(
-    THEME_CSS_VARS_KEY,
-    {
-      defaultValue: cachedThemePalette ? generateThemeCssVars(cachedThemePalette) : '',
-    }
-  )
+  const [cachedThemeCssVars, setCachedThemeCssVars] =
+    useLocalStorageState<string>(THEME_CSS_VARS_KEY, {
+      defaultValue: cachedThemePalette
+        ? generateThemeCssVars(cachedThemePalette)
+        : '',
+    })
 
   // automatically insert custom theme css vars into document head
   useEffect(() => {
@@ -157,6 +157,10 @@ export function ExperimentalThemeProvider({ children }: PropsWithChildren) {
 
   // listen to theme changed event and change html theme mode
   useEffect(() => {
+    if (!appWindow) {
+      return () => {}
+    }
+
     const unlisten = appWindow.onThemeChanged((e) => {
       if (themeMode.value === ThemeMode.SYSTEM) {
         changeHtmlThemeMode(e.payload)

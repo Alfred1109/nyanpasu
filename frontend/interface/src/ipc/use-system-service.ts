@@ -1,6 +1,5 @@
-import { unwrapResult } from '@/utils'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { commands } from './bindings'
+import { commands, type StatusInfo } from './bindings'
 
 export type ServiceType = 'install' | 'uninstall' | 'start' | 'stop'
 
@@ -11,41 +10,81 @@ export type ServiceType = 'install' | 'uninstall' | 'start' | 'stop'
  */
 export const useSystemService = () => {
   const queryClient = useQueryClient()
+  const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+  const isBrowser = typeof window !== 'undefined'
 
-  const query = useQuery({
+  const unwrap = <T, E>(
+    res: { status: 'ok'; data: T } | { status: 'error'; error: E },
+  ) => {
+    if (res.status === 'error') {
+      throw res.error
+    }
+    return res.data
+  }
+
+  const query = useQuery<StatusInfo>({
     queryKey: ['system-service'],
+    enabled: isInTauri || isBrowser,
     queryFn: async () => {
-      try {
-        return unwrapResult(await commands.statusService())
-      } catch (error) {
-        // 如果查询失败（通常是服务未安装），返回默认状态
+      if (!isInTauri) {
+        const res = await fetch('/__local_api/service/status', {
+          cache: 'no-store',
+        })
+        if (!res.ok) {
+          throw new Error(`local api failed: ${res.status}`)
+        }
+        const data = (await res.json()) as {
+          status?: 'running' | 'stopped' | 'not_installed'
+          version?: string
+        }
+        const status = data.status ?? 'not_installed'
         return {
           name: '',
-          version: '',
-          status: 'not_installed' as const,
+          version: data.version ?? '',
+          status: status as any,
           server: null,
         }
       }
+      try {
+        return unwrap(await commands.serviceStatus())
+      } catch (error) {
+        const message = String(error)
+        const isNotInstalled =
+          message.includes('executable not found') ||
+          message.toLowerCase().includes('not installed')
+
+        if (isNotInstalled) {
+          return {
+            name: '',
+            version: '',
+            status: 'not_installed' as const,
+            server: null,
+          }
+        }
+
+        throw error
+      }
     },
+    refetchInterval: 5000,
   })
 
   const upsert = useMutation({
     mutationFn: async (type: ServiceType) => {
       switch (type) {
         case 'install':
-          unwrapResult(await commands.installService())
+          unwrap(await commands.serviceInstall())
           break
 
         case 'uninstall':
-          unwrapResult(await commands.uninstallService())
+          unwrap(await commands.serviceUninstall())
           break
 
         case 'start':
-          unwrapResult(await commands.startService())
+          unwrap(await commands.serviceStart())
           break
 
         case 'stop':
-          unwrapResult(await commands.stopService())
+          unwrap(await commands.serviceStop())
           break
       }
     },

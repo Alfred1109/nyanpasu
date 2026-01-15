@@ -37,7 +37,11 @@ export const LoadingSwitch = ({
           size={16}
         />
       )}
-      <Switch disabled={loading || disabled} checked={checked} {...props} />
+      <Switch
+        disabled={loading || disabled}
+        checked={checked ?? false}
+        {...props}
+      />
     </div>
   )
 }

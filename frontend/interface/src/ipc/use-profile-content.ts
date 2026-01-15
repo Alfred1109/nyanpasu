@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { unwrapResult } from '../utils'
 import { commands } from './bindings'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 /**
  * A custom hook that manages profile content data fetching and updating.
  *
@@ -48,7 +50,7 @@ export const useProfileContent = (uid: string) => {
     queryFn: async () => {
       return unwrapResult(await commands.readProfileFile(uid))
     },
-    enabled: !!uid,
+    enabled: isInTauri && !!uid,
   })
 
   /**

@@ -11,7 +11,9 @@ export const DEFAULT_COLOR = '#1867c0'
 
 export const DEFAULT_FONT_FAMILY = `"Roboto", "Helvetica", "Arial", sans-serif, "Color Emoji Flags"," Color Emoji"`
 
-const appWindow = getCurrentWebviewWindow()
+// Check if we're in Tauri environment before calling Tauri APIs
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+const appWindow = isInTauri ? getCurrentWebviewWindow() : null
 
 const applyRootStyleVar = (mode: 'light' | 'dark', theme: Theme) => {
   const root = document.documentElement
@@ -66,7 +68,7 @@ const ThemeInner = ({ children }: PropsWithChildren) => {
   const { setMode } = useColorScheme()
 
   useEffect(() => {
-    if (themeMode === 'system') {
+    if (themeMode === 'system' && appWindow) {
       appWindow.theme().then((m) => {
         if (m) {
           setThemeMode(m)
@@ -77,6 +79,10 @@ const ThemeInner = ({ children }: PropsWithChildren) => {
       const chosenThemeMode = (themeMode as 'light' | 'dark') || 'light'
       setThemeMode(chosenThemeMode)
       setMode(chosenThemeMode)
+    }
+
+    if (!appWindow) {
+      return () => {}
     }
 
     const unlisten = appWindow.onThemeChanged((e) => {

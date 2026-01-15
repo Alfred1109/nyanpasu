@@ -1,10 +1,12 @@
-import { useEffect } from 'react'
 import { merge } from 'lodash-es'
+import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { unwrapResult } from '../utils'
 import { commands, type IVerge } from '../ipc/bindings'
 import { NYANPASU_SETTING_QUERY_KEY } from '../ipc/consts'
+import { unwrapResult } from '../utils'
 import { useDebouncedConfigUpdate } from './use-debounced-config'
+
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
 
 /**
  * Optimized settings hook with debounced updates for better performance
@@ -23,6 +25,7 @@ export const useOptimizedSettings = () => {
 
   const query = useQuery({
     queryKey: [NYANPASU_SETTING_QUERY_KEY],
+    enabled: isInTauri,
     queryFn: async () => {
       return unwrapResult(await commands.getVergeConfig())
     },

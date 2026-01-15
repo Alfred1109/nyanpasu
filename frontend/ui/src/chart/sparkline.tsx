@@ -114,11 +114,14 @@ export const Sparkline: FC<SparklineProps> = ({
       xScale.domain([0, data.length - 1])
       yScale.domain([0, d3.max(data) ?? 0])
 
-      const t = svg.transition().duration(750).ease(d3.easeCubic)
+      const duration = 750
+
       svg
         .select('.area')
         .datum(data)
-        .transition(t)
+        .transition()
+        .duration(duration)
+        .ease(d3.easeCubic)
         .attrTween('d', function (d) {
           const previous = d3.select(this).attr('d')
           const current = area(d)
@@ -128,7 +131,9 @@ export const Sparkline: FC<SparklineProps> = ({
       svg
         .select('.line')
         .datum(data)
-        .transition(t)
+        .transition()
+        .duration(duration)
+        .ease(d3.easeCubic)
         .attrTween('d', function (d) {
           const previous = d3.select(this).attr('d')
           const current = line(d)

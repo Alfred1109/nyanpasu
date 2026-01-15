@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { commands } from './bindings'
 import { NYANPASU_POST_PROCESSING_QUERY_KEY } from './consts'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 /**
  * Custom hook for fetching post-processing output using React Query.
  * Another name is chains/script logs.
@@ -14,6 +16,7 @@ import { NYANPASU_POST_PROCESSING_QUERY_KEY } from './consts'
 export const usePostProcessingOutput = () => {
   const query = useQuery({
     queryKey: [NYANPASU_POST_PROCESSING_QUERY_KEY],
+    enabled: isInTauri,
     queryFn: async () => {
       return unwrapResult(await commands.getPostprocessingOutput())
     },

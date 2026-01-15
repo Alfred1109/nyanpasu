@@ -7,6 +7,44 @@ use tracing::{error, info, warn};
 use crate::core::service::control;
 use nyanpasu_ipc::types::ServiceStatus;
 
+#[command]
+#[specta::specta]
+pub async fn service_status<'a>() -> Result<nyanpasu_ipc::types::StatusInfo<'a>, String> {
+    control::status().await.map_err(|e| e.to_string())
+}
+
+#[command]
+#[specta::specta]
+pub async fn service_install() -> Result<(), String> {
+    control::install_service().await.map_err(|e| e.to_string())
+}
+
+#[command]
+#[specta::specta]
+pub async fn service_uninstall() -> Result<(), String> {
+    control::uninstall_service()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[command]
+#[specta::specta]
+pub async fn service_start() -> Result<(), String> {
+    control::start_service().await.map_err(|e| e.to_string())
+}
+
+#[command]
+#[specta::specta]
+pub async fn service_stop() -> Result<(), String> {
+    control::stop_service().await.map_err(|e| e.to_string())
+}
+
+#[command]
+#[specta::specta]
+pub async fn service_restart() -> Result<(), String> {
+    control::restart_service().await.map_err(|e| e.to_string())
+}
+
 /// 简化的服务状态信息
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct SimpleServiceStatus {
@@ -23,7 +61,7 @@ pub struct SimpleServiceStatus {
 /// 获取简化的服务状态
 #[command]
 #[specta::specta]
-pub async fn get_simple_service_status() -> Result<SimpleServiceStatus, String> {
+pub async fn service_status_summary() -> Result<SimpleServiceStatus, String> {
     match control::status().await {
         Ok(status_info) => {
             let message = match status_info.status {
@@ -56,11 +94,11 @@ pub async fn get_simple_service_status() -> Result<SimpleServiceStatus, String> 
 /// 安装服务（一键安装并启用服务模式）
 #[command]
 #[specta::specta]
-pub async fn install_service_simple() -> Result<String, String> {
+pub async fn service_setup() -> Result<String, String> {
     info!("开始一键安装服务");
 
     // 检查当前状态
-    let current_status = get_simple_service_status().await?;
+    let current_status = service_status_summary().await?;
     if current_status.installed && matches!(current_status.status, ServiceStatus::Running) {
         return Ok("服务已安装并运行中".to_string());
     }
@@ -122,11 +160,11 @@ pub async fn install_service_simple() -> Result<String, String> {
 /// 卸载服务
 #[command]
 #[specta::specta]
-pub async fn uninstall_service_simple() -> Result<String, String> {
+pub async fn service_remove() -> Result<String, String> {
     info!("开始卸载服务");
 
     // 检查当前状态
-    let current_status = get_simple_service_status().await?;
+    let current_status = service_status_summary().await?;
     if !current_status.installed {
         return Ok("服务未安装，无需卸载".to_string());
     }
@@ -166,7 +204,7 @@ pub async fn uninstall_service_simple() -> Result<String, String> {
 /// 检查是否需要显示服务管理提示
 #[command]
 #[specta::specta]
-pub async fn check_service_recommendation() -> Result<ServiceRecommendation, String> {
+pub async fn service_recommendation() -> Result<ServiceRecommendation, String> {
     let (system_proxy_enabled, tun_mode_enabled, service_mode_enabled) = {
         let verge = crate::config::Config::verge();
         let config = verge.latest();
@@ -179,7 +217,7 @@ pub async fn check_service_recommendation() -> Result<ServiceRecommendation, Str
 
     // 如果用户使用了系统代理或TUN模式，但服务未安装，则推荐安装
     if (system_proxy_enabled || tun_mode_enabled) && !service_mode_enabled {
-        let status = get_simple_service_status().await?;
+        let status = service_status_summary().await?;
         if !status.installed {
             return Ok(ServiceRecommendation {
                 should_recommend: true,
@@ -223,8 +261,8 @@ pub struct ServiceRecommendation {
 /// 获取服务管理操作建议
 #[command]
 #[specta::specta]
-pub async fn get_service_action() -> Result<ServiceAction, String> {
-    let status = get_simple_service_status().await?;
+pub async fn service_action() -> Result<ServiceAction, String> {
+    let status = service_status_summary().await?;
 
     let action = if !status.installed {
         ServiceActionType::Install

@@ -64,6 +64,10 @@ export default function App() {
   useNyanpasuStorageSubscribers()
 
   useMount(() => {
+    if (typeof window === 'undefined' || !('__TAURI__' in window)) {
+      return
+    }
+
     const appWindow = getCurrentWebviewWindow()
     Promise.all([
       appWindow.show(),

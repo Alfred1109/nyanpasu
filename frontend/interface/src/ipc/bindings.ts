@@ -1,6 +1,9 @@
 /** tauri-specta globals **/
 
-import { invoke as TAURI_INVOKE } from '@tauri-apps/api/core'
+import {
+  Channel as TAURI_CHANNEL,
+  invoke as TAURI_INVOKE,
+} from '@tauri-apps/api/core'
 import * as TAURI_API_EVENT from '@tauri-apps/api/event'
 import { type WebviewWindow as __WebviewWindow__ } from '@tauri-apps/api/webviewWindow'
 
@@ -245,6 +248,9 @@ export const commands = {
       else return { status: 'error', error: e as any }
     }
   },
+  /**
+   * patch verge config
+   */
   async patchVergeConfig(payload: IVerge): Promise<Result<null, string>> {
     try {
       return {
@@ -256,7 +262,12 @@ export const commands = {
       else return { status: 'error', error: e as any }
     }
   },
-  async toggleSystemProxy(): Promise<Result<null, string>> {
+  /**
+   * toggle system proxy with service dependency
+   */
+  async toggleSystemProxy(): Promise<
+    Result<PrivilegedOperationResult, string>
+  > {
     try {
       return { status: 'ok', data: await TAURI_INVOKE('toggle_system_proxy') }
     } catch (e) {
@@ -264,9 +275,118 @@ export const commands = {
       else return { status: 'error', error: e as any }
     }
   },
-  async toggleTunMode(): Promise<Result<null, string>> {
+  /**
+   * toggle tun mode with service dependency
+   */
+  async toggleTunMode(): Promise<Result<PrivilegedOperationResult, string>> {
     try {
       return { status: 'ok', data: await TAURI_INVOKE('toggle_tun_mode') }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 检查TUN模式权限
+   */
+  async checkTunPermission(): Promise<Result<boolean, string>> {
+    try {
+      return { status: 'ok', data: await TAURI_INVOKE('check_tun_permission') }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 授予TUN模式权限
+   */
+  async grantTunPermission(): Promise<Result<null, string>> {
+    try {
+      return { status: 'ok', data: await TAURI_INVOKE('grant_tun_permission') }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 检查服务模式权限
+   */
+  async checkServicePermission(): Promise<Result<boolean, string>> {
+    try {
+      return {
+        status: 'ok',
+        data: await TAURI_INVOKE('check_service_permission'),
+      }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 授予服务模式权限
+   */
+  async grantServicePermission(): Promise<Result<null, string>> {
+    try {
+      return {
+        status: 'ok',
+        data: await TAURI_INVOKE('grant_service_permission'),
+      }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 检查系统代理权限
+   */
+  async checkProxyPermission(): Promise<Result<boolean, string>> {
+    try {
+      return {
+        status: 'ok',
+        data: await TAURI_INVOKE('check_proxy_permission'),
+      }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 授予系统代理权限
+   */
+  async grantProxyPermission(): Promise<Result<null, string>> {
+    try {
+      return {
+        status: 'ok',
+        data: await TAURI_INVOKE('grant_proxy_permission'),
+      }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 检查自启动权限
+   */
+  async checkAutostartPermission(): Promise<Result<boolean, string>> {
+    try {
+      return {
+        status: 'ok',
+        data: await TAURI_INVOKE('check_autostart_permission'),
+      }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 授予自启动权限
+   */
+  async grantAutostartPermission(): Promise<Result<null, string>> {
+    try {
+      return {
+        status: 'ok',
+        data: await TAURI_INVOKE('grant_autostart_permission'),
+      }
     } catch (e) {
       if (e instanceof Error) throw e
       else return { status: 'error', error: e as any }
@@ -465,49 +585,224 @@ export const commands = {
       else return { status: 'error', error: e as any }
     }
   },
-  async statusService(): Promise<Result<StatusInfo, string>> {
+  async serviceStatus(): Promise<Result<StatusInfo, string>> {
     try {
-      return { status: 'ok', data: await TAURI_INVOKE('status_service') }
+      return { status: 'ok', data: await TAURI_INVOKE('service_status') }
     } catch (e) {
       if (e instanceof Error) throw e
       else return { status: 'error', error: e as any }
     }
   },
-  async installService(): Promise<Result<null, string>> {
+  async serviceInstall(): Promise<Result<null, string>> {
     try {
-      return { status: 'ok', data: await TAURI_INVOKE('install_service') }
+      return { status: 'ok', data: await TAURI_INVOKE('service_install') }
     } catch (e) {
       if (e instanceof Error) throw e
       else return { status: 'error', error: e as any }
     }
   },
-  async uninstallService(): Promise<Result<null, string>> {
+  async serviceUninstall(): Promise<Result<null, string>> {
     try {
-      return { status: 'ok', data: await TAURI_INVOKE('uninstall_service') }
+      return { status: 'ok', data: await TAURI_INVOKE('service_uninstall') }
     } catch (e) {
       if (e instanceof Error) throw e
       else return { status: 'error', error: e as any }
     }
   },
-  async startService(): Promise<Result<null, string>> {
+  async serviceStart(): Promise<Result<null, string>> {
     try {
-      return { status: 'ok', data: await TAURI_INVOKE('start_service') }
+      return { status: 'ok', data: await TAURI_INVOKE('service_start') }
     } catch (e) {
       if (e instanceof Error) throw e
       else return { status: 'error', error: e as any }
     }
   },
-  async stopService(): Promise<Result<null, string>> {
+  async serviceStop(): Promise<Result<null, string>> {
     try {
-      return { status: 'ok', data: await TAURI_INVOKE('stop_service') }
+      return { status: 'ok', data: await TAURI_INVOKE('service_stop') }
     } catch (e) {
       if (e instanceof Error) throw e
       else return { status: 'error', error: e as any }
     }
   },
-  async restartService(): Promise<Result<null, string>> {
+  async serviceRestart(): Promise<Result<null, string>> {
     try {
-      return { status: 'ok', data: await TAURI_INVOKE('restart_service') }
+      return { status: 'ok', data: await TAURI_INVOKE('service_restart') }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 获取简化的服务状态
+   */
+  async serviceStatusSummary(): Promise<Result<SimpleServiceStatus, string>> {
+    try {
+      return {
+        status: 'ok',
+        data: await TAURI_INVOKE('service_status_summary'),
+      }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 安装服务（一键安装并启用服务模式）
+   */
+  async serviceSetup(): Promise<Result<string, string>> {
+    try {
+      return { status: 'ok', data: await TAURI_INVOKE('service_setup') }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 卸载服务
+   */
+  async serviceRemove(): Promise<Result<string, string>> {
+    try {
+      return { status: 'ok', data: await TAURI_INVOKE('service_remove') }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 检查是否需要显示服务管理提示
+   */
+  async serviceRecommendation(): Promise<
+    Result<ServiceRecommendation, string>
+  > {
+    try {
+      return {
+        status: 'ok',
+        data: await TAURI_INVOKE('service_recommendation'),
+      }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 获取服务管理操作建议
+   */
+  async serviceAction(): Promise<Result<ServiceAction, string>> {
+    try {
+      return { status: 'ok', data: await TAURI_INVOKE('service_action') }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 获取权限管理状态
+   */
+  async getPrivilegeStatus(): Promise<Result<PrivilegeStatus, string>> {
+    try {
+      return { status: 'ok', data: await TAURI_INVOKE('get_privilege_status') }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 已简化为纯服务模式，无需设置权限模式
+   */
+  async getCurrentPrivilegeMode(): Promise<Result<PrivilegeMode, string>> {
+    try {
+      return {
+        status: 'ok',
+        data: await TAURI_INVOKE('get_current_privilege_mode'),
+      }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 执行权限操作
+   */
+  async executePrivilegeOperation(
+    operation: PrivilegedOperation,
+  ): Promise<Result<PrivilegedOperationResult, string>> {
+    try {
+      return {
+        status: 'ok',
+        data: await TAURI_INVOKE('execute_privilege_operation', { operation }),
+      }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 预检权限操作
+   */
+  async precheckPrivilegeOperation(
+    operation: PrivilegedOperation,
+  ): Promise<Result<boolean, string>> {
+    try {
+      return {
+        status: 'ok',
+        data: await TAURI_INVOKE('precheck_privilege_operation', { operation }),
+      }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 获取权限操作建议
+   */
+  async getPrivilegeRecommendations(): Promise<Result<string[], string>> {
+    try {
+      return {
+        status: 'ok',
+        data: await TAURI_INVOKE('get_privilege_recommendations'),
+      }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 自动设置服务模式
+   */
+  async autoSetupServiceMode(): Promise<Result<string, string>> {
+    try {
+      return {
+        status: 'ok',
+        data: await TAURI_INVOKE('auto_setup_service_mode'),
+      }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 检查服务模式可用性
+   */
+  async checkServiceModeAvailability(): Promise<
+    Result<ServiceModeInfo, string>
+  > {
+    try {
+      return {
+        status: 'ok',
+        data: await TAURI_INVOKE('check_service_mode_availability'),
+      }
+    } catch (e) {
+      if (e instanceof Error) throw e
+      else return { status: 'error', error: e as any }
+    }
+  },
+  /**
+   * 测试权限系统
+   */
+  async testPrivilegeSystem(): Promise<Result<PrivilegeTestResult, string>> {
+    try {
+      return { status: 'ok', data: await TAURI_INVOKE('test_privilege_system') }
     } catch (e) {
       if (e instanceof Error) throw e
       else return { status: 'error', error: e as any }
@@ -733,23 +1028,9 @@ export const commands = {
       else return { status: 'error', error: e as any }
     }
   },
-  async checkUpdate(): Promise<Result<UpdateWrapper | null, string>> {
-    try {
-      return { status: 'ok', data: await TAURI_INVOKE('check_update') }
-    } catch (e) {
-      if (e instanceof Error) throw e
-      else return { status: 'error', error: e as any }
-    }
-  },
 }
 
 /** user-defined events **/
-
-export const events = __makeEvents__<{
-  clashConnectionsEvent: ClashConnectionsEvent
-}>({
-  clashConnectionsEvent: 'clash-connections-event',
-})
 
 /** user-defined constants **/
 
@@ -777,26 +1058,11 @@ export type ChunkStatus = {
   speed: number
 }
 export type ChunkThreadState = 'Idle' | 'Downloading' | 'Finished'
-export type ClashConnectionsConnectorEvent =
-  | { kind: 'state_changed'; data: ClashConnectionsConnectorState }
-  | { kind: 'update'; data: ClashConnectionsInfo }
 export type ClashConnectionsConnectorState =
   | 'disconnected'
   | 'connecting'
   | 'connected'
-export type ClashConnectionsEvent = ClashConnectionsConnectorEvent
-export type ClashConnectionsInfo = {
-  downloadTotal: number
-  uploadTotal: number
-  downloadSpeed: number
-  uploadSpeed: number
-}
-export type ClashCore =
-  | 'clash'
-  | 'clash-rs'
-  | 'mihomo'
-  | 'mihomo-alpha'
-  | 'clash-rs-alpha'
+export type ClashCore = 'clash' | 'mihomo' | 'mihomo-alpha'
 export type ClashCoreType =
   | 'mihomo'
   | 'mihomo-alpha'
@@ -1214,6 +1480,66 @@ export type PostProcessingOutput = {
    */
   advice: [LogSpan, string][]
 }
+/**
+ * 权限模式（已简化为纯服务模式）
+ */
+export type PrivilegeMode =
+  /**
+   * 服务模式（唯一模式）
+   */
+  | 'Service'
+  /**
+   * 禁用权限操作
+   */
+  | 'Disabled'
+/**
+ * 权限状态（纯服务模式）
+ */
+export type PrivilegeStatus = {
+  service_available: boolean
+  service_connected: boolean
+  current_mode: PrivilegeMode
+}
+export type PrivilegeTestResult = {
+  overall_status: string
+  test_results: string[]
+  recommendations: string[]
+}
+/**
+ * 需要特权的操作类型
+ */
+export type PrivilegedOperation =
+  /**
+   * 设置系统代理
+   */
+  | {
+      type: 'SetSystemProxy'
+      data: { enable: boolean; port: number; bypass: string[] }
+    }
+  /**
+   * 设置TUN模式
+   */
+  | { type: 'SetTunMode'; data: { enable: boolean } }
+  /**
+   * 修改网络设置
+   */
+  | { type: 'ModifyNetworkSettings'; data: { dns: string[] | null } }
+  /**
+   * 更新核心权限
+   */
+  | { type: 'UpdateCorePermissions'; data: { core_path: string } }
+  /**
+   * 重置系统代理
+   */
+  | { type: 'ResetSystemProxy' }
+/**
+ * 权限操作结果
+ */
+export type PrivilegedOperationResult = {
+  success: boolean
+  message: string | null
+  handler_used: string
+}
 export type Profile =
   | ({ type: 'remote' } & RemoteProfile)
   | ({ type: 'local' } & LocalProfile)
@@ -1496,7 +1822,89 @@ export type ScriptProfileBuilder = {
   updated: number | null
 } & { script_type: ScriptType | null }
 export type ScriptType = 'javascript' | 'lua'
+/**
+ * 服务操作信息
+ */
+export type ServiceAction = {
+  /**
+   * 当前应该执行的操作
+   */
+  action: ServiceActionType
+  /**
+   * 按钮显示文字
+   */
+  button_text: string
+  /**
+   * 操作描述
+   */
+  description: string
+  /**
+   * 当前服务状态
+   */
+  status: ServiceStatus
+  /**
+   * 是否正在执行操作
+   */
+  is_busy: boolean
+}
+/**
+ * 服务操作类型
+ */
+export type ServiceActionType = 'Install' | 'Uninstall'
+export type ServiceModeInfo = {
+  available: boolean
+  connected: boolean
+  service_status: string | null
+  current_mode: PrivilegeMode
+  benefits: string[]
+}
+/**
+ * 服务推荐信息
+ */
+export type ServiceRecommendation = {
+  /**
+   * 是否应该推荐安装服务
+   */
+  should_recommend: boolean
+  /**
+   * 推荐标题
+   */
+  title: string
+  /**
+   * 推荐消息
+   */
+  message: string
+  /**
+   * 服务优势列表
+   */
+  benefits: string[]
+  /**
+   * 操作按钮文字
+   */
+  action_text: string
+}
 export type ServiceStatus = 'not_installed' | 'stopped' | 'running'
+/**
+ * 简化的服务状态信息
+ */
+export type SimpleServiceStatus = {
+  /**
+   * 服务是否已安装
+   */
+  installed: boolean
+  /**
+   * 服务当前状态
+   */
+  status: ServiceStatus
+  /**
+   * 服务版本信息
+   */
+  version: string | null
+  /**
+   * 状态描述消息
+   */
+  message: string
+}
 export type StatisticWidgetVariant = 'large' | 'small'
 export type StatusInfo = {
   name: string
@@ -1517,15 +1925,6 @@ export type SubscriptionInfo = {
 }
 export type TrayIcon = 'normal' | 'tun' | 'system_proxy'
 export type TunStack = 'system' | 'gvisor' | 'mixed'
-export type UpdateWrapper = {
-  rid: number
-  available: boolean
-  current_version: string
-  version: string
-  date: string | null
-  body: string | null
-  raw_json: JsonValue
-}
 export type UpdaterState =
   | 'idle'
   | 'downloading'

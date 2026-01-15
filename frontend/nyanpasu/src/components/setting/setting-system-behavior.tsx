@@ -18,13 +18,15 @@ export const SettingSystemBehavior = () => {
     try {
       await autoLaunch.upsert(!autoLaunch.value)
       message(
-        autoLaunch.value 
-          ? t('Auto-launch disabled. Changes take effect after restart.') 
-          : t('Auto-launch enabled. App will start automatically on system boot.'),
+        autoLaunch.value
+          ? t('Auto-launch disabled. Changes take effect after restart.')
+          : t(
+              'Auto-launch enabled. App will start automatically on system boot.',
+            ),
         {
           title: t('Auto-launch Updated'),
           kind: 'info',
-        }
+        },
       )
     } catch (error) {
       message(`${t('Failed to update auto-launch')}: ${formatError(error)}`, {
@@ -38,13 +40,13 @@ export const SettingSystemBehavior = () => {
     try {
       await silentStart.upsert(!silentStart.value)
       message(
-        silentStart.value 
-          ? t('Silent start disabled. App window will show on next startup.') 
+        silentStart.value
+          ? t('Silent start disabled. App window will show on next startup.')
           : t('Silent start enabled. App will start minimized to tray.'),
         {
           title: t('Silent Start Updated'),
           kind: 'info',
-        }
+        },
       )
     } catch (error) {
       message(`${t('Failed to update silent start')}: ${formatError(error)}`, {
@@ -82,17 +84,20 @@ export const SettingSystemBehavior = () => {
         <ListItem sx={{ pl: 0, pr: 0 }}>
           <ListItemText
             primary={t('Status Information')}
+            secondaryTypographyProps={{ component: 'div' }}
             secondary={
               <div>
                 <div>
-                  {t('Auto Start')}: {autoLaunch.value ? 
-                    t('✓ Enabled - App will start on system boot') : 
-                    t('✗ Disabled - Manual startup required')}
+                  {t('Auto Start')}:{' '}
+                  {autoLaunch.value
+                    ? t('✓ Enabled - App will start on system boot')
+                    : t('✗ Disabled - Manual startup required')}
                 </div>
                 <div>
-                  {t('Silent Start')}: {silentStart.value ? 
-                    t('✓ Enabled - Starts minimized to tray') : 
-                    t('✗ Disabled - Window shows on startup')}
+                  {t('Silent Start')}:{' '}
+                  {silentStart.value
+                    ? t('✓ Enabled - Starts minimized to tray')
+                    : t('✗ Disabled - Window shows on startup')}
                 </div>
               </div>
             }

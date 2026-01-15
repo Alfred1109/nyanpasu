@@ -5,6 +5,8 @@ import { commands } from './bindings'
 import { NYANPASU_SYSTEM_PROXY_QUERY_KEY } from './consts'
 import { useSetting } from './use-settings'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 /**
  * Custom hook to fetch and manage the system proxy settings.
  *
@@ -18,10 +20,11 @@ import { useSetting } from './use-settings'
 export const useSystemProxy = () => {
   const query = useQuery({
     queryKey: [NYANPASU_SYSTEM_PROXY_QUERY_KEY],
+    enabled: isInTauri,
     queryFn: async () => {
       return unwrapResult(await commands.getSysProxy())
     },
-    refetchInterval: 5000,
+    refetchInterval: isInTauri ? 5000 : false,
     refetchIntervalInBackground: true,
   })
 

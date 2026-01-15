@@ -36,7 +36,7 @@
       "sidecar/clash",
       "sidecar/mihomo",
       "sidecar/mihomo-alpha",
-      "sidecar/nyanpasu-service-x86_64-pc-windows-msvc"
+      "sidecar/nyanpasu-service"
     ],
     "copyright": "© 2025 nyanpasu All Rights Reserved",
     "category": "DeveloperTool",

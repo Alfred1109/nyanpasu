@@ -72,9 +72,15 @@ export const useClashWSContext = () => {
 
 export const ClashWSProvider = ({ children }: PropsWithChildren) => {
   // High-performance circular buffers for WebSocket data
-  const connectionsBuffer = useRef(new CircularBuffer<ClashConnection>(MAX_CONNECTIONS_HISTORY))
-  const memoryBuffer = useRef(new CircularBuffer<ClashMemory>(MAX_MEMORY_HISTORY))
-  const trafficBuffer = useRef(new CircularBuffer<ClashTraffic>(MAX_TRAFFIC_HISTORY))
+  const connectionsBuffer = useRef(
+    new CircularBuffer<ClashConnection>(MAX_CONNECTIONS_HISTORY),
+  )
+  const memoryBuffer = useRef(
+    new CircularBuffer<ClashMemory>(MAX_MEMORY_HISTORY),
+  )
+  const trafficBuffer = useRef(
+    new CircularBuffer<ClashTraffic>(MAX_TRAFFIC_HISTORY),
+  )
   const logsBuffer = useRef(new CircularBuffer<ClashLog>(MAX_LOGS_HISTORY))
 
   // Create persisted state handlers
@@ -150,15 +156,26 @@ export const ClashWSProvider = ({ children }: PropsWithChildren) => {
       return
     }
 
-    const data = JSON.parse(
-      connectionsWS.latestMessage?.data,
-    ) as ClashConnection
+    const raw = connectionsWS.latestMessage?.data
+    if (!raw || raw === 'undefined') {
+      return
+    }
+
+    let data: ClashConnection
+    try {
+      data = JSON.parse(raw) as ClashConnection
+    } catch {
+      return
+    }
 
     // Use high-performance circular buffer instead of inefficient array operations
     connectionsBuffer.current.push(data)
-    
+
     // Update React Query cache with buffer data
-    queryClient.setQueryData([CLASH_CONNECTIONS_QUERY_KEY], connectionsBuffer.current.toArray())
+    queryClient.setQueryData(
+      [CLASH_CONNECTIONS_QUERY_KEY],
+      connectionsBuffer.current.toArray(),
+    )
   }, [connectionsWS.latestMessage, recordConnections])
 
   // clash memory - optimized with circular buffer
@@ -167,13 +184,26 @@ export const ClashWSProvider = ({ children }: PropsWithChildren) => {
       return
     }
 
-    const data = JSON.parse(memoryWS.latestMessage?.data) as ClashMemory
+    const raw = memoryWS.latestMessage?.data
+    if (!raw || raw === 'undefined') {
+      return
+    }
+
+    let data: ClashMemory
+    try {
+      data = JSON.parse(raw) as ClashMemory
+    } catch {
+      return
+    }
 
     // Use high-performance circular buffer instead of inefficient array operations
     memoryBuffer.current.push(data)
-    
+
     // Update React Query cache with buffer data
-    queryClient.setQueryData([CLASH_MEMORY_QUERY_KEY], memoryBuffer.current.toArray())
+    queryClient.setQueryData(
+      [CLASH_MEMORY_QUERY_KEY],
+      memoryBuffer.current.toArray(),
+    )
   }, [memoryWS.latestMessage, recordMemory])
 
   // clash traffic - optimized with circular buffer
@@ -182,13 +212,26 @@ export const ClashWSProvider = ({ children }: PropsWithChildren) => {
       return
     }
 
-    const data = JSON.parse(trafficWS.latestMessage?.data) as ClashTraffic
+    const raw = trafficWS.latestMessage?.data
+    if (!raw || raw === 'undefined') {
+      return
+    }
+
+    let data: ClashTraffic
+    try {
+      data = JSON.parse(raw) as ClashTraffic
+    } catch {
+      return
+    }
 
     // Use high-performance circular buffer instead of inefficient array operations
     trafficBuffer.current.push(data)
-    
+
     // Update React Query cache with buffer data
-    queryClient.setQueryData([CLASH_TRAAFFIC_QUERY_KEY], trafficBuffer.current.toArray())
+    queryClient.setQueryData(
+      [CLASH_TRAAFFIC_QUERY_KEY],
+      trafficBuffer.current.toArray(),
+    )
   }, [trafficWS.latestMessage, recordTraffic])
 
   // clash logs - optimized with circular buffer
@@ -197,16 +240,31 @@ export const ClashWSProvider = ({ children }: PropsWithChildren) => {
       return
     }
 
+    const raw = logsWS.latestMessage?.data
+    if (!raw || raw === 'undefined') {
+      return
+    }
+
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      return
+    }
+
     const data = {
-      ...JSON.parse(logsWS.latestMessage?.data),
+      ...(parsed as object),
       time: dayjs(new Date()).format('HH:mm:ss'),
     } as ClashLog
 
     // Use high-performance circular buffer instead of inefficient array operations
     logsBuffer.current.push(data)
-    
+
     // Update React Query cache with buffer data
-    queryClient.setQueryData([CLASH_LOGS_QUERY_KEY], logsBuffer.current.toArray())
+    queryClient.setQueryData(
+      [CLASH_LOGS_QUERY_KEY],
+      logsBuffer.current.toArray(),
+    )
   }, [logsWS.latestMessage, recordLogs])
 
   const contextValue = useMemo(

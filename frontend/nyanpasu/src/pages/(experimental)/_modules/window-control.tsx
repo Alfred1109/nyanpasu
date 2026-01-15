@@ -13,7 +13,8 @@ import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { listen, TauriEvent, UnlistenFn } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 
-const appWindow = getCurrentWebviewWindow()
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+const appWindow = isInTauri ? getCurrentWebviewWindow() : null
 
 const CtrlButton = ({ className, ...props }: ButtonProps) => {
   return (
@@ -33,6 +34,7 @@ const AlwaysOnTopButton = () => {
     useSetting('always_on_top')
 
   const handleToggleAlwaysOnTop = useCallback(async () => {
+    if (!appWindow) return
     await upsertAlwaysOnTop(!alwaysOnTop)
     await appWindow.setAlwaysOnTop(!alwaysOnTop)
   }, [alwaysOnTop, upsertAlwaysOnTop])
@@ -64,6 +66,7 @@ const AlwaysOnTopButton = () => {
 
 const MinimizeButton = () => {
   const handleMinimize = useCallback(async () => {
+    if (!appWindow) return
     await appWindow.minimize()
   }, [])
 
@@ -82,17 +85,20 @@ const MaximizeButton = () => {
 
   const { data: isMaximized } = useSuspenseQuery({
     queryKey: ['isMaximized'],
-    queryFn: () => appWindow.isMaximized(),
+    queryFn: () =>
+      appWindow ? appWindow.isMaximized() : Promise.resolve(false),
   })
 
   const queryClient = useQueryClient()
 
   const handleToggleMaximize = useCallback(async () => {
+    if (!appWindow) return
     await appWindow.toggleMaximize()
     await queryClient.invalidateQueries({ queryKey: ['isMaximized'] })
   }, [queryClient])
 
   useEffect(() => {
+    if (!appWindow) return
     listen(TauriEvent.WINDOW_RESIZED, () => {
       queryClient.invalidateQueries({ queryKey: ['isMaximized'] })
     })
@@ -120,6 +126,7 @@ const MaximizeButton = () => {
 
 const CloseButton = () => {
   const handleClose = useCallback(async () => {
+    if (!appWindow) return
     await appWindow.close()
   }, [])
 

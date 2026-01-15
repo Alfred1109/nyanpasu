@@ -2,7 +2,6 @@ import { useAsyncEffect } from 'ahooks'
 import { useAtom, useSetAtom } from 'jotai'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
 import { OS } from '@/consts'
 import { serviceManualPromptDialogAtom } from '@/store/service'
 import { notification } from '@/utils/notification'
@@ -12,7 +11,10 @@ import { IconButton, Tooltip } from '@mui/material'
 import { useColorScheme } from '@mui/material/styles'
 import { getCoreDir, getServiceInstallPrompt } from '@nyanpasu/interface'
 import { BaseDialog, BaseDialogProps, cn } from '@nyanpasu/ui'
+import { useQuery } from '@tanstack/react-query'
 import styles from './service-manual-prompt-dialog.module.scss'
+
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
 
 type CopyToClipboardButtonProps = {
   onClick: () => void
@@ -64,17 +66,19 @@ export default function ServerManualPromptDialog({
   const { data: serviceInstallPrompt, error } = useQuery({
     queryKey: ['/service_install_prompt'],
     queryFn: getServiceInstallPrompt,
-    enabled: operation === 'install',
+    enabled: isInTauri && operation === 'install',
   })
   const { data: coreDir } = useQuery({
     queryKey: ['/core_dir'],
     queryFn: getCoreDir,
+    enabled: isInTauri,
   })
   const commands = useMemo(() => {
+    const prefix = coreDir ? `cd "${coreDir}"\n` : ''
     if (operation === 'install' && serviceInstallPrompt) {
-      return `cd "${coreDir}"\n${serviceInstallPrompt}`
+      return `${prefix}${serviceInstallPrompt}`
     } else if (operation) {
-      return `cd "${coreDir}"\n${OS !== 'windows' ? 'sudo ' : ''}./nyanpasu-service ${operation}`
+      return `${prefix}${OS !== 'windows' ? 'sudo ' : ''}./nyanpasu-service ${operation}`
     }
     return ''
   }, [operation, serviceInstallPrompt, coreDir])

@@ -38,10 +38,10 @@ const MAX_WIDTH = 'calc(100% - 48px - 16px)'
 export const IPASNPanel = ({ refreshCount }: { refreshCount: number }) => {
   const { t } = useTranslation()
 
-  const { data, mutate, isValidating } = useIPSB()
+  const { data, refetch, isFetching } = useIPSB()
 
   const handleRefreshIP = () => {
-    mutate()
+    refetch()
   }
 
   const [showIPAddress, setShowIPAddress] = useState(false)
@@ -76,9 +76,9 @@ export const IPASNPanel = ({ refreshCount }: { refreshCount: number }) => {
                   <Button
                     className="!size-8 !min-w-0"
                     onClick={handleRefreshIP}
-                    loading={isValidating}
+                    loading={isFetching}
                   >
-                    {!isValidating && (
+                    {isFetching && (
                       <CircularProgress
                         size={16}
                         variant="determinate"

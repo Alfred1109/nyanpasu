@@ -4,17 +4,21 @@ import { useGlobalMutation } from '@/utils/mutation'
 import { notification, NotificationType } from '@/utils/notification'
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 export default function MutationProvider() {
   const { t } = useTranslation()
   const unlistenFn = useRef<UnlistenFn>(null)
   const mutate = useGlobalMutation()
   useEffect(() => {
+    if (!isInTauri) return
+
     listen<'nyanpasu_config' | 'clash_config' | 'proxies' | 'profiles'>(
       'nyanpasu://mutation',
       ({ payload }) => {
         switch (payload) {
           case 'nyanpasu_config':
-            mutate((key) => {
+            mutate((key: unknown) => {
               if (typeof key === 'string') {
                 return (
                   key.includes('nyanpasuConfig') ||
@@ -26,7 +30,7 @@ export default function MutationProvider() {
             })
             break
           case 'clash_config':
-            mutate((key) => {
+            mutate((key: unknown) => {
               if (typeof key === 'string') {
                 return (
                   key.includes('getClashRules') ||
@@ -44,11 +48,12 @@ export default function MutationProvider() {
             break
           case 'proxies':
             mutate(
-              (key) => typeof key === 'string' && key.includes('getProxies'),
+              (key: unknown) =>
+                typeof key === 'string' && key.includes('getProxies'),
             )
             break
           case 'profiles':
-            mutate((key) => {
+            mutate((key: unknown) => {
               if (typeof key === 'string') {
                 return (
                   key.includes('getClashRules') ||

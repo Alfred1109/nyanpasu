@@ -20,7 +20,26 @@ static SERVICE_PATH: Lazy<PathBuf> = Lazy::new(|| {
         return sidecar_path;
     }
 
-    app_path.join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX))
+    let app_local_path = app_path.join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX));
+    if app_local_path.exists() {
+        return app_local_path;
+    }
+
+    #[cfg(windows)]
+    {
+        let program_data = std::env::var_os("PROGRAMDATA")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from(r"C:\ProgramData"));
+        let program_data_path = program_data
+            .join("nyanpasu-service")
+            .join("data")
+            .join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX));
+        if program_data_path.exists() {
+            return program_data_path;
+        }
+    }
+
+    app_local_path
 });
 
 pub async fn init_service() {

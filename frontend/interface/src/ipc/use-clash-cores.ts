@@ -8,6 +8,8 @@ import {
   NYANPASU_SETTING_QUERY_KEY,
 } from './consts'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 export const SUPPORTED_CLASH_CORES = [
   'clash',
   'mihomo',
@@ -35,6 +37,7 @@ export const useClashCores = () => {
 
   const query = useQuery({
     queryKey: [CLASH_CORE_QUERY_KEY],
+    enabled: isInTauri,
     queryFn: async () => {
       return await SUPPORTED_CLASH_CORES.reduce(
         async (acc, key) => {

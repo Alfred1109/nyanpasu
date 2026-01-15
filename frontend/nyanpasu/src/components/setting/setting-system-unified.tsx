@@ -33,35 +33,14 @@ import {
   SwitchItem,
   TextItem,
 } from '@nyanpasu/ui'
-import { PermissionDialog } from './modules/permission-dialog'
 import { PaperSwitchButton } from './modules/system-proxy'
 
 const TunModeButton = () => {
   const { t } = useTranslation()
-  const [showPermissionDialog, setShowPermissionDialog] = useState(false)
 
   const tunMode = useSetting('enable_tun_mode')
-  const serviceMode = useSetting('enable_service_mode')
 
   const handleTunMode = useLockFn(async () => {
-    // 如果要启用TUN模式且不在服务模式下，先检查权限
-    if (!tunMode.value && !serviceMode.value) {
-      setShowPermissionDialog(true)
-      return
-    }
-
-    try {
-      await toggleTunMode()
-    } catch (error) {
-      message(`Activation TUN Mode failed! \n Error: ${formatError(error)}`, {
-        title: t('Error'),
-        kind: 'error',
-      })
-    }
-  })
-
-  const handlePermissionConfirm = useLockFn(async () => {
-    setShowPermissionDialog(false)
     try {
       await toggleTunMode()
     } catch (error) {
@@ -79,42 +58,16 @@ const TunModeButton = () => {
         checked={Boolean(tunMode.value)}
         onClick={handleTunMode}
       />
-      <PermissionDialog
-        open={showPermissionDialog}
-        onClose={() => setShowPermissionDialog(false)}
-        onConfirm={handlePermissionConfirm}
-        permissionType="tun"
-      />
     </>
   )
 }
 
 const SystemProxyButton = () => {
   const { t } = useTranslation()
-  const [showPermissionDialog, setShowPermissionDialog] = useState(false)
 
   const systemProxy = useSetting('enable_system_proxy')
-  const serviceMode = useSetting('enable_service_mode')
 
   const handleSystemProxy = useLockFn(async () => {
-    // 如果要启用系统代理且不在服务模式下，先检查权限
-    if (!systemProxy.value && !serviceMode.value) {
-      setShowPermissionDialog(true)
-      return
-    }
-
-    try {
-      await toggleSystemProxy()
-    } catch (error) {
-      message(`Activation System Proxy failed!`, {
-        title: t('Error'),
-        kind: 'error',
-      })
-    }
-  })
-
-  const handlePermissionConfirm = useLockFn(async () => {
-    setShowPermissionDialog(false)
     try {
       await toggleSystemProxy()
     } catch (error) {
@@ -132,12 +85,6 @@ const SystemProxyButton = () => {
         checked={Boolean(systemProxy.value)}
         onClick={handleSystemProxy}
       />
-      <PermissionDialog
-        open={showPermissionDialog}
-        onClose={() => setShowPermissionDialog(false)}
-        onConfirm={handlePermissionConfirm}
-        permissionType="proxy"
-      />
     </>
   )
 }
@@ -150,7 +97,9 @@ const ServiceModeSection = () => {
   const [showUninstallDialog, setShowUninstallDialog] = useState(false)
   const [serviceActionPending, setServiceActionPending] = useState(false)
 
-  const isServiceInstalled = query.data?.status !== 'not_installed'
+  const serviceStatus = query.data?.status
+  const isServiceInstalled =
+    !!serviceStatus && serviceStatus !== 'not_installed'
 
   const handleServiceModeToggle = useLockFn(async () => {
     if (!serviceMode.value && !isServiceInstalled) {
@@ -239,11 +188,28 @@ const ServiceModeSection = () => {
     }
   }
 
+  const getStatusText = () => {
+    if (query.isLoading) {
+      return t('loading')
+    }
+    if (query.isError) {
+      return t('Error')
+    }
+    if (!query.data?.status) {
+      return t('unknown')
+    }
+    return t(`${query.data?.status || 'unknown'}`)
+  }
+
   return (
     <>
       <SwitchItem
         label={t('Service Mode')}
-        disabled={serviceActionPending || query.isLoading}
+        disabled={
+          !(typeof window !== 'undefined' && '__TAURI__' in window) ||
+          serviceActionPending ||
+          query.isLoading
+        }
         checked={serviceMode.value || false}
         onChange={handleServiceModeToggle}
       />
@@ -257,7 +223,7 @@ const ServiceModeSection = () => {
                 style={{ color: getStatusColor() }}
                 className="text-sm font-medium"
               >
-                {t(`${query.data?.status || 'unknown'}`)}
+                {getStatusText()}
               </span>
             </div>
           }
@@ -269,17 +235,21 @@ const ServiceModeSection = () => {
         />
       </ListItem>
 
-      {!isServiceInstalled && (
-        <ListItem sx={{ pl: 0, pr: 0 }}>
-          <Typography variant="body2" color="text.secondary">
-            {t(
-              'Install the system service to enable service mode and avoid permission issues',
-            )}
-          </Typography>
-        </ListItem>
-      )}
+      {typeof window !== 'undefined' &&
+        '__TAURI__' in window &&
+        !isServiceInstalled && (
+          <ListItem sx={{ pl: 0, pr: 0 }}>
+            <Typography variant="body2" color="text.secondary">
+              {t(
+                'Install the system service to enable service mode and avoid permission issues',
+              )}
+            </Typography>
+          </ListItem>
+        )}
 
-      {isServiceInstalled &&
+      {typeof window !== 'undefined' &&
+        '__TAURI__' in window &&
+        isServiceInstalled &&
         !serviceMode.value &&
         query.data?.status === 'stopped' && (
           <ListItem sx={{ pl: 0, pr: 0 }}>
@@ -307,7 +277,7 @@ const ServiceModeSection = () => {
         <DialogContent>
           <DialogContentText>
             {t(
-              'The system service is not installed. Do you want to install it now to enable service mode?',
+              'Install system service to enable service mode and avoid permission issues',
             )}
           </DialogContentText>
         </DialogContent>

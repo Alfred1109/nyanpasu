@@ -5,6 +5,7 @@
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "allowJs": true,
+    "allowArbitraryExtensions": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -26,4 +27,5 @@
     "outDir": "./dist",
   },
   "include": ["vite.config.ts", "src/"],
+  "exclude": ["src/**/*.module.d.scss.ts"],
 }

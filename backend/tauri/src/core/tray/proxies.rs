@@ -22,25 +22,16 @@ async fn loop_task() {
                 warn!("update proxies failed: {:?}", e);
             }
         }
-        {
+        let updated_at = {
             let guard = ProxiesGuard::global().read();
-            if guard.updated_at() == 0 {
-                error!("proxies not updated yet!!!!");
-                // Send notification to user about proxy update issue
-                let _ = crate::core::handle::Handle::emit(
-                    "tray-error",
-                    serde_json::json!({
-                        "type": "proxy_update_failed",
-                        "message": "Proxy information not yet available. Please wait for initialization to complete."
-                    }),
-                );
-            }
+            guard.updated_at()
+        };
 
-            // else {
-            //     let proxies = guard.inner();
-            //     let str = simd_json::to_string_pretty(proxies).unwrap();
-            //     debug!(target: "tray", "proxies info: {:?}", str);
-            // }
+        if updated_at == 0 {
+            debug!("proxies not initialized yet, skipping tray update");
+            // Skip this update cycle, don't crash the app
+            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            continue;
         }
         tokio::time::sleep(tokio::time::Duration::from_secs(10)).await; // TODO: add a config to control the interval
     }

@@ -4,6 +4,8 @@ import { unwrapResult } from '../utils'
 import { commands, type IVerge } from './bindings'
 import { NYANPASU_SETTING_QUERY_KEY } from './consts'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 /**
  * Custom hook for managing Verge configuration settings using React Query.
  * Provides functionality to fetch and update settings with automatic cache invalidation.
@@ -43,6 +45,7 @@ export const useSettings = () => {
    */
   const query = useQuery({
     queryKey: [NYANPASU_SETTING_QUERY_KEY],
+    enabled: isInTauri,
     queryFn: async () => {
       return unwrapResult(await commands.getVergeConfig())
     },

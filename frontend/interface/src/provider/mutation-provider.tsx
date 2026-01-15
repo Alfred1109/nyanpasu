@@ -5,11 +5,11 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import {
   CLASH_CONFIG_QUERY_KEY,
   CLASH_INFO_QUERY_KEY,
-  CLASH_VERSION_QUERY_KEY,
-  CLASH_PROXIES_QUERY_KEY,
-  CLASH_RULES_QUERY_KEY,
-  CLASH_RULES_PROVIDER_QUERY_KEY,
   CLASH_PROXIES_PROVIDER_QUERY_KEY,
+  CLASH_PROXIES_QUERY_KEY,
+  CLASH_RULES_PROVIDER_QUERY_KEY,
+  CLASH_RULES_QUERY_KEY,
+  CLASH_VERSION_QUERY_KEY,
   NYANPASU_BACKEND_EVENT_NAME,
   NYANPASU_SETTING_QUERY_KEY,
   NYANPASU_SYSTEM_PROXY_QUERY_KEY,
@@ -17,6 +17,8 @@ import {
 } from '../ipc/consts'
 
 type EventPayload = 'nyanpasu_config' | 'clash_config' | 'proxies' | 'profiles'
+
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
 
 const NYANPASU_CONFIG_MUTATION_KEYS = [
   NYANPASU_SETTING_QUERY_KEY,
@@ -67,6 +69,10 @@ export const MutationProvider = ({ children }: PropsWithChildren) => {
   }
 
   useMount(() => {
+    if (!isInTauri) {
+      return
+    }
+
     listen<EventPayload>(NYANPASU_BACKEND_EVENT_NAME, ({ payload }) => {
       console.log('MutationProvider', payload)
 

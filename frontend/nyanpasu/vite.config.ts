@@ -1,4 +1,7 @@
+import { execFile as execFileCb } from 'node:child_process'
+import fs from 'node:fs'
 import path from 'node:path'
+import { promisify } from 'node:util'
 import { NodePackageImporter } from 'sass-embedded'
 import AutoImport from 'unplugin-auto-import/vite'
 import IconsResolver from 'unplugin-icons/resolver'
@@ -17,6 +20,8 @@ import react from '@vitejs/plugin-react-swc'
 
 const IS_NIGHTLY = process.env.NIGHTLY?.toLowerCase() === 'true'
 
+const execFile = promisify(execFileCb)
+
 const builtinVars = () => {
   return {
     name: 'built-in-vars',
@@ -32,6 +37,118 @@ const builtinVars = () => {
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
   const isDev = command === 'serve'
+
+  const localServiceApi = () => {
+    return {
+      name: 'local-service-api',
+      configureServer(server: any) {
+        server.middlewares.use(
+          '/__local_api/service/status',
+          async (req: any, res: any, next: any) => {
+            try {
+              if (req.method && req.method !== 'GET') {
+                res.statusCode = 405
+                res.end('Method Not Allowed')
+                return
+              }
+
+              const repoRoot = path.resolve(__dirname, '../..')
+              const candidates = [
+                process.env.NYANPASU_SERVICE_BIN,
+                path.resolve(
+                  repoRoot,
+                  'backend/tauri/sidecar/nyanpasu-service.exe',
+                ),
+                'C:/ProgramData/nyanpasu-service/data/nyanpasu-service.exe',
+              ].filter(Boolean) as string[]
+
+              let exePath: string | undefined
+              for (const p of candidates) {
+                if (p && fs.existsSync(p)) {
+                  exePath = p
+                  break
+                }
+              }
+
+              if (exePath) {
+                const { stdout } = await execFile(
+                  exePath,
+                  ['status', '--json'],
+                  {
+                    windowsHide: true,
+                  },
+                )
+                const parsed = JSON.parse(String(stdout))
+                const status = parsed?.status
+                const version = parsed?.version
+                res.setHeader('Content-Type', 'application/json')
+                res.end(
+                  JSON.stringify({
+                    status,
+                    version,
+                    source: 'nyanpasu-service',
+                    binary: exePath,
+                  }),
+                )
+                return
+              }
+
+              // Fallback: query Windows service name
+              if (process.platform === 'win32') {
+                const candidates = [
+                  'moe.elaina.nyanpasu-service',
+                  'nyanpasu-service',
+                ]
+                for (const name of candidates) {
+                  try {
+                    const { stdout } = await execFile(
+                      'sc.exe',
+                      ['query', name],
+                      { windowsHide: true },
+                    )
+                    const out = String(stdout)
+                    const match = out.match(/STATE\s*:\s*\d+\s+(\w+)/)
+                    const state = match?.[1]?.toLowerCase()
+                    const status =
+                      state === 'running'
+                        ? 'running'
+                        : state === 'stopped'
+                          ? 'stopped'
+                          : 'unknown'
+                    res.setHeader('Content-Type', 'application/json')
+                    res.end(
+                      JSON.stringify({ status, source: 'sc', service: name }),
+                    )
+                    return
+                  } catch {
+                    // try next
+                  }
+                }
+                res.setHeader('Content-Type', 'application/json')
+                res.end(
+                  JSON.stringify({ status: 'not_installed', source: 'sc' }),
+                )
+                return
+              }
+
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify({ status: 'unknown', source: 'none' }))
+            } catch (e: any) {
+              res.statusCode = 500
+              res.setHeader('Content-Type', 'application/json')
+              res.end(
+                JSON.stringify({
+                  status: 'unknown',
+                  source: 'error',
+                  error: e?.message ?? String(e),
+                }),
+              )
+            }
+          },
+        )
+      },
+    }
+  }
 
   const config = {
     // root: "/",
@@ -49,10 +166,17 @@ export default defineConfig(({ command, mode }) => {
           importer: [
             new NodePackageImporter(),
             // Custom importer for @/styles alias - workaround for vite-sass-dts limitation
-            ((...args: Parameters<Parameters<typeof sass.compile>[1]['importer']>) => {
+            ((
+              ...args: Parameters<
+                Parameters<typeof sass.compile>[1]['importer']
+              >
+            ) => {
               const url = args[0] as string
               if (url.startsWith('@/styles')) {
-                const relativePath = url.replace('@/styles', './src/assets/styles')
+                const relativePath = url.replace(
+                  '@/styles',
+                  './src/assets/styles',
+                )
                 return {
                   file: path.resolve(__dirname, relativePath),
                 }
@@ -66,6 +190,7 @@ export default defineConfig(({ command, mode }) => {
     plugins: [
       // tailwindPlugin(),
       tsconfigPaths(),
+      isDev ? localServiceApi() : null,
       legacy({
         renderLegacyChunks: false,
         modernTargets: ['edge>=109', 'safari>=13'],
@@ -118,7 +243,7 @@ export default defineConfig(({ command, mode }) => {
         outdir: './src/paraglide',
         strategy: ['custom-extension'],
       }),
-    ],
+    ].filter(Boolean),
     resolve: {
       alias: {
         '@repo': path.resolve('../../'),

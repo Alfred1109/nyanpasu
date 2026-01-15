@@ -3,10 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { notification, NotificationType } from '@/utils/notification'
 import { listen, UnlistenFn } from '@tauri-apps/api/event'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 export const NoticeProvider = () => {
   const { t } = useTranslation()
   const unlistenFn = useRef<UnlistenFn>(null)
   useEffect(() => {
+    if (!isInTauri) return
+
     listen<{
       set_config: { ok: string } | { err: string }
     }>('nyanpasu://notice-message', ({ payload }) => {

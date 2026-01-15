@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useClashAPI, type ClashProviderRule } from '../service/clash-api'
 import { CLASH_RULES_PROVIDER_QUERY_KEY } from './consts'
 
+const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+
 export interface ClashRulesProviderQueryItem extends ClashProviderRule {
   mutate: () => Promise<void>
 }
@@ -16,6 +18,7 @@ export const useClashRulesProvider = () => {
 
   const query = useQuery({
     queryKey: [CLASH_RULES_PROVIDER_QUERY_KEY],
+    enabled: isInTauri,
     queryFn: async () => {
       const { providers } = await providersRules()
 

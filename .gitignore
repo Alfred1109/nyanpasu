@@ -17,7 +17,7 @@ tauri.preview.conf.json
 
 *.tsbuildinfo
 
- *.module.d.scss.ts
+tauri-dev.*.log
 
 
 manifest/site/updater/*
