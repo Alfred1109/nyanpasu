@@ -22,15 +22,17 @@ codegen-units = 256
 
 [profile.release]
 # 发布构建优化 - 在速度和大小间平衡
-codegen-units = 16  # 从 1 增加到 16 提升并行度
-lto = "thin"        # 使用 thin LTO 而非 full LTO，更快
-opt-level = "z"     # 优化大小
-panic = "abort"     # 稍微减少二进制大小
-strip = true        # 移除调试符号
+codegen-units = 16 # 从 1 增加到 16 提升并行度
+lto = "thin"       # 使用 thin LTO 而非 full LTO，更快
+opt-level = "z"    # 优化大小
+panic = "abort"    # 稍微减少二进制大小
+strip = true       # 移除调试符号
 
 [target.x86_64-pc-windows-msvc]
 # Windows 特定优化
 rustflags = [
-    "-C", "target-cpu=native",        # 使用本机CPU指令集
-    "-C", "link-arg=/INCREMENTAL:NO", # 禁用增量链接提升性能
+  "-C",
+  "target-cpu=native",        # 使用本机CPU指令集
+  "-C",
+  "link-arg=/INCREMENTAL:NO", # 禁用增量链接提升性能
 ]

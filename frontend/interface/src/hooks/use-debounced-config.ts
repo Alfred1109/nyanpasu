@@ -1,8 +1,8 @@
 import { useCallback, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { unwrapResult } from '../utils'
 import { commands, type IVerge } from '../ipc/bindings'
 import { NYANPASU_SETTING_QUERY_KEY } from '../ipc/consts'
+import { unwrapResult } from '../utils'
 
 /**
  * Performance-optimized configuration update hook with debouncing
@@ -54,7 +54,7 @@ export const useDebouncedConfigUpdate = (debounceMs = 300) => {
         mutation.mutate(finalUpdates)
       }, debounceMs)
     },
-    [debounceMs, mutation]
+    [debounceMs, mutation],
   )
 
   /**

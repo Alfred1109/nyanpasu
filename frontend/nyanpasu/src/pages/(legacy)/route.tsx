@@ -16,6 +16,7 @@ import 'dayjs/locale/zh-cn'
 import 'dayjs/locale/zh-tw'
 import { useAtom, useSetAtom } from 'jotai'
 import { PropsWithChildren, useEffect } from 'react'
+
 // SWR removed - now using React Query globally
 
 export const Route = createFileRoute('/(legacy)')({

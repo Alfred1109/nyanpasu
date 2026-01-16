@@ -10,11 +10,11 @@ const breakpointsOrder: Breakpoint[] = ['xs', 'sm', 'md', 'lg', 'xl']
 export const useBreakpoint = (): Breakpoint => {
   const size = useSize(document.documentElement)
   const width = size?.width || 0
-  
+
   const breakpoints = MUI_BREAKPOINTS.values
-  
+
   if (!breakpoints) return 'xs'
-  
+
   if (width >= breakpoints.xl) return 'xl'
   if (width >= breakpoints.lg) return 'lg'
   if (width >= breakpoints.md) return 'md'

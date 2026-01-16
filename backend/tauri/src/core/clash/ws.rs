@@ -23,7 +23,12 @@ use crate::log_err;
 async fn connect_clash_server<T: serde::de::DeserializeOwned + Send + Sync + 'static>(
     endpoint: Request,
 ) -> anyhow::Result<Receiver<T>> {
-    let (stream, _) = connect_async(endpoint).await?;
+    // 添加连接超时：30 秒
+    let connect_fut = connect_async(endpoint);
+    let (stream, _) = tokio::time::timeout(std::time::Duration::from_secs(30), connect_fut)
+        .await
+        .context("WebSocket connection timeout after 30 seconds")??;
+
     let (_, mut read) = stream.split();
     let (tx, rx) = tokio::sync::mpsc::channel(32);
     tokio::spawn(async move {
@@ -51,6 +56,7 @@ async fn connect_clash_server<T: serde::de::DeserializeOwned + Send + Sync + 'st
                 }
                 Err(e) => {
                     tracing::error!("failed to read message: {}", e);
+                    break;
                 }
                 _ => {}
             }

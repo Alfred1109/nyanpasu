@@ -197,10 +197,73 @@ pub async fn install_service() -> anyhow::Result<()> {
             }
         );
     }
-    // Due to most platform, the service will be started automatically after installed
-    if !super::ipc::HEALTH_CHECK_RUNNING.load(std::sync::atomic::Ordering::Relaxed) {
-        super::ipc::spawn_health_check();
+
+    // Windows 的 ShellExecuteW 会立即返回，需要轮询等待服务真正安装完成
+    #[cfg(windows)]
+    {
+        tracing::info!("Waiting for service installation to complete...");
+        for attempt in 0..30 {
+            tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+            match status().await {
+                Ok(info) if !matches!(info.status, ServiceStatus::NotInstalled) => {
+                    tracing::info!(
+                        "Service installation verified after {} seconds",
+                        attempt + 1
+                    );
+                    break;
+                }
+                Ok(_) => {
+                    if attempt == 29 {
+                        tracing::warn!(
+                            "Service still shows as not_installed after 30 seconds, but continuing"
+                        );
+                    }
+                }
+                Err(e) => {
+                    tracing::debug!(
+                        "Status check failed during install wait (attempt {}): {}",
+                        attempt + 1,
+                        e
+                    );
+                }
+            }
+        }
     }
+
+    // 只在服务模式启用时才启动健康检查
+    let enable_service_mode = {
+        *crate::config::Config::verge()
+            .latest()
+            .enable_service_mode
+            .as_ref()
+            .unwrap_or(&false)
+    };
+
+    if enable_service_mode {
+        // 验证服务确实可以连接后再启动健康检查
+        match status().await {
+            Ok(info) if matches!(info.status, ServiceStatus::Running | ServiceStatus::Stopped) => {
+                if !super::ipc::HEALTH_CHECK_RUNNING.load(std::sync::atomic::Ordering::Relaxed) {
+                    tracing::info!("Service installed and accessible, starting health check");
+                    super::ipc::spawn_health_check();
+                }
+            }
+            Ok(_) => {
+                tracing::debug!(
+                    "Service installed but not yet accessible, health check will be started when service mode is enabled"
+                );
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "Service installed but status check failed: {}. Health check deferred.",
+                    e
+                );
+            }
+        }
+    } else {
+        tracing::debug!("Service mode not enabled, skipping health check startup");
+    }
+
     Ok(())
 }
 
@@ -352,9 +415,27 @@ pub async fn start_service() -> anyhow::Result<()> {
             }
         );
     }
-    if !super::ipc::HEALTH_CHECK_RUNNING.load(std::sync::atomic::Ordering::Acquire) {
-        super::ipc::spawn_health_check();
+
+    // 只在服务模式启用且服务可访问时才启动健康检查
+    let enable_service_mode = {
+        *crate::config::Config::verge()
+            .latest()
+            .enable_service_mode
+            .as_ref()
+            .unwrap_or(&false)
+    };
+
+    if enable_service_mode {
+        if let Ok(info) = status().await {
+            if matches!(info.status, ServiceStatus::Running) {
+                if !super::ipc::HEALTH_CHECK_RUNNING.load(std::sync::atomic::Ordering::Acquire) {
+                    tracing::info!("Service started successfully, starting health check");
+                    super::ipc::spawn_health_check();
+                }
+            }
+        }
     }
+
     Ok(())
 }
 
@@ -467,25 +548,67 @@ pub async fn restart_service() -> anyhow::Result<()> {
             }
         );
     }
-    if !super::ipc::HEALTH_CHECK_RUNNING.load(std::sync::atomic::Ordering::Acquire) {
-        super::ipc::spawn_health_check();
+
+    // 只在服务模式启用且服务可访问时才启动健康检查
+    let enable_service_mode = {
+        *crate::config::Config::verge()
+            .latest()
+            .enable_service_mode
+            .as_ref()
+            .unwrap_or(&false)
+    };
+
+    if enable_service_mode {
+        if let Ok(info) = status().await {
+            if matches!(info.status, ServiceStatus::Running) {
+                if !super::ipc::HEALTH_CHECK_RUNNING.load(std::sync::atomic::Ordering::Acquire) {
+                    tracing::info!("Service restarted successfully, starting health check");
+                    super::ipc::spawn_health_check();
+                }
+            }
+        }
     }
+
     Ok(())
 }
 
 #[tracing::instrument]
 pub async fn status<'a>() -> anyhow::Result<nyanpasu_ipc::types::StatusInfo<'a>> {
+    // 如果服务可执行文件不存在，返回 not_installed 状态而不是错误
     if !SERVICE_PATH.as_path().exists() {
-        anyhow::bail!(
-            "nyanpasu-service executable not found at: {}",
+        tracing::debug!(
+            "nyanpasu-service executable not found at: {}, returning not_installed status",
             SERVICE_PATH.display()
         );
+        return Ok(nyanpasu_ipc::types::StatusInfo {
+            name: std::borrow::Cow::Borrowed(""),
+            version: std::borrow::Cow::Borrowed(""),
+            status: ServiceStatus::NotInstalled,
+            server: None,
+        });
     }
+
     let mut cmd = tokio::process::Command::new(SERVICE_PATH.as_path());
     cmd.args(["status", "--json"]);
     #[cfg(windows)]
     cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
-    let output = cmd.output().await?;
+
+    let output = match cmd.output().await {
+        Ok(output) => output,
+        Err(e) => {
+            tracing::warn!(
+                "failed to execute service status command: {}, returning not_installed",
+                e
+            );
+            return Ok(nyanpasu_ipc::types::StatusInfo {
+                name: std::borrow::Cow::Borrowed(""),
+                version: std::borrow::Cow::Borrowed(""),
+                status: ServiceStatus::NotInstalled,
+                server: None,
+            });
+        }
+    };
+
     let stderr = String::from_utf8_lossy(&output.stderr);
     if stderr.contains("Permission denied") || stderr.contains("os error 13") {
         anyhow::bail!(
@@ -493,9 +616,31 @@ pub async fn status<'a>() -> anyhow::Result<nyanpasu_ipc::types::StatusInfo<'a>>
             stderr.trim()
         );
     }
+
+    // 如果命令执行失败，尝试解析 stderr 判断是否是服务未安装
     if !output.status.success() {
+        let stderr_str = stderr.to_string();
+        // 常见的服务未安装错误消息
+        if stderr_str.contains("not installed")
+            || stderr_str.contains("not found")
+            || stderr_str.contains("does not exist")
+            || stderr_str.contains("找不到")
+            || stderr_str.contains("不存在")
+        {
+            tracing::debug!(
+                "service appears not installed based on stderr: {}",
+                stderr_str
+            );
+            return Ok(nyanpasu_ipc::types::StatusInfo {
+                name: std::borrow::Cow::Borrowed(""),
+                version: std::borrow::Cow::Borrowed(""),
+                status: ServiceStatus::NotInstalled,
+                server: None,
+            });
+        }
+
         anyhow::bail!(
-            "failed to query service status, exit code: {}, signal: {:?}",
+            "failed to query service status, exit code: {}, signal: {:?}, stderr: {}",
             output.status.code().unwrap_or(-1),
             {
                 #[cfg(unix)]
@@ -506,10 +651,40 @@ pub async fn status<'a>() -> anyhow::Result<nyanpasu_ipc::types::StatusInfo<'a>>
                 {
                     0
                 }
-            }
+            },
+            stderr_str
         );
     }
-    let mut status = String::from_utf8(output.stdout)?;
-    tracing::trace!("service status: {}", status);
-    Ok(serde_json::from_str(&mut status)?)
+
+    let status_str = match String::from_utf8(output.stdout) {
+        Ok(s) => s,
+        Err(e) => {
+            tracing::error!("failed to parse service status output as UTF-8: {}", e);
+            return Ok(nyanpasu_ipc::types::StatusInfo {
+                name: std::borrow::Cow::Borrowed(""),
+                version: std::borrow::Cow::Borrowed(""),
+                status: ServiceStatus::NotInstalled,
+                server: None,
+            });
+        }
+    };
+
+    tracing::trace!("service status: {}", status_str);
+    match serde_json::from_str(&status_str) {
+        Ok(status) => Ok(status),
+        Err(e) => {
+            tracing::error!(
+                "failed to parse service status JSON: {}, raw: {}",
+                e,
+                status_str
+            );
+            // JSON 解析失败也认为服务未正确安装
+            Ok(nyanpasu_ipc::types::StatusInfo {
+                name: std::borrow::Cow::Borrowed(""),
+                version: std::borrow::Cow::Borrowed(""),
+                status: ServiceStatus::NotInstalled,
+                server: None,
+            })
+        }
+    }
 }

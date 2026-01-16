@@ -3,13 +3,13 @@ import { useAtomValue } from 'jotai'
 import { isObject } from 'lodash-es'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
 import { atomIsDrawer } from '@/store'
 import { Box, CircularProgress, Paper, Tooltip } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { getCoreStatus, useSystemService } from '@nyanpasu/interface'
 import { alpha } from '@nyanpasu/ui'
+import { useQuery } from '@tanstack/react-query'
 
 type Status = {
   label: string

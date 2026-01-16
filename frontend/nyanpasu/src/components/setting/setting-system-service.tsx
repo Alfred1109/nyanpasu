@@ -1,6 +1,7 @@
 import { useMemoizedFn } from 'ahooks'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useServiceManager } from '@/hooks/use-service-manager'
 import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
 import {
@@ -15,12 +16,9 @@ import {
   ListItemText,
   Typography,
 } from '@mui/material'
-import {
-  restartSidecar,
-  useSetting,
-  useSystemService,
-} from '@nyanpasu/interface'
+import { useSetting } from '@nyanpasu/interface'
 import { BaseCard, SwitchItem } from '@nyanpasu/ui'
+import { ServiceInstallDialog } from './modules/service-install-dialog'
 import {
   ServerManualPromptDialogWrapper,
   useServerManualPromptDialog,
@@ -29,16 +27,18 @@ import {
 export const SettingSystemService = () => {
   const { t } = useTranslation()
 
-  const { query, upsert } = useSystemService()
-
+  // 使用统一的服务管理 hook
+  const serviceManager = useServiceManager()
   const serviceMode = useSetting('enable_service_mode')
+  const promptDialog = useServerManualPromptDialog()
+
   const [showInstallDialog, setShowInstallDialog] = useState(false)
   const [installAction, setInstallAction] = useState<
     'enable_service_mode' | 'start_service'
   >('enable_service_mode')
 
   const getInstallButtonString = () => {
-    switch (query.data?.status) {
+    switch (serviceManager.serviceStatus) {
       case 'stopped': {
         return t('uninstall')
       }
@@ -53,88 +53,84 @@ export const SettingSystemService = () => {
     }
   }
 
-  const isDisabled = query.data?.status === 'not_installed'
-  const isLoading = query.isLoading
+  const isDisabled = serviceManager.serviceStatus === 'not_installed'
 
-  const promptDialog = useServerManualPromptDialog()
+  const handleInstallClick = useMemoizedFn(async () => {
+    try {
+      const isInstall = serviceManager.serviceStatus === 'not_installed'
 
-  const [installOrUninstallPending, startInstallOrUninstall] = useTransition()
-  const handleInstallClick = useMemoizedFn(() => {
-    startInstallOrUninstall(async () => {
-      try {
-        switch (query.data?.status) {
-          case 'stopped':
-            await upsert.mutateAsync('uninstall')
-            break
+      if (isInstall) {
+        // 安装服务
+        await serviceManager.installService()
 
-          case 'not_installed':
-            await upsert.mutateAsync('install')
-            break
-
-          default:
-            break
-        }
-        await restartSidecar()
-      } catch (e) {
-        const errorMessage = `${
-          query.data?.status === 'not_installed'
-            ? t('Failed to install')
-            : t('Failed to uninstall')
-        }: ${formatError(e)}`
-
-        message(errorMessage, {
-          kind: 'error',
-          title: t('Error'),
+        message(t('Service installed successfully'), {
+          kind: 'info',
+          title: t('Success'),
         })
-        // If the installation fails, prompt the user to manually install the service
-        promptDialog.show(
-          query.data?.status === 'not_installed' ? 'install' : 'uninstall',
-        )
+      } else {
+        // 卸载服务
+        await serviceManager.uninstallService()
+
+        message(t('Service uninstalled successfully'), {
+          kind: 'info',
+          title: t('Success'),
+        })
       }
-    })
+    } catch (e) {
+      const errorMessage = `${
+        serviceManager.serviceStatus === 'not_installed'
+          ? t('Failed to install')
+          : t('Failed to uninstall')
+      }: ${formatError(e)}`
+
+      message(errorMessage, {
+        kind: 'error',
+        title: t('Error'),
+      })
+
+      // 如果安装/卸载失败，提示用户手动操作
+      promptDialog.show(
+        serviceManager.serviceStatus === 'not_installed'
+          ? 'install'
+          : 'uninstall',
+      )
+    }
   })
 
-  const handleInstallForAction = useMemoizedFn(() => {
-    startInstallOrUninstall(async () => {
-      try {
-        await upsert.mutateAsync('install')
-        await restartSidecar()
+  const handleInstallForAction = useMemoizedFn(async () => {
+    try {
+      // 安装服务
+      const success = await serviceManager.installService({
+        autoStart: installAction === 'enable_service_mode',
+      })
 
-        if (installAction === 'enable_service_mode') {
-          try {
-            await upsert.mutateAsync('start')
-            await restartSidecar()
-            await serviceMode.upsert(true)
-            return
-          } catch (e) {
-            message(`Start failed: ${formatError(e)}`, {
-              kind: 'error',
-              title: t('Error'),
-            })
-            promptDialog.show('start')
-            return
-          }
-        }
+      if (!success) {
+        return
+      }
 
+      // 如果需要启用服务模式
+      if (installAction === 'enable_service_mode') {
         try {
-          await upsert.mutateAsync('start')
-          await restartSidecar()
+          await serviceMode.upsert(true)
+          message(t('Service mode enabled successfully'), {
+            kind: 'info',
+            title: t('Success'),
+          })
         } catch (e) {
-          message(`Start failed: ${formatError(e)}`, {
+          message(`${t('Failed to enable service mode')}: ${formatError(e)}`, {
             kind: 'error',
             title: t('Error'),
           })
-          promptDialog.show('start')
         }
-      } catch (e) {
-        const errorMessage = `${t('Failed to install')}: ${formatError(e)}`
-        message(errorMessage, {
-          kind: 'error',
-          title: t('Error'),
-        })
-        promptDialog.show('install')
       }
-    })
+    } catch (e) {
+      const errorMessage = `${t('Failed to install')}: ${formatError(e)}`
+      message(errorMessage, {
+        kind: 'error',
+        title: t('Error'),
+      })
+      promptDialog.show('install')
+    }
   })
 
   const handleServiceModeToggle = useMemoizedFn(() => {
@@ -149,6 +145,15 @@ export const SettingSystemService = () => {
   return (
     <BaseCard label={t('System Service')}>
       <ServerManualPromptDialogWrapper />
+
+      {/* 统一的服务安装进度 Dialog */}
+      <ServiceInstallDialog
+        open={serviceManager.isInstalling}
+        installStage={serviceManager.installStage}
+        canCancel={serviceManager.canCancel}
+        handleCancel={serviceManager.cancelInstallation}
+      />
+
       <List disablePadding>
         <SwitchItem
           label={t('Service Mode')}
@@ -170,17 +175,16 @@ export const SettingSystemService = () => {
         <ListItem sx={{ pl: 0, pr: 0 }}>
           <ListItemText
             primary={t('Current Status', {
-              status: t(`${query.data?.status}`),
+              status: t(`${serviceManager.serviceStatus}`),
             })}
           />
           <div className="flex gap-2">
-            {(query.data?.status === 'not_installed' ||
-              query.data?.status === 'stopped') && (
+            {(serviceManager.serviceStatus === 'not_installed' ||
+              serviceManager.serviceStatus === 'stopped') && (
               <Button
                 variant="contained"
                 onClick={handleInstallClick}
-                loading={installOrUninstallPending}
-                disabled={isLoading || installOrUninstallPending}
+                disabled={serviceManager.isInstalling}
               >
                 {getInstallButtonString()}
               </Button>
@@ -198,6 +202,7 @@ export const SettingSystemService = () => {
         </ListItem>
       </List>
 
+      {/* 安装确认 Dialog */}
       <Dialog
         open={showInstallDialog}
         onClose={() => setShowInstallDialog(false)}
@@ -222,9 +227,7 @@ export const SettingSystemService = () => {
               handleInstallForAction()
             }}
             variant="contained"
-            disabled={
-              isLoading || installOrUninstallPending
-            }
+            disabled={serviceManager.isInstalling}
           >
             {t('Install')}
           </Button>

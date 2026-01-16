@@ -2,24 +2,25 @@
 
 ## Quick Reference: Component Mapping
 
-| Radix UI | MUI Equivalent | Migration Notes |
-|----------|----------------|-----------------|
-| `@radix-ui/react-select` | `@mui/material/Select` | Use FormControl + InputLabel |
-| `@radix-ui/react-switch` | `@mui/material/Switch` | Direct replacement |
-| `@radix-ui/react-separator` | `@mui/material/Divider` | Direct replacement |
-| `@radix-ui/react-dropdown-menu` | `@mui/material/Menu` | Use with MenuButton |
-| `@radix-ui/react-scroll-area` | `@mui/material/Box` | With custom scrollbar styling |
-| `@radix-ui/react-portal` | `@mui/material/Portal` | Direct replacement |
+| Radix UI                        | MUI Equivalent          | Migration Notes               |
+| ------------------------------- | ----------------------- | ----------------------------- |
+| `@radix-ui/react-select`        | `@mui/material/Select`  | Use FormControl + InputLabel  |
+| `@radix-ui/react-switch`        | `@mui/material/Switch`  | Direct replacement            |
+| `@radix-ui/react-separator`     | `@mui/material/Divider` | Direct replacement            |
+| `@radix-ui/react-dropdown-menu` | `@mui/material/Menu`    | Use with MenuButton           |
+| `@radix-ui/react-scroll-area`   | `@mui/material/Box`     | With custom scrollbar styling |
+| `@radix-ui/react-portal`        | `@mui/material/Portal`  | Direct replacement            |
 
 ## Example Migrations
 
 ### 1. Select Component Migration
 
 **Before (Radix UI):**
+
 ```tsx
 import * as SelectPrimitive from '@radix-ui/react-select'
 
-<SelectPrimitive.Root>
+;<SelectPrimitive.Root>
   <SelectPrimitive.Trigger>
     <SelectPrimitive.Value />
   </SelectPrimitive.Trigger>
@@ -30,10 +31,11 @@ import * as SelectPrimitive from '@radix-ui/react-select'
 ```
 
 **After (MUI):**
-```tsx
-import { Select, MenuItem, FormControl } from '@mui/material'
 
-<FormControl>
+```tsx
+import { FormControl, MenuItem, Select } from '@mui/material'
+
+;<FormControl>
   <Select value={value} onChange={handleChange}>
     <MenuItem value="item1">Item 1</MenuItem>
   </Select>
@@ -43,19 +45,21 @@ import { Select, MenuItem, FormControl } from '@mui/material'
 ### 2. Switch Component Migration
 
 **Before (Radix UI):**
+
 ```tsx
 import * as Switch from '@radix-ui/react-switch'
 
-<Switch.Root>
+;<Switch.Root>
   <Switch.Thumb />
 </Switch.Root>
 ```
 
 **After (MUI):**
+
 ```tsx
 import { Switch } from '@mui/material'
 
-<Switch checked={checked} onChange={handleChange} />
+;<Switch checked={checked} onChange={handleChange} />
 ```
 
 ## Implementation Steps

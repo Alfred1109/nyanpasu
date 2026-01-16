@@ -75,20 +75,28 @@ fn on_ipc_state_changed(state: IpcState) {
             .as_ref()
             .unwrap_or(&false)
     };
-    std::thread::spawn(move || {
-        nyanpasu_utils::runtime::block_on(async move {
-            if enabled_service {
-                let (_, _, run_type) = crate::core::CoreManager::global().status().await;
-                match (state, run_type) {
-                    (IpcState::Connected, crate::core::RunType::Normal)
-                    | (IpcState::Disconnected, crate::core::RunType::Service) => {
-                        tracing::info!("Restarting core due to IPC state change");
-                        log_err!(crate::core::CoreManager::global().run_core().await);
-                    }
-                    _ => {}
+
+    // 使用 tauri 运行时而非创建新线程，避免线程泄漏
+    tauri::async_runtime::spawn(async move {
+        if enabled_service {
+            let (_, _, run_type) = crate::core::CoreManager::global().status().await;
+            match (state, run_type) {
+                (IpcState::Connected, crate::core::RunType::Normal)
+                | (IpcState::Disconnected, crate::core::RunType::Service) => {
+                    tracing::info!("Restarting core due to IPC state change");
+                    log_err!(crate::core::CoreManager::global().run_core().await);
+                }
+                _ => {
+                    tracing::debug!(
+                        "IPC state change does not require core restart (state={:?}, run_type={:?})",
+                        state,
+                        run_type
+                    );
                 }
             }
-        })
+        } else {
+            tracing::debug!("Service mode not enabled, skipping core restart on IPC state change");
+        }
     });
 }
 
@@ -97,14 +105,35 @@ pub(super) fn spawn_health_check() {
     std::thread::spawn(|| {
         HEALTH_CHECK_RUNNING.store(true, Ordering::Release);
         block_on(async {
+            // 初次检查使用较短间隔确保快速响应
+            let mut check_count = 0;
             loop {
                 if KILL_FLAG.load(Ordering::Acquire) {
                     set_ipc_state(IpcState::Disconnected);
                     HEALTH_CHECK_RUNNING.store(false, Ordering::Release);
+                    tracing::info!("Health check terminated by kill flag");
                     break;
                 }
+
                 health_check().await;
-                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                check_count += 1;
+
+                // 自适应间隔：前 3 次检查间隔 5 秒，之后改为 30 秒
+                // 这样既能快速响应初始状态，又能减少长期运行的开销
+                let interval = if check_count < 3 {
+                    std::time::Duration::from_secs(5)
+                } else {
+                    std::time::Duration::from_secs(30)
+                };
+
+                if check_count == 3 {
+                    tracing::debug!(
+                        "Health check interval changed to 30 seconds after {} checks",
+                        check_count
+                    );
+                }
+
+                tokio::time::sleep(interval).await;
             }
         })
     });

@@ -43,21 +43,21 @@ fs-err = { version = "3.1.2", features = ["tokio"] }
 
 [profile.release]
 panic = "abort"
-codegen-units = 16      # 从1增加到16，充分利用多核CPU
-lto = "thin"            # 使用thin LTO，比full LTO快很多
-opt-level = "z"         # 优化二进制大小
-strip = true           # 移除调试符号减少大小
+codegen-units = 16 # 从1增加到16，充分利用多核CPU
+lto = "thin"       # 使用thin LTO，比full LTO快很多
+opt-level = "z"    # 优化二进制大小
+strip = true       # 移除调试符号减少大小
 
 # 新增开发配置优化
 [profile.dev]
-opt-level = 1          # 轻微优化提升开发体验
-debug = 1              # 减少调试信息生成时间
-incremental = true     # 启用增量编译
-codegen-units = 256    # 最大化并行编译
+opt-level = 1       # 轻微优化提升开发体验
+debug = 1           # 减少调试信息生成时间
+incremental = true  # 启用增量编译
+codegen-units = 256 # 最大化并行编译
 
 # 新增快速构建配置
 [profile.fast-build]
 inherits = "release"
-codegen-units = 32     # 更激进的并行化
-lto = false           # 禁用LTO获得更快构建速度
-opt-level = 1         # 较低优化级别
+codegen-units = 32   # 更激进的并行化
+lto = false          # 禁用LTO获得更快构建速度
+opt-level = 1        # 较低优化级别

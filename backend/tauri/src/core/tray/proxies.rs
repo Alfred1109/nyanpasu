@@ -117,7 +117,10 @@ fn diff_proxies(old_proxies: &TrayProxies, new_proxies: &TrayProxies) -> TrayUpd
     // 3. start checking the group content
     let mut actions = Vec::new();
     for (group, item) in new_proxies.iter() {
-        let old_item = old_proxies.get(group).unwrap(); // safe to unwrap
+        let Some(old_item) = old_proxies.get(group) else {
+            warn!("Group {} not found in old proxies, skipping", group);
+            continue;
+        };
 
         // check if the length of all list is different
         if item.all.len() != old_item.all.len() {
@@ -136,11 +139,17 @@ fn diff_proxies(old_proxies: &TrayProxies, new_proxies: &TrayProxies) -> TrayUpd
         }
         // then diff the current
         if item.current != old_item.current {
-            actions.push((
-                group.clone(),
-                old_item.current.clone().unwrap(),
-                item.current.clone().unwrap(),
-            ));
+            match (&old_item.current, &item.current) {
+                (Some(old_current), Some(new_current)) => {
+                    actions.push((group.clone(), old_current.clone(), new_current.clone()));
+                }
+                _ => {
+                    warn!(
+                        "Cannot update proxy for group {}: current proxy is None",
+                        group
+                    );
+                }
+            }
         }
     }
     if actions.is_empty() {
@@ -394,10 +403,12 @@ mod platform_impl {
             return;
         }
         let app_handle = Handle::global().app_handle.lock();
-        let tray_state = app_handle
-            .as_ref()
-            .unwrap()
-            .state::<crate::core::tray::TrayState<tauri::Wry>>();
+        let Some(app_handle_ref) = app_handle.as_ref() else {
+            warn!("app handle is not initialized, cannot update tray proxies");
+            TRAY_ITEM_UPDATE_BARRIER.store(false, std::sync::atomic::Ordering::Release);
+            return;
+        };
+        let tray_state = app_handle_ref.state::<crate::core::tray::TrayState<tauri::Wry>>();
         TRAY_ITEM_UPDATE_BARRIER.store(true, std::sync::atomic::Ordering::Release);
         let menu = tray_state.menu.lock();
         // comment it just because we could not get the access to the menu item via the id
@@ -541,7 +552,10 @@ pub fn on_system_tray_event(event: &str) {
     if !event.starts_with("proxy_node_") {
         return; // bypass non-select event
     }
-    let node_id = event.split('_').next_back().unwrap(); // safe to unwrap
+    let Some(node_id) = event.split('_').next_back() else {
+        warn!("Invalid proxy node event format: {}", event);
+        return;
+    };
     let node_id = match node_id.parse::<usize>() {
         Ok(id) => id,
         Err(e) => {

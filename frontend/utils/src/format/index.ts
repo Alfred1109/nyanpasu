@@ -9,7 +9,7 @@ export function formatError(err: unknown): string {
 }
 
 /**
- * Environment info formatting utility  
+ * Environment info formatting utility
  * From frontend/nyanpasu/src/utils/index.ts
  */
 export function formatEnvInfos(envs: any) {
@@ -38,11 +38,11 @@ export function formatEnvInfos(envs: any) {
 
 /**
  * File size formatting utility
- * From scripts/utils/index.ts  
+ * From scripts/utils/index.ts
  */
 export function formatFileSize(bytes: number): string {
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
   if (bytes === 0) return '0 Bytes'
   const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
+  return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i]
 }

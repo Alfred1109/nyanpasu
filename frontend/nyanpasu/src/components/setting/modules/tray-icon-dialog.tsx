@@ -1,7 +1,6 @@
 import { useMemoizedFn } from 'ahooks'
 import { useState, useTransition } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { formatError, sleep } from '@/utils'
 import { message } from '@/utils/notification'
 import { Button } from '@mui/material'
@@ -11,16 +10,14 @@ import {
   setTrayIcon as setTrayIconCall,
 } from '@nyanpasu/interface'
 import { BaseDialog, BaseDialogProps } from '@nyanpasu/ui'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { open } from '@tauri-apps/plugin-dialog'
 
 function TrayIconItem({ mode }: { mode: 'system_proxy' | 'tun' | 'normal' }) {
   const { t } = useTranslation()
   const [ts, setTs] = useState(Date.now())
   const queryClient = useQueryClient()
-  const {
-    data: isSetTrayIcon,
-    isLoading,
-  } = useQuery({
+  const { data: isSetTrayIcon, isLoading } = useQuery({
     queryKey: ['/isSetTrayIcon', mode],
     queryFn: () => isTrayIconSet(mode),
     refetchOnWindowFocus: true,
@@ -29,8 +26,9 @@ function TrayIconItem({ mode }: { mode: 'system_proxy' | 'tun' | 'normal' }) {
     queryKey: ['/getServerPort'],
     queryFn: getServerPort,
   })
-  
-  const mutate = () => queryClient.invalidateQueries({ queryKey: ['/isSetTrayIcon', mode] })
+
+  const mutate = () =>
+    queryClient.invalidateQueries({ queryKey: ['/isSetTrayIcon', mode] })
   const src = `http://localhost:${serverPort}/tray/icon?mode=${mode}&ts=${ts}`
   const [loading, startTransition] = useTransition()
   const selectImage = async () => {

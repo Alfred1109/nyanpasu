@@ -1,6 +1,5 @@
 import { useAtom, useAtomValue } from 'jotai'
 import { memo, RefObject, useDeferredValue, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { Virtualizer } from 'virtua'
 import { proxyGroupAtom } from '@/store'
 import { proxiesFilterAtom } from '@/store/proxies'
@@ -13,6 +12,7 @@ import {
 } from '@mui/material'
 import { getServerPort, useClashProxies } from '@nyanpasu/interface'
 import { alpha, LazyImage } from '@nyanpasu/ui'
+import { useQuery } from '@tanstack/react-query'
 
 const IconRender = memo(function IconRender({ icon }: { icon: string }) {
   const {

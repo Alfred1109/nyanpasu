@@ -48,12 +48,20 @@ export const useSystemService = () => {
       try {
         return unwrap(await commands.serviceStatus())
       } catch (error) {
-        const message = String(error)
+        const message = String(error).toLowerCase()
+        // 扩大匹配范围，涵盖更多服务不可用的情况
         const isNotInstalled =
           message.includes('executable not found') ||
-          message.toLowerCase().includes('not installed')
+          message.includes('not installed') ||
+          message.includes('not found') ||
+          message.includes('does not exist') ||
+          message.includes('找不到') ||
+          message.includes('不存在') ||
+          message.includes('failed to execute') ||
+          message.includes('no such file')
 
         if (isNotInstalled) {
+          console.debug('Service appears not installed:', message)
           return {
             name: '',
             version: '',
@@ -62,10 +70,24 @@ export const useSystemService = () => {
           }
         }
 
-        throw error
+        // 对于其他错误，也返回 not_installed 状态而不是抛出错误
+        // 这样可以避免 UI 进入 error 状态导致按钮完全不可用
+        console.warn(
+          'Failed to query service status, treating as not_installed:',
+          error,
+        )
+        return {
+          name: '',
+          version: '',
+          status: 'not_installed' as const,
+          server: null,
+        }
       }
     },
     refetchInterval: 5000,
+    // 添加重试配置，避免临时错误导致长时间不可用
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   })
 
   const upsert = useMutation({

@@ -21,10 +21,13 @@ export const SettingSystemBehaviorEnhanced = () => {
     setTesting(true)
     try {
       // 这里可以调用后端的诊断接口
-      message(t('Auto-launch diagnostic completed. Check console for details.'), {
-        title: t('Diagnostic'),
-        kind: 'info',
-      })
+      message(
+        t('Auto-launch diagnostic completed. Check console for details.'),
+        {
+          title: t('Diagnostic'),
+          kind: 'info',
+        },
+      )
     } catch (error) {
       message(`${t('Diagnostic failed')}: ${formatError(error)}`, {
         title: t('Error'),
@@ -39,13 +42,13 @@ export const SettingSystemBehaviorEnhanced = () => {
     try {
       await autoLaunch.upsert(!autoLaunch.value)
       message(
-        autoLaunch.value 
-          ? t('Auto-launch enabled successfully') 
+        autoLaunch.value
+          ? t('Auto-launch enabled successfully')
           : t('Auto-launch disabled successfully'),
         {
           title: t('Success'),
           kind: 'info',
-        }
+        },
       )
     } catch (error) {
       message(`${t('Failed to update auto-launch')}: ${formatError(error)}`, {
@@ -59,13 +62,13 @@ export const SettingSystemBehaviorEnhanced = () => {
     try {
       await silentStart.upsert(!silentStart.value)
       message(
-        silentStart.value 
-          ? t('Silent start enabled successfully') 
+        silentStart.value
+          ? t('Silent start enabled successfully')
           : t('Silent start disabled successfully'),
         {
           title: t('Success'),
           kind: 'info',
-        }
+        },
       )
     } catch (error) {
       message(`${t('Failed to update silent start')}: ${formatError(error)}`, {
@@ -119,11 +122,9 @@ export const SettingSystemBehaviorEnhanced = () => {
         </ListItem>
 
         <ListItem sx={{ pl: 0, pr: 0 }}>
-          <div className="flex w-full justify-between items-center">
+          <div className="flex w-full items-center justify-between">
             <div>
-              <Typography variant="body2">
-                {t('Startup Diagnostic')}
-              </Typography>
+              <Typography variant="body2">{t('Startup Diagnostic')}</Typography>
               <Typography variant="caption" color="text.secondary">
                 {t('Test auto-launch functionality and check system settings')}
               </Typography>
@@ -142,10 +143,13 @@ export const SettingSystemBehaviorEnhanced = () => {
         {/* 平台特定说明 */}
         <ListItem sx={{ pl: 0, pr: 0 }}>
           <Typography variant="body2" color="text.secondary">
-            <strong>{t('Platform Notes')}:</strong><br />
-            • <strong>Windows</strong>: {t('Uses registry entries for auto-start')}<br />
-            • <strong>macOS</strong>: {t('Uses Login Items in System Preferences')}<br />
-            • <strong>Linux</strong>: {t('Uses .desktop files in autostart directory')}
+            <strong>{t('Platform Notes')}:</strong>
+            <br />• <strong>Windows</strong>:{' '}
+            {t('Uses registry entries for auto-start')}
+            <br />• <strong>macOS</strong>:{' '}
+            {t('Uses Login Items in System Preferences')}
+            <br />• <strong>Linux</strong>:{' '}
+            {t('Uses .desktop files in autostart directory')}
           </Typography>
         </ListItem>
       </List>

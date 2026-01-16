@@ -505,7 +505,25 @@ impl CoreManager {
     }
 
     /// 重启内核
+    ///
+    /// 注意：此函数包含重试逻辑，但有最大重试次数限制以防止无限递归
     pub async fn recover_core(&'static self) -> Result<()> {
+        self.recover_core_with_retry(0).await
+    }
+
+    /// 带重试计数的内核恢复实现
+    async fn recover_core_with_retry(&'static self, retry_count: u32) -> Result<()> {
+        const MAX_RETRIES: u32 = 10; // 最多重试 10 次
+
+        if retry_count >= MAX_RETRIES {
+            let err = anyhow::anyhow!(
+                "Failed to recover clash core after {} attempts, giving up to prevent resource exhaustion",
+                MAX_RETRIES
+            );
+            log::error!(target: "app", "{}", err);
+            return Err(err);
+        }
+
         // 清除原来的实例
         {
             let instance = {
@@ -521,14 +539,29 @@ impl CoreManager {
         }
 
         if let Err(err) = self.run_core().await {
-            log::error!(target: "app", "failed to recover clash core");
-            log::error!(target: "app", "{err:?}");
-            tokio::time::sleep(Duration::from_secs(5)).await; // sleep 5s
+            log::error!(
+                target: "app",
+                "Failed to recover clash core (attempt {}/{}): {:?}",
+                retry_count + 1,
+                MAX_RETRIES,
+                err
+            );
+
+            // 使用指数退避策略：5s, 10s, 20s, ...，最多 60s
+            let delay_secs = std::cmp::min(5 * 2u64.pow(retry_count), 60);
+            tokio::time::sleep(Duration::from_secs(delay_secs)).await;
+
+            // 在后台线程中重试，因为 recover_core_with_retry 可能不是 Send
+            let retry_count = retry_count + 1;
             std::thread::spawn(move || {
-                block_on(async {
-                    let _ = CoreManager::global().recover_core().await;
+                nyanpasu_utils::runtime::block_on(async {
+                    let _ = CoreManager::global()
+                        .recover_core_with_retry(retry_count)
+                        .await;
                 })
             });
+        } else {
+            log::info!(target: "app", "Core recovered successfully after {} attempts", retry_count);
         }
 
         Ok(())

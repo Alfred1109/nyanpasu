@@ -38,7 +38,7 @@ export async function retry<T>(
     delay?: number
     backoffMultiplier?: number
     maxDelay?: number
-  } = {}
+  } = {},
 ): Promise<T> {
   const {
     maxAttempts = 3,
@@ -55,7 +55,7 @@ export async function retry<T>(
       return await fn()
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error))
-      
+
       if (attempt === maxAttempts) {
         throw lastError
       }

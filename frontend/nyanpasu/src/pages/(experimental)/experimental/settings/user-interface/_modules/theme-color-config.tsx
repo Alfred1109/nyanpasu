@@ -1,4 +1,5 @@
 import Check from '~icons/material-symbols/check-rounded'
+import { MuiColorInput } from 'mui-color-input'
 import { useCallback, useState } from 'react'
 import { useExperimentalThemeContext } from '@/components/providers/theme-provider'
 import { Button } from '@/components/ui/button'
@@ -8,7 +9,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { m } from '@/paraglide/messages'
-import { MuiColorInput } from 'mui-color-input'
 import { SettingsCard, SettingsCardContent } from '../../_modules/settings-card'
 
 export default function ThemeColorConfig() {

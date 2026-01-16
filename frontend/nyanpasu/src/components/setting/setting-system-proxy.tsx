@@ -1,36 +1,26 @@
 import { useLockFn } from 'ahooks'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useServiceManager } from '@/hooks/use-service-manager'
 import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
 import {
-  Close as CloseIcon,
-  Security as SecurityIcon,
-} from '@mui/icons-material'
-import {
-  Box,
   Button,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
-  IconButton,
   InputAdornment,
-  LinearProgress,
   List,
   ListItem,
-  Typography,
 } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import {
-  restartSidecar,
   toggleSystemProxy,
   toggleTunMode,
   useSetting,
   useSystemProxy,
-  useSystemService,
 } from '@nyanpasu/interface'
 import {
   BaseCard,
@@ -40,94 +30,14 @@ import {
   SwitchItem,
   TextItem,
 } from '@nyanpasu/ui'
+import { ServiceInstallDialog } from './modules/service-install-dialog'
 import {
   ServerManualPromptDialogWrapper,
   useServerManualPromptDialog,
 } from './modules/service-manual-prompt-dialog'
 import { PaperSwitchButton } from './modules/system-proxy'
 
-const withTimeout = async <T,>(promise: Promise<T>, ms: number) => {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timeoutId = setTimeout(() => {
-      reject(new Error('timeout'))
-    }, ms)
-  })
-  try {
-    return await Promise.race([promise, timeout])
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId)
-    }
-  }
-}
-
 type ModeAction = 'system_proxy' | 'tun'
-
-enum InstallStage {
-  PREPARING = 'preparing',
-  WAITING_UAC = 'waiting_uac',
-  INSTALLING = 'installing',
-  STARTING = 'starting',
-  CONFIGURING = 'configuring',
-}
-
-const getStageProgress = (stage: InstallStage): number => {
-  switch (stage) {
-    case InstallStage.PREPARING:
-      return 10
-    case InstallStage.WAITING_UAC:
-      return 25
-    case InstallStage.INSTALLING:
-      return 50
-    case InstallStage.STARTING:
-      return 75
-    case InstallStage.CONFIGURING:
-      return 90
-    default:
-      return 0
-  }
-}
-
-const getStageText = (
-  stage: InstallStage,
-  t: (key: string) => string,
-): string => {
-  switch (stage) {
-    case InstallStage.PREPARING:
-      return t('Preparing service installation...')
-    case InstallStage.WAITING_UAC:
-      return t('Waiting for UAC permission confirmation')
-    case InstallStage.INSTALLING:
-      return t('Installing service...')
-    case InstallStage.STARTING:
-      return t('Starting service...')
-    case InstallStage.CONFIGURING:
-      return t('Configuring system proxy...')
-    default:
-      return t('Processing...')
-  }
-}
-
-const getStageDescription = (
-  stage: InstallStage,
-  t: (key: string) => string,
-): string => {
-  switch (stage) {
-    case InstallStage.WAITING_UAC:
-      return t(
-        "Please confirm the Windows User Account Control (UAC) permission prompt. If you don't see it, check your taskbar or other windows.",
-      )
-    case InstallStage.INSTALLING:
-      return t('Installing the system service with administrator privileges...')
-    case InstallStage.STARTING:
-      return t('Starting the service and establishing connection...')
-    case InstallStage.CONFIGURING:
-      return t('Applying system proxy configuration...')
-    default:
-      return ''
-  }
-}
 
 const TunModeButton = ({
   serviceStatus,
@@ -316,25 +226,20 @@ export const SettingSystemProxy = () => {
 
   const [expand, setExpand] = useState(false)
 
-  const { query, upsert: serviceUpsert } = useSystemService()
+  // 使用统一的服务管理 hook
+  const serviceManager = useServiceManager()
   const systemProxy = useSetting('enable_system_proxy')
   const tunMode = useSetting('enable_tun_mode')
   const promptDialog = useServerManualPromptDialog()
-  const serviceStatus = query.data?.status
-  const isServiceInstalled =
-    !!serviceStatus && serviceStatus !== 'not_installed'
+
   const [showInstallDialog, setShowInstallDialog] = useState(false)
   const [showUninstallDialog, setShowUninstallDialog] = useState(false)
-  const [serviceActionPending, setServiceActionPending] = useState(false)
-  const [installStage, setInstallStage] = useState<InstallStage | null>(null)
-  const [canCancel, setCanCancel] = useState(false)
-  const [cancelRequested, setCancelRequested] = useState(false)
   const [pendingModeAction, setPendingModeAction] = useState<ModeAction | null>(
     null,
   )
 
   const getStatusColor = () => {
-    switch (query.data?.status) {
+    switch (serviceManager.serviceStatus) {
       case 'running':
         return 'success.main'
       case 'stopped':
@@ -347,25 +252,25 @@ export const SettingSystemProxy = () => {
   }
 
   const getStatusText = () => {
-    if (query.isLoading) {
+    if (serviceManager.query.isLoading) {
       return t('loading')
     }
-    if (query.isError) {
+    if (serviceManager.query.isError) {
       return t('Error')
     }
-    if (!serviceStatus) {
+    if (!serviceManager.serviceStatus) {
       return t('unknown')
     }
-    if (!isServiceInstalled) {
+    if (!serviceManager.isServiceInstalled) {
       return t('Not Installed')
     }
-    switch (serviceStatus) {
+    switch (serviceManager.serviceStatus) {
       case 'running':
         return t('running')
       case 'stopped':
         return t('stopped')
       default:
-        return t(serviceStatus || 'unknown')
+        return t(serviceManager.serviceStatus || 'unknown')
     }
   }
 
@@ -374,91 +279,33 @@ export const SettingSystemProxy = () => {
     setShowInstallDialog(true)
   }
 
-  const handleCancel = useLockFn(async () => {
-    setCancelRequested(true)
-    setCanCancel(false)
-    setServiceActionPending(false)
-    setInstallStage(null)
-    setPendingModeAction(null)
-  })
-
   const handleInstallConfirm = useLockFn(async () => {
     setShowInstallDialog(false)
-    setCancelRequested(false)
 
     try {
-      setServiceActionPending(true)
-      setCanCancel(false)
+      // 使用统一的服务安装流程
+      await serviceManager.installService({
+        autoStart: true,
+        onConfigureProxy:
+          pendingModeAction === 'system_proxy'
+            ? async () => {
+                await toggleSystemProxy()
+              }
+            : undefined,
+        onConfigureTun:
+          pendingModeAction === 'tun'
+            ? async () => {
+                await toggleTunMode()
+              }
+            : undefined,
+      })
 
-      // Stage 1: Preparing
-      setInstallStage(InstallStage.PREPARING)
-      await new Promise((resolve) => setTimeout(resolve, 800))
-
-      if (cancelRequested) return
-
-      // Stage 2: Waiting for UAC (with cancel option)
-      setInstallStage(InstallStage.WAITING_UAC)
-      setCanCancel(true)
-
-      await withTimeout(serviceUpsert.mutateAsync('install'), 60_000)
-
-      if (cancelRequested) return
-      setCanCancel(false)
-
-      // Stage 3: Installing
-      setInstallStage(InstallStage.INSTALLING)
-      await restartSidecar()
-
-      let currentStatus: string | undefined = query.data?.status
-      for (let i = 0; i < 10; i++) {
-        if (cancelRequested) return
-        const result = await query.refetch()
-        currentStatus = result.data?.status
-        if (currentStatus !== 'not_installed') {
-          break
-        }
-        await new Promise((resolve) => setTimeout(resolve, 500))
-      }
-
-      if (currentStatus === 'not_installed') {
-        throw new Error('service_not_installed')
-      }
-
-      if (pendingModeAction) {
-        // Stage 4: Starting
-        setInstallStage(InstallStage.STARTING)
-        await withTimeout(serviceUpsert.mutateAsync('start'), 30_000)
-        await restartSidecar()
-
-        if (cancelRequested) return
-
-        // Stage 5: Configuring
-        setInstallStage(InstallStage.CONFIGURING)
-        if (pendingModeAction === 'system_proxy') {
-          await withTimeout(toggleSystemProxy(), 30_000)
-        }
-        if (pendingModeAction === 'tun') {
-          await withTimeout(toggleTunMode(), 30_000)
-        }
-      }
-
-      await query.refetch()
+      message(t('Service installed successfully'), {
+        title: t('Success'),
+        kind: 'info',
+      })
     } catch (error) {
-      if (cancelRequested) return
-
-      if (error instanceof Error && error.message === 'timeout') {
-        message(
-          t('Operation timed out, it may be waiting for UAC/permission prompt'),
-          {
-            title: t('Error'),
-            kind: 'error',
-          },
-        )
-        promptDialog.show('install')
-      } else if (
-        error instanceof Error &&
-        error.message === 'service_not_installed'
-      ) {
+      if (error instanceof Error && error.message === 'service_not_installed') {
         message(t('Failed to install system service'), {
           title: t('Error'),
           kind: 'error',
@@ -476,19 +323,13 @@ export const SettingSystemProxy = () => {
       }
     } finally {
       setPendingModeAction(null)
-      setServiceActionPending(false)
-      setInstallStage(null)
-      setCanCancel(false)
-      setCancelRequested(false)
     }
   })
 
   const handleUninstallConfirm = useLockFn(async () => {
     setShowUninstallDialog(false)
     try {
-      setServiceActionPending(true)
-      setInstallStage(InstallStage.INSTALLING) // Use installing stage for uninstall too
-
+      // 先关闭系统代理和TUN模式
       if (systemProxy.value) {
         await toggleSystemProxy()
       }
@@ -496,29 +337,19 @@ export const SettingSystemProxy = () => {
         await toggleTunMode()
       }
 
-      await withTimeout(serviceUpsert.mutateAsync('uninstall'), 60_000)
-      await restartSidecar()
-      await query.refetch()
+      // 使用统一的服务卸载流程
+      await serviceManager.uninstallService()
+
+      message(t('Service uninstalled successfully'), {
+        title: t('Success'),
+        kind: 'info',
+      })
     } catch (error) {
-      if (error instanceof Error && error.message === 'timeout') {
-        message(
-          t('Operation timed out, it may be waiting for UAC/permission prompt'),
-          {
-            title: t('Error'),
-            kind: 'error',
-          },
-        )
-        promptDialog.show('uninstall')
-      } else {
-        message(`${t('Error')}: ${formatError(error)}`, {
-          title: t('Error'),
-          kind: 'error',
-        })
-        promptDialog.show('uninstall')
-      }
-    } finally {
-      setServiceActionPending(false)
-      setInstallStage(null)
+      message(`${t('Error')}: ${formatError(error)}`, {
+        title: t('Error'),
+        kind: 'error',
+      })
+      promptDialog.show('uninstall')
     }
   })
 
@@ -531,89 +362,28 @@ export const SettingSystemProxy = () => {
     >
       <ServerManualPromptDialogWrapper />
 
-      {serviceActionPending && installStage && (
-        <Box
-          sx={{
-            bgcolor: 'background.default',
-            border: 1,
-            borderColor: 'divider',
-            borderRadius: 1,
-            p: 2,
-            mb: 2,
-            position: 'relative',
-          }}
-        >
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            mb={2}
-          >
-            <Typography variant="subtitle1" color="text.primary">
-              {t('Installing Service')}
-            </Typography>
-            {canCancel && (
-              <IconButton onClick={handleCancel} size="small">
-                <CloseIcon />
-              </IconButton>
-            )}
-          </Box>
-
-          <Box display="flex" alignItems="center" gap={2} mb={2}>
-            {installStage === InstallStage.WAITING_UAC ? (
-              <SecurityIcon color="warning" sx={{ fontSize: 20 }} />
-            ) : (
-              <CircularProgress size={20} />
-            )}
-            <Typography variant="body2" color="text.primary">
-              {getStageText(installStage, t)}
-            </Typography>
-          </Box>
-
-          <LinearProgress
-            variant="determinate"
-            value={getStageProgress(installStage)}
-            sx={{ mb: 1.5, height: 6, borderRadius: 3 }}
-          />
-
-          {getStageDescription(installStage, t) && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: '0.8rem' }}
-            >
-              {getStageDescription(installStage, t)}
-            </Typography>
-          )}
-
-          {installStage === InstallStage.WAITING_UAC && (
-            <Box mt={1.5}>
-              <Typography
-                variant="body2"
-                color="warning.main"
-                sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}
-              >
-                ⚠️ {t('Please check for UAC permission dialog')}
-              </Typography>
-            </Box>
-          )}
-        </Box>
-      )}
+      {/* 统一的服务安装进度 Dialog */}
+      <ServiceInstallDialog
+        open={serviceManager.isInstalling}
+        installStage={serviceManager.installStage}
+        canCancel={serviceManager.canCancel}
+        handleCancel={serviceManager.cancelInstallation}
+      />
 
       <Grid container spacing={2}>
         <Grid size={{ xs: 6 }}>
           <SystemProxyButton
-            serviceStatus={query.data?.status}
+            serviceStatus={serviceManager.serviceStatus}
             onRequireInstall={handleRequireInstall}
-            disabled={!isInTauri || serviceActionPending || query.isLoading}
+            disabled={!isInTauri || serviceManager.isInstalling}
           />
         </Grid>
 
         <Grid size={{ xs: 6 }}>
           <TunModeButton
-            serviceStatus={query.data?.status}
+            serviceStatus={serviceManager.serviceStatus}
             onRequireInstall={handleRequireInstall}
-            disabled={!isInTauri || serviceActionPending || query.isLoading}
+            disabled={!isInTauri || serviceManager.isInstalling}
           />
         </Grid>
       </Grid>
@@ -632,7 +402,7 @@ export const SettingSystemProxy = () => {
           </div>
         </ListItem>
 
-        {isInTauri && !isServiceInstalled && (
+        {isInTauri && !serviceManager.isServiceInstalled && (
           <ListItem sx={{ pl: 0, pr: 0 }}>
             <div className="text-sm text-gray-500">
               {t(
@@ -642,7 +412,7 @@ export const SettingSystemProxy = () => {
           </ListItem>
         )}
 
-        {isInTauri && query.data?.status === 'not_installed' && (
+        {isInTauri && serviceManager.serviceStatus === 'not_installed' && (
           <ListItem sx={{ pl: 0, pr: 0 }}>
             <div className="ml-auto">
               <Button
@@ -652,7 +422,7 @@ export const SettingSystemProxy = () => {
                   setPendingModeAction(null)
                   setShowInstallDialog(true)
                 }}
-                disabled={serviceActionPending || query.isLoading}
+                disabled={serviceManager.isInstalling}
               >
                 {t('install')}
               </Button>
@@ -661,7 +431,7 @@ export const SettingSystemProxy = () => {
         )}
 
         {isInTauri &&
-          query.data?.status === 'stopped' &&
+          serviceManager.serviceStatus === 'stopped' &&
           !systemProxy.value &&
           !tunMode.value && (
             <ListItem sx={{ pl: 0, pr: 0 }}>
@@ -671,7 +441,7 @@ export const SettingSystemProxy = () => {
                   variant="outlined"
                   color="error"
                   onClick={() => setShowUninstallDialog(true)}
-                  disabled={serviceActionPending || query.isLoading}
+                  disabled={serviceManager.isInstalling}
                 >
                   {t('uninstall')}
                 </Button>
@@ -680,6 +450,7 @@ export const SettingSystemProxy = () => {
           )}
       </List>
 
+      {/* 安装确认 Dialog */}
       <Dialog
         open={showInstallDialog}
         onClose={() => setShowInstallDialog(false)}
@@ -701,13 +472,14 @@ export const SettingSystemProxy = () => {
           <Button
             onClick={handleInstallConfirm}
             variant="contained"
-            disabled={serviceActionPending || query.isLoading}
+            disabled={serviceManager.isInstalling}
           >
             {t('Install')}
           </Button>
         </DialogActions>
       </Dialog>
 
+      {/* 卸载确认 Dialog */}
       <Dialog
         open={showUninstallDialog}
         onClose={() => setShowUninstallDialog(false)}
@@ -730,7 +502,7 @@ export const SettingSystemProxy = () => {
             onClick={handleUninstallConfirm}
             variant="contained"
             color="error"
-            disabled={serviceActionPending || query.isLoading}
+            disabled={serviceManager.isInstalling}
           >
             {t('uninstall')}
           </Button>

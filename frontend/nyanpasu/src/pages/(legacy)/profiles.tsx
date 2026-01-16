@@ -1,10 +1,9 @@
 import MdiTextBoxCheckOutline from '~icons/mdi/text-box-check-outline'
-import { useLockFn } from 'ahooks'
+import { useLockFn, useSize } from 'ahooks'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAtom } from 'jotai'
 import { useMemo, useState, useTransition } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSize } from 'ahooks'
 import { z } from 'zod'
 import {
   atomChainsSelected,

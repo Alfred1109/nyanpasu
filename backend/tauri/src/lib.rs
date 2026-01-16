@@ -35,7 +35,7 @@ use anyhow::Context;
 #[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri::Emitter;
-use tauri_specta::{collect_commands, collect_events};
+use tauri_specta::collect_commands;
 use utils::resolve::{is_window_opened, reset_window_open_counter};
 
 rust_i18n::i18n!("../../locales");
@@ -315,9 +315,6 @@ pub fn run() -> std::io::Result<()> {
         // updater layer
     ]);
 
-    let specta_builder =
-        specta_builder.events(collect_events![crate::core::clash::ClashConnectionsEvent,]);
-
     #[cfg(debug_assertions)]
     if export_bindings {
         let specta_bindings_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -352,7 +349,14 @@ pub fn run() -> std::io::Result<()> {
                 );
             }
             Err(e) => {
-                panic!("Failed to export typescript bindings: {e}");
+                log::error!("Failed to export typescript bindings: {e}");
+                log::error!(
+                    "This is a development-time error. Please check your IPC definitions and TypeScript configuration."
+                );
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Failed to export typescript bindings: {e}"),
+                ));
             }
         }
         return Ok(());

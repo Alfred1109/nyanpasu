@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useRef } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 
 interface VirtualizedListProps<T> {
   items: T[]
@@ -28,7 +28,7 @@ export function VirtualizedList<T>({
     const visibleStart = Math.floor(scrollTop / itemHeight)
     const visibleEnd = Math.min(
       visibleStart + Math.ceil(containerHeight / itemHeight),
-      items.length - 1
+      items.length - 1,
     )
 
     return {
@@ -94,7 +94,7 @@ export function VirtualizedList<T>({
 export function useVirtualizedData<T>(
   allData: T[],
   pageSize = 1000,
-  filterFn?: (item: T) => boolean
+  filterFn?: (item: T) => boolean,
 ) {
   const [currentPage, setCurrentPage] = useState(0)
 
@@ -114,7 +114,7 @@ export function useVirtualizedData<T>(
 
   const loadNextPage = useCallback(() => {
     if (hasNextPage) {
-      setCurrentPage(prev => prev + 1)
+      setCurrentPage((prev) => prev + 1)
     }
   }, [hasNextPage])
 

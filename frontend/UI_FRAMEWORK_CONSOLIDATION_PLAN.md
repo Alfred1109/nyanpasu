@@ -3,14 +3,16 @@
 ## Current State Analysis
 
 ### MUI Usage
+
 - **Components**: 116 files using MUI components
 - **Dependencies**:
   - `@mui/material`: 7.3.5
-  - `@mui/icons-material`: 7.3.5  
+  - `@mui/icons-material`: 7.3.5
   - `@mui/lab`: 7.0.0-beta.17
   - `@mui/x-date-pickers`: 8.17.0
 
 ### Radix UI Usage
+
 - **Components**: Mixed usage across the same 116 files
 - **Dependencies**:
   - `@radix-ui/react-dropdown-menu`: 2.1.16
@@ -32,6 +34,7 @@
 ## Recommended Solution: Keep MUI as Primary
 
 ### Rationale
+
 - **Broader adoption** in the codebase (116 files heavily using MUI)
 - **Complete ecosystem** (Material, Lab, Icons, Date Pickers)
 - **Better TypeScript support** for the existing codebase
@@ -40,17 +43,20 @@
 ### Migration Plan
 
 #### Phase 1: Replace Radix UI Components (Week 1-2)
+
 - `@radix-ui/react-select` → `@mui/material/Select`
-- `@radix-ui/react-switch` → `@mui/material/Switch` 
+- `@radix-ui/react-switch` → `@mui/material/Switch`
 - `@radix-ui/react-separator` → `@mui/material/Divider`
 - `@radix-ui/react-dropdown-menu` → `@mui/material/Menu`
 
 #### Phase 2: Custom Components (Week 3)
+
 - `@radix-ui/react-scroll-area` → Custom MUI-based ScrollArea
 - `@radix-ui/react-portal` → `@mui/material/Portal`
 - `@radix-ui/react-slot` → Custom MUI composition
 
 #### Phase 3: Testing & Cleanup (Week 4)
+
 - Remove Radix UI dependencies
 - Update TypeScript types
 - Verify theme consistency
@@ -59,13 +65,15 @@
 ## Implementation Priority
 
 ### High Impact Files (10+ imports each)
+
 1. `clash-field.tsx` (10 imports)
-2. `clash-web.tsx` (9 imports) 
+2. `clash-web.tsx` (9 imports)
 3. `clash-core.tsx` (6 imports)
 4. `textItem.tsx` (5 imports)
 5. `profiles.tsx` (4 imports)
 
 ### Migration Commands
+
 ```bash
 # Remove Radix UI dependencies
 pnpm remove @radix-ui/react-dropdown-menu @radix-ui/react-scroll-area @radix-ui/react-select @radix-ui/react-separator @radix-ui/react-slot @radix-ui/react-switch @radix-ui/react-use-controllable-state @radix-ui/react-portal

@@ -8,12 +8,12 @@ import { createNyanpasuJSONStorage } from '@/services/storage'
 export const getStorageItem = <T = string>(
   key: string,
   defaultValue: T,
-  parser?: (value: string) => T
+  parser?: (value: string) => T,
 ): T => {
   try {
     const item = localStorage.getItem(key)
     if (item === null) return defaultValue
-    
+
     return parser ? parser(item) : (item as T)
   } catch {
     return defaultValue
@@ -24,9 +24,9 @@ export const getStorageItem = <T = string>(
  * Safely set item to localStorage with error handling
  */
 export const setStorageItem = (
-  key: string, 
-  value: any, 
-  serializer?: (value: any) => string
+  key: string,
+  value: any,
+  serializer?: (value: any) => string,
 ): boolean => {
   try {
     const serializedValue = serializer ? serializer(value) : String(value)
@@ -44,7 +44,7 @@ export const setStorageItem = (
 export const createStorageAtom = <T>(
   key: string,
   initialValue: T,
-  useNyanpasuStorage = false
+  useNyanpasuStorage = false,
 ) => {
   if (useNyanpasuStorage) {
     return atomWithStorage(key, initialValue, createNyanpasuJSONStorage<T>())
@@ -56,11 +56,14 @@ export const createStorageAtom = <T>(
  * Create localStorage-backed boolean state utilities
  * For cases where Jotai atoms are not suitable
  */
-export const createPersistedBooleanState = (key: string, defaultValue = false) => {
-  const getStoredValue = (): boolean => 
+export const createPersistedBooleanState = (
+  key: string,
+  defaultValue = false,
+) => {
+  const getStoredValue = (): boolean =>
     getStorageItem(key, defaultValue, (val) => JSON.parse(val))
 
-  const setStoredValue = (value: boolean): boolean => 
+  const setStoredValue = (value: boolean): boolean =>
     setStorageItem(key, value, (val) => JSON.stringify(val))
 
   return { getStoredValue, setStoredValue }
@@ -72,9 +75,11 @@ export const createPersistedBooleanState = (key: string, defaultValue = false) =
  * @deprecated
  */
 export const atomWithLocalStorage = <T>(key: string, initialValue: T) => {
-  console.warn(`atomWithLocalStorage is deprecated. Use createStorageAtom instead for key: ${key}`)
-  
-  const getInitialValue = (): T => 
+  console.warn(
+    `atomWithLocalStorage is deprecated. Use createStorageAtom instead for key: ${key}`,
+  )
+
+  const getInitialValue = (): T =>
     getStorageItem(key, initialValue, (val) => JSON.parse(val))
 
   const baseAtom = atom<T>(getInitialValue())

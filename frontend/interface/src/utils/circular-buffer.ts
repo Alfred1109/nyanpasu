@@ -36,12 +36,12 @@ export class CircularBuffer<T> {
     if (this.size === 0) return []
 
     const result: T[] = new Array(this.size)
-    
+
     for (let i = 0; i < this.size; i++) {
       const index = (this.head + i) % this.capacity
       result[i] = this.buffer[index]
     }
-    
+
     return result
   }
 
@@ -80,7 +80,7 @@ export class CircularBuffer<T> {
    */
   getLatest(): T | undefined {
     if (this.size === 0) return undefined
-    
+
     const latestIndex = this.tail === 0 ? this.capacity - 1 : this.tail - 1
     return this.buffer[latestIndex]
   }
@@ -90,16 +90,16 @@ export class CircularBuffer<T> {
    */
   getReversed(count?: number): T[] {
     if (this.size === 0) return []
-    
+
     const itemCount = Math.min(count || this.size, this.size)
     const result: T[] = new Array(itemCount)
-    
+
     for (let i = 0; i < itemCount; i++) {
       const index = this.tail - 1 - i
       const bufferIndex = index < 0 ? this.capacity + index : index
       result[i] = this.buffer[bufferIndex]
     }
-    
+
     return result
   }
 }

@@ -36,9 +36,7 @@ export const UpdateProviderButton = ({
       setLoading(true)
 
       await Promise.all(
-        Object.entries(providers).map(([_, provider]) => 
-          provider.mutate()
-        ),
+        Object.entries(providers).map(([_, provider]) => provider.mutate()),
       )
 
       message(t('Update completed successfully'), {

@@ -1,6 +1,6 @@
 // UI related utilities consolidated from various sources
-import { includes, isArray, isObject, isString, some } from 'lodash-es'
 import { clsx, type ClassValue } from 'clsx'
+import { includes, isArray, isObject, isString, some } from 'lodash-es'
 import { twMerge } from 'tailwind-merge'
 
 /**
@@ -23,7 +23,11 @@ export function cn(...inputs: ClassValue[]) {
  * Color mixing utility for CSS
  * From frontend/ui/src/utils/color-mix.ts
  */
-export function colorMix(color1: string, color2: string, percentage = 50): string {
+export function colorMix(
+  color1: string,
+  color2: string,
+  percentage = 50,
+): string {
   return `color-mix(in srgb, ${color1} ${percentage}%, ${color2})`
 }
 
