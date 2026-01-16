@@ -9,37 +9,65 @@ pub mod control;
 pub mod ipc;
 
 const SERVICE_NAME: &str = "nyanpasu-service";
-static SERVICE_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    let app_path = app_install_dir().unwrap();
 
-    let sidecar_path =
-        app_path
-            .join("sidecar")
-            .join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX));
-    if sidecar_path.exists() {
-        return sidecar_path;
-    }
+/// Get service executable path with improved resolution logic
+pub fn get_service_path() -> anyhow::Result<PathBuf> {
+    // Try multiple possible locations in order of preference
+    let candidates = get_service_path_candidates()?;
 
-    let app_local_path = app_path.join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX));
-    if app_local_path.exists() {
-        return app_local_path;
-    }
-
-    #[cfg(windows)]
-    {
-        let program_data = std::env::var_os("PROGRAMDATA")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| PathBuf::from(r"C:\ProgramData"));
-        let program_data_path = program_data
-            .join("nyanpasu-service")
-            .join("data")
-            .join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX));
-        if program_data_path.exists() {
-            return program_data_path;
+    for path in candidates {
+        if path.exists() {
+            return Ok(path);
         }
     }
 
-    app_local_path
+    // If none found, return the most likely fallback
+    let app_path = app_install_dir()?;
+    Ok(app_path.join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX)))
+}
+
+fn get_service_path_candidates() -> anyhow::Result<Vec<PathBuf>> {
+    let app_path = app_install_dir()?;
+    let mut candidates = Vec::new();
+
+    // 1. Try sidecar directory (development/unpacked)
+    candidates.push(app_path.join("sidecar").join(format!(
+        "{}{}",
+        SERVICE_NAME,
+        std::env::consts::EXE_SUFFIX
+    )));
+
+    // 2. Try app directory (same folder as main exe)
+    candidates.push(app_path.join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX)));
+
+    // 3. Try installed service location (Windows)
+    #[cfg(windows)]
+    {
+        if let Some(program_data) = std::env::var_os("PROGRAMDATA") {
+            let program_data_path = PathBuf::from(program_data)
+                .join("nyanpasu-service")
+                .join("data")
+                .join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX));
+            candidates.push(program_data_path);
+        }
+    }
+
+    Ok(candidates)
+}
+
+static SERVICE_PATH: Lazy<PathBuf> = Lazy::new(|| {
+    get_service_path().unwrap_or_else(|_| {
+        // Final fallback
+        app_install_dir()
+            .unwrap_or_else(|_| {
+                std::env::current_exe()
+                    .unwrap()
+                    .parent()
+                    .unwrap()
+                    .to_path_buf()
+            })
+            .join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX))
+    })
 });
 
 pub async fn init_service() {

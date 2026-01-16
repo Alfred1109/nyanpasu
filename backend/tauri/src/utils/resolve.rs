@@ -220,11 +220,9 @@ pub fn resolve_reset() {
 pub fn create_window(app_handle: &AppHandle) {
     if let Some(window) = app_handle.get_webview_window("main") {
         tracing::debug!("main window is already opened, try to show it");
-        if OPEN_WINDOWS_COUNTER.load(Ordering::Acquire) == 0 {
-            trace_err!(window.unminimize(), "set win unminimize");
-            trace_err!(window.show(), "set win visible");
-            trace_err!(window.set_focus(), "set win focus");
-        }
+        trace_err!(window.unminimize(), "set win unminimize");
+        trace_err!(window.show(), "set win visible");
+        trace_err!(window.set_focus(), "set win focus");
         return;
     }
 
