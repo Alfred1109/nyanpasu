@@ -18,25 +18,18 @@ const TunModeButton = ({
   const tunMode = useSetting('enable_tun_mode')
 
   const handleTunMode = useLockFn(async () => {
-    const isCurrentlyEnabled = Boolean(tunMode.value)
-    
-    // 只在开启TUN模式时检查服务状态，关闭时不检查
-    if (!isCurrentlyEnabled && serviceStatus !== 'running') {
-      const statusMessage =
-        serviceStatus === 'not_installed'
-          ? t('Service not installed, please install the system service first')
-          : t('Service not running, please start the system service first')
-
-      message(statusMessage, {
-        title: t('TUN Mode'),
-        kind: 'warning',
-      })
-      return
-    }
-
     try {
-      await toggleTunMode()
+      const result = await toggleTunMode()
+      
+      // 如果后端返回了消息（比如服务未安装/未启动的提示），显示给用户
+      if (result && result.message) {
+        message(result.message, {
+          title: t('TUN Mode'),
+          kind: result.success ? 'info' : 'warning',
+        })
+      }
     } catch (error) {
+      const isCurrentlyEnabled = Boolean(tunMode.value)
       const action = isCurrentlyEnabled ? 'Deactivation' : 'Activation'
       message(`${action} TUN Mode failed!`, {
         title: t('Error'),

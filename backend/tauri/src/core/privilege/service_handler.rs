@@ -1,8 +1,7 @@
 use anyhow::Result;
-use nyanpasu_ipc::types::ServiceStatus;
-use tracing::{error, info, warn};
+use tracing::info;
 
-use super::{PrivilegedOperation, PrivilegedOperationHandler};
+use super::{PrivilegedOperation, PrivilegedOperationHandler, service_utils};
 use crate::core::service::{control, ipc};
 
 /// 服务模式权限处理器
@@ -21,9 +20,6 @@ impl ServicePrivilegeHandler {
         // 现在先使用现有的服务控制功能作为基础
 
         match operation {
-            PrivilegedOperation::SetSystemProxy { enable } => {
-                self.set_system_proxy_via_service(*enable).await
-            }
             PrivilegedOperation::SetTunMode { enable } => {
                 self.set_tun_mode_via_service(*enable).await
             }
@@ -37,33 +33,12 @@ impl ServicePrivilegeHandler {
         }
     }
 
-    async fn set_system_proxy_via_service(&self, enable: bool) -> Result<()> {
-        info!("通过服务设置系统代理: enable={}", enable);
-
-        // 1. 更新配置
-        let patch = crate::config::nyanpasu::IVerge {
-            enable_system_proxy: Some(enable),
-            ..Default::default()
-        };
-
-        crate::feat::patch_verge(patch).await?;
-
-        // 2. 通过服务重启核心以应用代理设置
-        self.request_core_restart().await?;
-
-        Ok(())
-    }
 
     async fn set_tun_mode_via_service(&self, enable: bool) -> Result<()> {
         info!("通过服务设置TUN模式: enable={}", enable);
 
         // 1. 更新配置
-        let patch = crate::config::nyanpasu::IVerge {
-            enable_tun_mode: Some(enable),
-            ..Default::default()
-        };
-
-        crate::feat::patch_verge(patch).await?;
+        service_utils::update_tun_config(enable).await?;
 
         // 2. 通过服务重启核心（TUN模式需要特权）
         self.request_core_restart().await?;
@@ -97,29 +72,15 @@ impl ServicePrivilegeHandler {
 
     /// 请求服务重启核心
     async fn request_core_restart(&self) -> Result<()> {
-        // 检查服务是否正在运行
-        match control::status().await {
-            Ok(status) => {
-                if matches!(status.status, ServiceStatus::Running) {
-                    // 服务正在运行，配置更改会自动触发核心重启
-                    info!("服务正在运行，配置更改将自动应用");
-                    Ok(())
-                } else {
-                    warn!("服务未运行，尝试启动服务");
-                    control::start_service().await
-                }
-            }
-            Err(e) => {
-                error!("无法获取服务状态: {}", e);
-                Err(e)
-            }
-        }
+        // 使用工具函数确保服务运行
+        service_utils::ensure_service_running().await?;
+        info!("服务正在运行，配置更改将自动应用");
+        Ok(())
     }
 
     /// 检查服务是否支持特定操作
     fn supports_operation(&self, operation: &PrivilegedOperation) -> bool {
         match operation {
-            PrivilegedOperation::SetSystemProxy { .. } => true,
             PrivilegedOperation::SetTunMode { .. } => true,
             PrivilegedOperation::UpdateCorePermissions { .. }
             | PrivilegedOperation::ModifyNetworkSettings { .. } => {
@@ -148,10 +109,7 @@ impl PrivilegedOperationHandler for ServicePrivilegeHandler {
         }
 
         // 检查服务状态
-        match control::status().await {
-            Ok(status) => matches!(status.status, ServiceStatus::Running),
-            Err(_) => false,
-        }
+        service_utils::is_service_running().await.unwrap_or(false)
     }
 
     fn name(&self) -> &'static str {
@@ -161,7 +119,6 @@ impl PrivilegedOperationHandler for ServicePrivilegeHandler {
     fn requires_confirmation(&self, operation: &PrivilegedOperation) -> bool {
         // 服务模式下，大部分常见操作不需要用户确认
         match operation {
-            PrivilegedOperation::SetSystemProxy { .. } => false,
             PrivilegedOperation::SetTunMode { .. } => false,
             _ => true, // 高级操作仍需确认
         }

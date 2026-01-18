@@ -80,8 +80,12 @@ export default function SettingSystemService() {
     }
     setMessage('')
     try {
-      // For stop, we need to implement it in the service manager or use a different approach
-      setMessage('服务停止功能开发中...')
+      const success = await serviceManager.stopService()
+      if (success) {
+        setMessage('服务停止成功！')
+      } else {
+        setMessage('服务停止失败')
+      }
     } catch (error) {
       console.error('Service stop error:', error)
       setMessage(`服务停止失败: ${error}`)

@@ -52,17 +52,17 @@ const getOperationTitle = (
 ): string => {
   switch (operation) {
     case 'install':
-      return t('Installing Service')
+      return '正在安装服务'
     case 'uninstall':
-      return t('Uninstalling Service')
+      return '正在卸载服务'
     case 'start':
-      return t('Starting Service')
+      return '正在启动服务'
     case 'stop':
-      return t('Stopping Service')
+      return '正在停止服务'
     case 'restart':
-      return t('Restarting Service')
+      return '正在重启服务'
     default:
-      return t('Service Operation')
+      return '服务操作'
   }
 }
 
@@ -93,23 +93,29 @@ const getStageProgress = (stage: InstallStage): number => {
  */
 const getStageText = (
   stage: InstallStage,
+  operation: ServiceOperation,
   t: (key: string) => string,
 ): string => {
   switch (stage) {
     case InstallStage.PREPARING:
-      return t('Preparing service installation...')
+      return operation === 'uninstall' ? '准备卸载服务...' : '准备安装服务...'
     case InstallStage.WAITING_UAC:
-      return t('Waiting for UAC permission confirmation')
+      return '等待管理员权限确认'
     case InstallStage.INSTALLING:
-      return t('Installing service...')
+      if (operation === 'uninstall') return '正在卸载服务...'
+      if (operation === 'start') return '正在启动服务...'
+      if (operation === 'stop') return '正在停止服务...'
+      if (operation === 'restart') return '正在重启服务...'
+      return '正在安装服务...'
     case InstallStage.VERIFYING:
-      return t('Verifying service installation...')
+      if (operation === 'uninstall') return '验证服务卸载状态...'
+      return '验证服务安装状态...'
     case InstallStage.STARTING:
-      return t('Starting service...')
+      return '正在启动服务...'
     case InstallStage.CONFIGURING:
-      return t('Configuring system proxy...')
+      return '配置系统代理设置...'
     default:
-      return t('Processing...')
+      return '处理中...'
   }
 }
 
@@ -122,19 +128,15 @@ const getStageDescription = (
 ): string => {
   switch (stage) {
     case InstallStage.WAITING_UAC:
-      return t(
-        "Please confirm the Windows User Account Control (UAC) permission prompt. If you don't see it, check your taskbar or other windows.",
-      )
+      return '请确认 Windows 用户账户控制 (UAC) 权限提示。如果没有看到弹窗，请检查任务栏或其他窗口。'
     case InstallStage.INSTALLING:
-      return t('Installing the system service with administrator privileges...')
+      return '正在使用管理员权限安装系统服务...'
     case InstallStage.VERIFYING:
-      return t(
-        'Waiting for service installation to complete and verifying status. This may take 30-40 seconds on Windows...',
-      )
+      return '等待服务安装完成并验证状态。在 Windows 系统上这可能需要 30-40 秒...'
     case InstallStage.STARTING:
-      return t('Starting the service and establishing connection...')
+      return '正在启动服务并建立连接...'
     case InstallStage.CONFIGURING:
-      return t('Applying system proxy configuration...')
+      return '正在应用系统代理配置...'
     default:
       return ''
   }
@@ -208,7 +210,7 @@ export const ServiceInstallDialog = ({
             <CircularProgress size={24} />
           )}
           <Typography variant="body1" color="text.primary">
-            {getStageText(installStage, t)}
+            {getStageText(installStage, operation, t)}
           </Typography>
         </Box>
 
@@ -254,7 +256,7 @@ export const ServiceInstallDialog = ({
                 variant="body2"
                 sx={{ fontWeight: 'medium', fontSize: '0.85rem' }}
               >
-                ⚠️ {t('Please check for UAC permission dialog')}
+                ⚠️ 请检查 UAC 权限确认弹窗
               </Typography>
             </Box>
             
@@ -266,7 +268,7 @@ export const ServiceInstallDialog = ({
                 onClick={onManualUacConfirm}
                 sx={{ fontWeight: 'medium' }}
               >
-                ✓ {t('I have confirmed UAC permission')}
+                ✓ 我已确认 UAC 权限
               </Button>
             )}
           </Box>
@@ -287,10 +289,7 @@ export const ServiceInstallDialog = ({
               variant="body2"
               sx={{ fontWeight: 'medium', fontSize: '0.85rem' }}
             >
-              ℹ️{' '}
-              {t(
-                'This process may take up to 40 seconds, please be patient...',
-              )}
+              ℹ️ 此过程可能需要最多 40 秒，请耐心等待...
             </Typography>
           </Box>
         )}

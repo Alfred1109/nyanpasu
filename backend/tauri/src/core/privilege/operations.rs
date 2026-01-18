@@ -6,25 +6,7 @@ use crate::config::Config;
 
 /// 权限操作的便捷函数集合
 /// 这些函数提供了简化的API，隐藏了底层的权限管理复杂性
-
-/// 设置系统代理
-pub async fn set_system_proxy(enable: bool) -> Result<()> {
-    let operation = PrivilegedOperation::SetSystemProxy { enable };
-
-    let result = PrivilegeManager::global()
-        .execute_operation(operation)
-        .await?;
-
-    if !result.success {
-        anyhow::bail!(
-            "设置系统代理失败: {}",
-            result.message.unwrap_or_else(|| "未知错误".to_string())
-        );
-    }
-
-    info!("系统代理设置成功 (处理器: {})", result.handler_used);
-    Ok(())
-}
+///
 
 /// 设置TUN模式
 pub async fn set_tun_mode(enable: bool) -> Result<()> {

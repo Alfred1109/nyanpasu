@@ -22,43 +22,43 @@ const appWindow = isInTauri ? getCurrentWebviewWindow() : null
 
 export const DEFAULT_COLOR = '#1867C0'
 
-export enum ThemeMode {
-  LIGHT = 'light',
-  DARK = 'dark',
-  SYSTEM = 'system',
-}
-
 const CUSTOM_THEME_KEY = 'custom-theme' as const
 
-const changeHtmlThemeMode = (mode: Omit<ThemeMode, 'system'>) => {
+const changeHtmlThemeMode = (mode: 'light' | 'dark') => {
   const root = document.documentElement
 
-  if (mode === ThemeMode.DARK) {
-    root.classList.add(ThemeMode.DARK)
+  if (mode === 'dark') {
+    root.classList.add('dark')
   } else {
-    root.classList.remove(ThemeMode.DARK)
+    root.classList.remove('dark')
   }
 
-  if (mode === ThemeMode.LIGHT) {
-    root.classList.add(ThemeMode.LIGHT)
+  if (mode === 'light') {
+    root.classList.add('light')
   } else {
-    root.classList.remove(ThemeMode.LIGHT)
+    root.classList.remove('light')
   }
 }
 
-function MUIColorSchemeSync({ themeMode }: { themeMode: ThemeMode }) {
+function MUIColorSchemeSync() {
   const { setMode } = useColorScheme()
 
   useEffect(() => {
-    if (themeMode !== ThemeMode.SYSTEM) {
-      setMode(themeMode)
-      return
-    }
+    // Always use system theme
 
     const apply = (mode: 'light' | 'dark') => {
       console.log('🎨 Applying theme mode:', mode)
       changeHtmlThemeMode(mode)
       setMode(mode)
+      
+      // Force update document body background
+      setTimeout(() => {
+        const computedStyle = getComputedStyle(document.documentElement)
+        const bgColor = computedStyle.getPropertyValue('--mui-palette-background-default')
+        if (bgColor) {
+          document.body.style.backgroundColor = bgColor
+        }
+      }, 100)
     }
 
     if (appWindow) {
@@ -90,6 +90,7 @@ function MUIColorSchemeSync({ themeMode }: { themeMode: ThemeMode }) {
     apply(mql.matches ? 'dark' : 'light')
 
     const onChange = (e: MediaQueryListEvent) => {
+      console.log('🔄 Media query changed:', e.matches ? 'dark' : 'light')
       apply(e.matches ? 'dark' : 'light')
     }
 
@@ -97,7 +98,7 @@ function MUIColorSchemeSync({ themeMode }: { themeMode: ThemeMode }) {
     return () => {
       mql.removeEventListener('change', onChange)
     }
-  }, [setMode, themeMode])
+  }, [setMode])
 
   useEffect(() => {
     if (!appWindow) {
@@ -105,16 +106,25 @@ function MUIColorSchemeSync({ themeMode }: { themeMode: ThemeMode }) {
     }
 
     const unlisten = appWindow.onThemeChanged((e) => {
-      if (themeMode === ThemeMode.SYSTEM) {
-        changeHtmlThemeMode(e.payload)
-        setMode(e.payload)
-      }
+      console.log('🪟 Tauri theme changed:', e.payload)
+      // Always follow system theme changes
+      changeHtmlThemeMode(e.payload)
+      setMode(e.payload)
+      
+      // Update body background when theme changes
+      setTimeout(() => {
+        const computedStyle = getComputedStyle(document.documentElement)
+        const bgColor = computedStyle.getPropertyValue('--mui-palette-background-default')
+        if (bgColor) {
+          document.body.style.backgroundColor = bgColor
+        }
+      }, 100)
     })
 
     return () => {
       unlisten.then((fn) => fn())
     }
-  }, [setMode, themeMode])
+  }, [setMode])
 
   return null
 }
@@ -124,8 +134,6 @@ const ThemeContext = createContext<{
   themeCssVars: string
   themeColor: string
   setThemeColor: (color: string) => Promise<void>
-  themeMode: ThemeMode
-  setThemeMode: (mode: ThemeMode) => Promise<void>
 } | null>(null)
 
 export function useExperimentalThemeContext() {
@@ -153,7 +161,6 @@ export function ExperimentalThemeProvider({ children }: PropsWithChildren) {
   }, [])
 
   const setThemeColor = async () => {}
-  const setThemeMode = async () => {}
 
   return (
     <ThemeContext.Provider
@@ -162,8 +169,6 @@ export function ExperimentalThemeProvider({ children }: PropsWithChildren) {
         themeCssVars: '',
         themeColor: DEFAULT_COLOR,
         setThemeColor,
-        themeMode: ThemeMode.SYSTEM,
-        setThemeMode,
       }}
     >
       <CssVarsProvider 
@@ -171,7 +176,7 @@ export function ExperimentalThemeProvider({ children }: PropsWithChildren) {
         modeStorageKey="mui-mode-v1"
         defaultMode="system"
       >
-        <MUIColorSchemeSync themeMode={ThemeMode.SYSTEM} />
+        <MUIColorSchemeSync />
         {children}
       </CssVarsProvider>
     </ThemeContext.Provider>

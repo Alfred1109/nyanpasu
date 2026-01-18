@@ -27,19 +27,6 @@ export const patchNyanpasuConfig = async (payload: VergeConfig) => {
   return unwrapResult(await commands.patchVergeConfig(payload as IVerge))
 }
 
-export const toggleSystemProxy = async () => {
-  const result = unwrapResult(await commands.toggleSystemProxy())
-
-  // Trigger a small delay to allow backend to emit mutation event
-  setTimeout(() => {
-    // Force a page refresh to update UI state if needed
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('nyanpasu-setting-changed'))
-    }
-  }, 100)
-
-  return result
-}
 
 export const toggleTunMode = async () => {
   const result = unwrapResult(await commands.toggleTunMode())

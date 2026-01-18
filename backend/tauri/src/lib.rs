@@ -236,7 +236,6 @@ pub fn run() -> std::io::Result<()> {
         // verge
         ipc::get_verge_config,
         ipc::patch_verge_config,
-        ipc::toggle_system_proxy,
         ipc::toggle_tun_mode,
         ipc::check_tun_permission,
         ipc::grant_tun_permission,

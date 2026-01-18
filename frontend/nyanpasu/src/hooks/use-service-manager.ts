@@ -67,6 +67,11 @@ export interface ServiceManagerActions {
    */
   uninstallService: () => Promise<boolean>
   /**
+   * 停止服务
+   * @returns Promise<boolean> 是否停止成功
+   */
+  stopService: () => Promise<boolean>
+  /**
    * 取消当前的安装操作
    */
   cancelInstallation: () => void
@@ -229,7 +234,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
 
   /**
    * 等待服务安装完成
-   * 统一的轮询逻辑，可配置超时时间
+   * 基于真实服务状态的轮询逻辑，根据状态变化更新UI阶段
    *
    * @param maxSeconds 最大等待秒数，默认 40 秒
    * @returns Promise<boolean> 是否安装成功
@@ -244,17 +249,32 @@ export const useServiceManager = (): UseServiceManagerReturn => {
 
         await new Promise((resolve) => setTimeout(resolve, 1000))
         const result = await query.refetch()
-        console.log(`⏱️ Installation check ${i + 1}/${maxSeconds}s: status = ${result.data?.status}`)
+        const currentStatus = result.data?.status
+        console.log(`⏱️ Installation check ${i + 1}/${maxSeconds}s: status = ${currentStatus}`)
 
-        if (result.data?.status !== 'not_installed') {
-          console.log(`✅ Service installation verified after ${i + 1}s - status: ${result.data?.status}`)
+        // 根据真实状态更新UI阶段
+        if (currentStatus === 'not_installed') {
+          // 服务仍未安装，可能还在安装过程中
+          if (i < 5) {
+            setInstallStage(InstallStage.INSTALLING)
+          } else if (i < 15) {
+            setInstallStage(InstallStage.VERIFYING)
+          }
+        } else if (currentStatus === 'stopped') {
+          // 服务已安装但未运行
+          console.log(`✅ Service installation verified after ${i + 1}s - status: ${currentStatus}`)
+          setInstallStage(InstallStage.VERIFYING)
+          return true
+        } else if (currentStatus === 'running') {
+          // 服务已安装并运行
+          console.log(`✅ Service installation and startup verified after ${i + 1}s - status: ${currentStatus}`)
           return true
         }
 
         // 每 5 秒输出一次等待日志
         if ((i + 1) % 5 === 0) {
           console.log(
-            `Still waiting for service installation... (${i + 1}/${maxSeconds}s)`,
+            `Still waiting for service installation... (${i + 1}/${maxSeconds}s), current status: ${currentStatus}`,
           )
         }
       }
@@ -279,7 +299,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       try {
         // Stage 1: Preparing
         setInstallStage(InstallStage.PREPARING)
-        await new Promise((resolve) => setTimeout(resolve, 800))
+        console.log('🔧 Preparing service installation...')
         if (cancelRequested) {
           console.log('Installation cancelled at PREPARING stage')
           return false
@@ -302,15 +322,15 @@ export const useServiceManager = (): UseServiceManagerReturn => {
         }
         setCanCancel(false)
 
-        // Stage 3: Installing
+        // Stage 3: Installing - 立即进入安装阶段
         setInstallStage(InstallStage.INSTALLING)
+        console.log('📦 Service installation in progress...')
         if (cancelRequested) {
           console.log('Installation cancelled at INSTALLING stage')
           return false
         }
 
-        // Stage 4: Verifying
-        setInstallStage(InstallStage.VERIFYING)
+        // Stage 4: Verifying - waitForInstallation 会根据真实状态更新阶段
         const installed = await waitForInstallation(40)
         if (!installed) {
           throw new Error('service_not_installed')
@@ -380,6 +400,30 @@ export const useServiceManager = (): UseServiceManagerReturn => {
   }, [upsert, query])
 
   /**
+   * 停止服务
+   */
+  const stopService = useCallback(async (): Promise<boolean> => {
+    setCurrentOperation('stop')
+    setIsInstalling(true)
+    setInstallStage(InstallStage.INSTALLING) // Reuse installing stage for stop
+
+    try {
+      await upsert.mutateAsync('stop')
+      await restartSidecar()
+      await query.refetch()
+      console.log('Service stopped successfully')
+      return true
+    } catch (error) {
+      console.error('Service stop failed:', error)
+      throw error
+    } finally {
+      setIsInstalling(false)
+      setInstallStage(null)
+      setCurrentOperation(null)
+    }
+  }, [upsert, query])
+
+  /**
    * 取消安装
    */
   const cancelInstallation = useCallback(() => {
@@ -401,6 +445,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     // Methods
     installService,
     uninstallService,
+    stopService,
     cancelInstallation,
 
     // Query

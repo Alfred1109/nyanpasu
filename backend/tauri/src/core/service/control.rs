@@ -62,30 +62,9 @@ fn run_elevated(
     args: &[OsString],
     show: bool,
 ) -> Result<std::process::ExitStatus, std::io::Error> {
-    use std::process::Command;
-
-    // 首先尝试直接运行，如果失败则提权
-    let mut cmd = Command::new(program);
-    cmd.args(args);
-
-    match cmd.status() {
-        Ok(status) if status.success() => {
-            tracing::info!("Service operation completed without elevation");
-            return Ok(status);
-        }
-        Ok(status) => {
-            tracing::warn!(
-                "Service operation failed, trying with elevation. Exit code: {:?}",
-                status.code()
-            );
-        }
-        Err(e) => {
-            tracing::warn!(
-                "Service operation failed, trying with elevation. Error: {}",
-                e
-            );
-        }
-    }
+    // 服务安装/卸载/启动/停止操作总是需要管理员权限
+    // 直接使用UAC提权，不先尝试普通权限
+    tracing::info!("Service operation requires administrator privileges, requesting UAC elevation...");
 
     // 需要提权时，使用UAC
     let program_wide: Vec<u16> = OsStr::new(program).encode_wide().chain(Some(0)).collect();
@@ -96,7 +75,7 @@ fn run_elevated(
         .join(" ");
     let args_wide: Vec<u16> = OsStr::new(&args_str).encode_wide().chain(Some(0)).collect();
 
-    tracing::info!("Requesting administrator privileges for service installation...");
+    tracing::info!("Requesting administrator privileges for service operation...");
 
     let result = unsafe {
         ShellExecuteW(
@@ -118,7 +97,14 @@ fn run_elevated(
     };
 
     if result as usize > 32 {
-        tracing::info!("UAC elevation prompt launched successfully");
+        tracing::info!("UAC elevation prompt launched successfully, waiting for user response...");
+        
+        // ShellExecuteW 成功启动了提权进程，但不会等待用户响应
+        // 我们需要给用户足够的时间来响应UAC对话框
+        // 使用较长的等待时间，让用户有充分时间看到并响应UAC
+        std::thread::sleep(std::time::Duration::from_secs(10));
+        
+        tracing::info!("UAC wait period completed");
         Ok(std::process::ExitStatus::from_raw(0))
     } else {
         let error_code = result as i32;
@@ -503,6 +489,19 @@ pub async fn start_service() -> anyhow::Result<()> {
 }
 
 pub async fn stop_service() -> anyhow::Result<()> {
+    // 先检查服务状态，如果已经停止则直接返回成功
+    match status().await {
+        Ok(status_info) => {
+            if matches!(status_info.status, ServiceStatus::Stopped | ServiceStatus::NotInstalled) {
+                tracing::info!("服务已经停止或未安装，无需停止操作");
+                return Ok(());
+            }
+        }
+        Err(e) => {
+            tracing::warn!("无法获取服务状态，继续尝试停止: {}", e);
+        }
+    }
+
     let child = tokio::task::spawn_blocking(move || {
         #[cfg(windows)]
         {

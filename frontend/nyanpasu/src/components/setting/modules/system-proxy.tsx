@@ -1,7 +1,7 @@
 import { useControllableValue } from 'ahooks'
 import { memo, ReactNode } from 'react'
 // mergeSxProps removed in extreme cleanup
-import { CircularProgress } from '@mui/material'
+import { CircularProgress, Switch, Box, Typography } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material/styles'
 // alpha removed in extreme cleanup
 import { PaperButton, PaperButtonProps } from './nyanpasu-path'
@@ -50,17 +50,68 @@ export const PaperSwitchButton = memo(function PaperSwitchButton({
       label={label}
       sxPaper={{
         backgroundColor: checked 
-          ? 'action.selected' 
+          ? 'primary.main' 
           : 'background.paper',
+        border: checked 
+          ? '2px solid' 
+          : '1px solid',
+        borderColor: checked 
+          ? 'primary.main' 
+          : 'divider',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          backgroundColor: checked 
+            ? 'primary.dark' 
+            : 'action.hover',
+        },
       }}
       sxButton={{
         flexDirection: 'column',
         alignItems: 'start',
         gap: 0.5,
+        position: 'relative',
       }}
       onClick={handleClick}
       {...props}
     >
+      {/* Switch indicator */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+        }}
+      >
+        <Switch
+          checked={checked}
+          size="small"
+          sx={{
+            pointerEvents: 'none',
+            '& .MuiSwitch-thumb': {
+              backgroundColor: checked ? 'primary.contrastText' : 'text.secondary',
+            },
+            '& .MuiSwitch-track': {
+              backgroundColor: checked ? 'primary.light' : 'action.disabled',
+            },
+          }}
+        />
+      </Box>
+
+      {/* Status text */}
+      <Typography
+        variant="caption"
+        sx={{
+          position: 'absolute',
+          bottom: 8,
+          right: 8,
+          color: checked ? 'primary.contrastText' : 'text.secondary',
+          fontWeight: 'medium',
+          fontSize: '0.7rem',
+        }}
+      >
+        {checked ? '已开启' : '已关闭'}
+      </Typography>
+
       {pending === true && (
         <CircularProgress
           sx={{

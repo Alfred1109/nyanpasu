@@ -6,6 +6,7 @@ use tracing::{error, info, warn};
 
 use crate::core::service::control;
 use nyanpasu_ipc::types::ServiceStatus;
+use super::service_utils;
 
 #[command]
 #[specta::specta]
@@ -64,16 +65,10 @@ pub struct SimpleServiceStatus {
 pub async fn service_status_summary() -> Result<SimpleServiceStatus, String> {
     match control::status().await {
         Ok(status_info) => {
-            let message = match status_info.status {
-                ServiceStatus::Running => "服务运行中，系统代理和TUN模式可正常使用".to_string(),
-                ServiceStatus::Stopped => "服务已安装但未运行".to_string(),
-                ServiceStatus::NotInstalled => {
-                    "服务未安装，需要安装后才能使用系统代理和TUN模式".to_string()
-                }
-            };
+            let message = service_utils::get_service_status_message().await;
 
             Ok(SimpleServiceStatus {
-                installed: !matches!(status_info.status, ServiceStatus::NotInstalled),
+                installed: service_utils::is_service_installed().await.unwrap_or(false),
                 status: status_info.status,
                 version: status_info.server.map(|s| s.version.to_string()),
                 message,
@@ -99,7 +94,7 @@ pub async fn service_setup() -> Result<String, String> {
 
     // 检查当前状态
     let current_status = service_status_summary().await?;
-    if current_status.installed && matches!(current_status.status, ServiceStatus::Running) {
+    if current_status.installed && service_utils::is_service_running().await.unwrap_or(false) {
         return Ok("服务已安装并运行中".to_string());
     }
 
@@ -109,12 +104,7 @@ pub async fn service_setup() -> Result<String, String> {
             info!("服务安装成功");
 
             // 启用服务模式配置
-            let patch = crate::config::nyanpasu::IVerge {
-                enable_service_mode: Some(true),
-                ..Default::default()
-            };
-
-            if let Err(e) = crate::feat::patch_verge(patch).await {
+            if let Err(e) = service_utils::update_service_mode_config(true).await {
                 warn!("更新服务模式配置失败: {}", e);
                 return Ok("服务安装成功，但配置更新失败。请手动启用服务模式。".to_string());
             }
@@ -123,36 +113,25 @@ pub async fn service_setup() -> Result<String, String> {
             tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
             // 验证服务状态
-            match control::status().await {
-                Ok(status) => {
-                    if matches!(status.status, ServiceStatus::Running) {
-                        Ok(
-                            "✅ 服务安装成功！现在可以享受丝滑的系统代理和TUN模式体验。"
-                                .to_string(),
-                        )
-                    } else {
-                        warn!("服务安装后未运行，尝试启动");
-                        match control::start_service().await {
-                            Ok(()) => Ok("✅ 服务安装并启动成功！".to_string()),
-                            Err(e) => Ok(format!(
-                                "服务安装成功，但启动失败: {}。可能需要重启应用。",
-                                e
-                            )),
-                        }
-                    }
-                }
-                Err(e) => {
-                    warn!("安装后无法获取服务状态: {}", e);
-                    Ok("服务已安装，但无法验证状态。建议重启应用。".to_string())
+            if service_utils::is_service_running().await.unwrap_or(false) {
+                Ok(
+                    "✅ 服务安装成功！现在可以享受丝滑的系统代理和TUN模式体验。"
+                        .to_string(),
+                )
+            } else {
+                warn!("服务安装后未运行，尝试启动");
+                match control::start_service().await {
+                    Ok(()) => Ok("✅ 服务安装并启动成功！".to_string()),
+                    Err(e) => Ok(format!(
+                        "服务安装成功，但启动失败: {}。可能需要重启应用。",
+                        e
+                    )),
                 }
             }
         }
         Err(e) => {
             error!("服务安装失败: {}", e);
-            Err(format!(
-                "服务安装失败: {}。请确保有管理员权限，或尝试以管理员身份运行。",
-                e
-            ))
+            Err(service_utils::handle_service_error("服务安装", e))
         }
     }
 }
@@ -183,12 +162,7 @@ pub async fn service_remove() -> Result<String, String> {
             info!("服务卸载成功");
 
             // 禁用服务模式配置
-            let patch = crate::config::nyanpasu::IVerge {
-                enable_service_mode: Some(false),
-                ..Default::default()
-            };
-
-            if let Err(e) = crate::feat::patch_verge(patch).await {
+            if let Err(e) = service_utils::update_service_mode_config(false).await {
                 warn!("更新服务模式配置失败: {}", e);
             }
 
@@ -196,7 +170,7 @@ pub async fn service_remove() -> Result<String, String> {
         }
         Err(e) => {
             error!("服务卸载失败: {}", e);
-            Err(format!("服务卸载失败: {}。请确保有管理员权限。", e))
+            Err(service_utils::handle_service_error("服务卸载", e))
         }
     }
 }

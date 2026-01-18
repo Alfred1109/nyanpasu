@@ -7,14 +7,13 @@ pub mod ipc_commands;
 pub mod manager;
 pub mod operations;
 pub mod service_handler;
+pub mod service_utils;
 pub mod simple_service;
 
 /// 需要特权的操作类型
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(tag = "type", content = "data")]
 pub enum PrivilegedOperation {
-    /// 设置系统代理
-    SetSystemProxy { enable: bool },
     /// 设置TUN模式
     SetTunMode { enable: bool },
     /// 修改网络设置
@@ -38,7 +37,6 @@ pub trait PrivilegedOperationHandler: Send + Sync {
     /// 检查是否需要用户确认
     fn requires_confirmation(&self, operation: &PrivilegedOperation) -> bool {
         match operation {
-            PrivilegedOperation::SetSystemProxy { .. } => false,
             PrivilegedOperation::SetTunMode { .. } => false,
             _ => true,
         }

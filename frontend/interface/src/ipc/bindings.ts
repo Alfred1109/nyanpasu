@@ -215,17 +215,6 @@ async patchVergeConfig(payload: IVerge) : Promise<Result<null, string>> {
 }
 },
 /**
- * toggle system proxy with service dependency
- */
-async toggleSystemProxy() : Promise<Result<PrivilegedOperationResult, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("toggle_system_proxy") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-/**
  * toggle tun mode with service dependency
  */
 async toggleTunMode() : Promise<Result<PrivilegedOperationResult, string>> {

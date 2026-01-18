@@ -482,26 +482,6 @@ pub async fn patch_verge_config(payload: IVerge) -> Result {
 }
 
 
-/// toggle system proxy with service dependency
-#[tauri::command]
-#[specta::specta]
-pub async fn toggle_system_proxy() -> Result<crate::core::privilege::PrivilegedOperationResult> {
-    use crate::{
-        config::Config,
-        core::privilege::{PrivilegedOperation, manager::PrivilegeManager},
-    };
-
-    let current_enable = Config::verge().latest().enable_system_proxy.unwrap_or(false);
-
-    let operation = PrivilegedOperation::SetSystemProxy {
-        enable: !current_enable,
-    };
-
-    PrivilegeManager::global()
-        .execute_operation(operation)
-        .await
-        .map_err(|e| IpcError::Custom(e.to_string()))
-}
 
 /// toggle tun mode with service dependency
 #[tauri::command]
