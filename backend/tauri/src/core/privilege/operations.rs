@@ -6,7 +6,6 @@ use crate::config::Config;
 
 /// 权限操作的便捷函数集合
 /// 这些函数提供了简化的API，隐藏了底层的权限管理复杂性
-///
 
 /// 设置TUN模式
 pub async fn set_tun_mode(enable: bool) -> Result<()> {

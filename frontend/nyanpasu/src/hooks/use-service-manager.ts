@@ -206,7 +206,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     mutationFn: async (type: 'install' | 'uninstall' | 'start' | 'stop') => {
       switch (type) {
         case 'install':
-          unwrap(await commands.serviceInstall())
+          unwrap(await commands.serviceSetup())
           break
 
         case 'uninstall':

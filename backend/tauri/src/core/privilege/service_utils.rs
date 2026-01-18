@@ -6,7 +6,6 @@ use crate::core::service::control;
 
 /// 服务配置更新工具函数
 /// 提取公共的配置更新逻辑，减少代码重复
-
 /// 更新服务模式配置
 pub async fn update_service_mode_config(enable: bool) -> Result<()> {
     let patch = crate::config::nyanpasu::IVerge {

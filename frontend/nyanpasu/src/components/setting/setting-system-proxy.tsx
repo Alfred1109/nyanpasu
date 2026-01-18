@@ -22,10 +22,10 @@ const TunModeButton = ({
       const result = await toggleTunMode()
       
       // 如果后端返回了消息（比如服务未安装/未启动的提示），显示给用户
-      if (result && result.message) {
+      if (result && typeof result === 'object' && 'message' in result && result.message) {
         message(result.message, {
           title: t('TUN Mode'),
-          kind: result.success ? 'info' : 'warning',
+          kind: 'success' in result && result.success ? 'info' : 'warning',
         })
       }
     } catch (error) {

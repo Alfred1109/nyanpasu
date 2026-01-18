@@ -98,36 +98,49 @@ pub async fn service_setup() -> Result<String, String> {
         return Ok("服务已安装并运行中".to_string());
     }
 
-    // 执行安装
+    info!("准备安装服务，即将请求UAC权限...");
+    
+    // 执行安装 - 这里会触发UAC对话框
     match control::install_service().await {
         Ok(()) => {
-            info!("服务安装成功");
+            info!("服务安装命令执行完成，开始验证安装状态...");
 
             // 启用服务模式配置
             if let Err(e) = service_utils::update_service_mode_config(true).await {
                 warn!("更新服务模式配置失败: {}", e);
-                return Ok("服务安装成功，但配置更新失败。请手动启用服务模式。".to_string());
             }
 
-            // 等待服务启动
-            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-
-            // 验证服务状态
-            if service_utils::is_service_running().await.unwrap_or(false) {
-                Ok(
-                    "✅ 服务安装成功！现在可以享受丝滑的系统代理和TUN模式体验。"
-                        .to_string(),
-                )
-            } else {
-                warn!("服务安装后未运行，尝试启动");
-                match control::start_service().await {
-                    Ok(()) => Ok("✅ 服务安装并启动成功！".to_string()),
-                    Err(e) => Ok(format!(
-                        "服务安装成功，但启动失败: {}。可能需要重启应用。",
-                        e
-                    )),
+            // 等待并验证服务安装状态 - 增加等待时间
+            info!("等待服务安装完成...");
+            for i in 0..30 {
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                
+                let status = service_status_summary().await?;
+                info!("安装验证 {}/30: installed={}, running={}", i+1, status.installed, 
+                      service_utils::is_service_running().await.unwrap_or(false));
+                
+                if status.installed {
+                    info!("服务安装验证成功！");
+                    
+                    // 尝试启动服务
+                    if !service_utils::is_service_running().await.unwrap_or(false) {
+                        info!("服务已安装但未运行，尝试启动...");
+                        if let Err(e) = control::start_service().await {
+                            warn!("启动服务失败: {}", e);
+                            return Ok("✅ 服务安装成功，但启动失败。请手动启动服务。".to_string());
+                        }
+                        
+                        // 等待服务启动
+                        tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                    }
+                    
+                    return Ok("✅ 服务安装成功！现在可以享受丝滑的TUN模式体验。".to_string());
                 }
             }
+            
+            // 安装超时
+            warn!("服务安装验证超时");
+            Ok("服务安装可能成功，但验证超时。请检查服务状态。".to_string())
         }
         Err(e) => {
             error!("服务安装失败: {}", e);

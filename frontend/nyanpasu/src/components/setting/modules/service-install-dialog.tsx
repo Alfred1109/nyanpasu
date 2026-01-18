@@ -100,7 +100,11 @@ const getStageText = (
     case InstallStage.PREPARING:
       return operation === 'uninstall' ? '准备卸载服务...' : '准备安装服务...'
     case InstallStage.WAITING_UAC:
-      return '等待管理员权限确认'
+      if (operation === 'uninstall') return '等待管理员权限确认 (卸载)'
+      if (operation === 'start') return '等待管理员权限确认 (启动)'
+      if (operation === 'stop') return '等待管理员权限确认 (停止)'
+      if (operation === 'restart') return '等待管理员权限确认 (重启)'
+      return '等待管理员权限确认 (安装)'
     case InstallStage.INSTALLING:
       if (operation === 'uninstall') return '正在卸载服务...'
       if (operation === 'start') return '正在启动服务...'
@@ -111,9 +115,13 @@ const getStageText = (
       if (operation === 'uninstall') return '验证服务卸载状态...'
       return '验证服务安装状态...'
     case InstallStage.STARTING:
+      if (operation === 'uninstall') return '清理服务配置...'
+      if (operation === 'stop') return '正在停止服务...'
+      if (operation === 'restart') return '正在重启服务...'
       return '正在启动服务...'
     case InstallStage.CONFIGURING:
-      return '配置系统代理设置...'
+      if (operation === 'uninstall') return '清理TUN模式配置...'
+      return '配置TUN模式设置...'
     default:
       return '处理中...'
   }
@@ -124,19 +132,29 @@ const getStageText = (
  */
 const getStageDescription = (
   stage: InstallStage,
+  operation: ServiceOperation,
   t: (key: string) => string,
 ): string => {
   switch (stage) {
     case InstallStage.WAITING_UAC:
       return '请确认 Windows 用户账户控制 (UAC) 权限提示。如果没有看到弹窗，请检查任务栏或其他窗口。'
     case InstallStage.INSTALLING:
+      if (operation === 'uninstall') return '正在使用管理员权限卸载系统服务...'
+      if (operation === 'start') return '正在使用管理员权限启动服务...'
+      if (operation === 'stop') return '正在使用管理员权限停止服务...'
+      if (operation === 'restart') return '正在使用管理员权限重启服务...'
       return '正在使用管理员权限安装系统服务...'
     case InstallStage.VERIFYING:
+      if (operation === 'uninstall') return '等待服务卸载完成并验证状态。在 Windows 系统上这可能需要 30-40 秒...'
       return '等待服务安装完成并验证状态。在 Windows 系统上这可能需要 30-40 秒...'
     case InstallStage.STARTING:
+      if (operation === 'uninstall') return '正在清理服务配置和相关文件...'
+      if (operation === 'stop') return '正在停止服务进程...'
+      if (operation === 'restart') return '正在重启服务并建立连接...'
       return '正在启动服务并建立连接...'
     case InstallStage.CONFIGURING:
-      return '正在应用系统代理配置...'
+      if (operation === 'uninstall') return '正在清理TUN模式配置...'
+      return '正在应用TUN模式配置...'
     default:
       return ''
   }
@@ -203,15 +221,17 @@ export const ServiceInstallDialog = ({
         </Box>
 
         {/* 当前阶段描述 */}
-        <Box display="flex" alignItems="center" gap={2} mb={2}>
+        <Box display="flex" alignItems="flex-start" gap={2} mb={2}>
           {installStage === InstallStage.WAITING_UAC ? (
-            <SecurityIcon color="warning" sx={{ fontSize: 24 }} />
+            <SecurityIcon color="warning" sx={{ fontSize: 24, mt: 0.5 }} />
           ) : (
-            <CircularProgress size={24} />
+            <CircularProgress size={24} sx={{ mt: 0.5 }} />
           )}
-          <Typography variant="body1" color="text.primary">
-            {getStageText(installStage, operation, t)}
-          </Typography>
+          <Box flex={1}>
+            <Typography variant="body1" color="text.primary" sx={{ lineHeight: 1.4 }}>
+              {getStageText(installStage, operation, t)}
+            </Typography>
+          </Box>
         </Box>
 
         {/* 进度条 */}
@@ -230,13 +250,13 @@ export const ServiceInstallDialog = ({
         />
 
         {/* 详细说明 */}
-        {getStageDescription(installStage, t) && (
+        {getStageDescription(installStage, operation, t) && (
           <Typography
             variant="body2"
             color="text.secondary"
             sx={{ fontSize: '0.85rem', lineHeight: 1.5 }}
           >
-            {getStageDescription(installStage, t)}
+            {getStageDescription(installStage, operation, t)}
           </Typography>
         )}
 
