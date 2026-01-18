@@ -1,13 +1,11 @@
-import { useLockFn } from 'ahooks'
-import { useAtomValue } from 'jotai'
 import { useMemo } from 'react'
+import { useLockFn } from 'ahooks'
 import { useTranslation } from 'react-i18next'
-import { atomIsDrawer } from '@/store'
-import { formatError } from '@/utils'
-import { message } from '@/utils/notification'
+import { useAtomValue } from 'jotai'
+import { message } from '@tauri-apps/plugin-dialog'
+import { Chip, Grid, Paper } from '@mui/material'
+import type { ChipProps } from '@mui/material'
 import { NetworkPing, SettingsEthernet } from '@mui/icons-material'
-import { Chip, Paper, type ChipProps } from '@mui/material'
-import Grid from '@mui/material/Grid'
 import {
   toggleSystemProxy,
   toggleTunMode,
@@ -15,6 +13,8 @@ import {
   useSetting,
   useSystemProxy,
 } from '@nyanpasu/interface'
+import { atomIsDrawer } from '@/store'
+import { useServiceManager } from '@/hooks/use-service-manager'
 import { PaperSwitchButton } from '../setting/modules/system-proxy'
 
 const TitleComp = () => {
@@ -75,6 +75,7 @@ export const ProxyShortcuts = () => {
 
   const isDrawer = useAtomValue(atomIsDrawer)
   const systemProxy = useSetting('enable_system_proxy')
+  const serviceManager = useServiceManager()
 
   const handleSystemProxy = useLockFn(async () => {
     try {
@@ -90,10 +91,27 @@ export const ProxyShortcuts = () => {
   const tunMode = useSetting('enable_tun_mode')
 
   const handleTunMode = useLockFn(async () => {
+    const isCurrentlyEnabled = Boolean(tunMode.value)
+    
+    // 只在开启TUN模式时检查服务状态，关闭时不检查
+    if (!isCurrentlyEnabled && serviceManager.serviceStatus !== 'running') {
+      const statusMessage =
+        serviceManager.serviceStatus === 'not_installed'
+          ? t('Service not installed, please install the system service first')
+          : t('Service not running, please start the system service first')
+
+      message(statusMessage, {
+        title: t('TUN Mode'),
+        kind: 'warning',
+      })
+      return
+    }
+    
     try {
       await toggleTunMode()
     } catch (error) {
-      message(`Activation TUN Mode failed! \n Error: ${formatError(error)}`, {
+      const action = isCurrentlyEnabled ? 'Deactivation' : 'Activation'
+      message(`${action} TUN Mode failed!`, {
         title: t('Error'),
         kind: 'error',
       })

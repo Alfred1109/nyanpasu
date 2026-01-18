@@ -26,11 +26,10 @@ export const DrawerContent = ({
         'gap-4',
         className,
       )}
-      sx={[
-        {
-          backgroundColor: 'var(--background-color-alpha)',
-        },
-      ]}
+      sx={(theme) => ({
+        backgroundColor: theme.palette.background.default,
+        color: theme.palette.text.primary,
+      })}
       data-tauri-drag-region
     >
       <div className="mx-2 flex items-center justify-center gap-4">

@@ -61,7 +61,18 @@ impl PrivilegeManager {
 
         // 启用操作：检查服务状态
         if let Some(service_handler) = &self.service_handler {
-            if service_handler.is_available().await {
+            let mut available = service_handler.is_available().await;
+
+            if !available && self.auto_service_setup {
+                info!("服务未运行，尝试自动设置后再执行操作");
+                if let Err(e) = self.auto_setup_service().await {
+                    warn!("自动设置服务失败: {}", e);
+                } else {
+                    available = service_handler.is_available().await;
+                }
+            }
+
+            if available {
                 // 服务已运行，直接执行
                 return match service_handler.execute(operation).await {
                     Ok(()) => Ok(PrivilegedOperationResult {

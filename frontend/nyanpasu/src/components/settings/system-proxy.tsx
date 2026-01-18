@@ -79,6 +79,14 @@ export const TunModeButton = (
   const tunMode = useSetting('enable_tun_mode')
 
   const { execute, isPending } = useBlockTask('tun-mode', async () => {
+    const isCurrentlyEnabled = Boolean(tunMode.value)
+    
+    // 只在开启TUN模式时检查服务状态，关闭时不检查
+    if (!isCurrentlyEnabled) {
+      // TODO: 需要获取服务状态进行检查
+      console.log('TUN Mode enabling - should check service status here')
+    }
+    
     await toggleTunMode()
   })
 

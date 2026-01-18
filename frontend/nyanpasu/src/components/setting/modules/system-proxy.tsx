@@ -49,8 +49,9 @@ export const PaperSwitchButton = memo(function PaperSwitchButton({
     <PaperButton
       label={label}
       sxPaper={{
-        backgroundColor: checked ? '#e3f2fd' : '#f5f5f5',
-        ...sxPaper,
+        backgroundColor: checked 
+          ? 'action.selected' 
+          : 'background.paper',
       }}
       sxButton={{
         flexDirection: 'column',

@@ -12,7 +12,6 @@ import {
   type RemoteProfileOptionsBuilder,
   type RunType,
   type StatusInfo,
-  type TrayIcon,
 } from '../ipc/bindings'
 import { unwrapResult } from '../utils'
 import { ManifestVersion } from './core'
@@ -300,14 +299,14 @@ export const setTrayIcon = async (
   path?: string,
 ) => {
   return unwrapResult(
-    await commands.setTrayIcon(mode as unknown as TrayIcon, path ?? null),
+    await commands.setTrayIcon(mode as any, path ?? null),
   )
 }
 
 export const isTrayIconSet = async (
   mode: 'tun' | 'system_proxy' | 'normal',
 ) => {
-  return unwrapResult(await commands.isTrayIconSet(mode as unknown as TrayIcon))
+  return unwrapResult(await commands.isTrayIconSet(mode as any))
 }
 
 export const getCoreStatus = async () => {

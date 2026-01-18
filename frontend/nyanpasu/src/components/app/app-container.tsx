@@ -64,6 +64,10 @@ export const AppContainer = ({
       square
       elevation={0}
       className={styles.layout}
+      sx={(theme) => ({
+        backgroundColor: theme.palette.background.default,
+        color: theme.palette.text.primary,
+      })}
       onPointerDown={(e: React.PointerEvent) => {
         if ((e.target as HTMLElement)?.dataset?.windrag) {
           appWindow?.startDragging()
@@ -81,7 +85,12 @@ export const AppContainer = ({
         </div>
       )}
 
-      <div className={styles.container}>
+      <Box 
+        className={styles.container}
+        sx={(theme) => ({
+          backgroundColor: theme.palette.background.paper,
+        })}
+      >
         {/* Window control buttons for all platforms in extreme cleanup version */}
         <LayoutControl className="z-top! fixed top-2 right-4" />
         <AnimatePresence>
@@ -108,7 +117,7 @@ export const AppContainer = ({
         />
 
         {children}
-      </div>
+      </Box>
     </Paper>
   )
 }

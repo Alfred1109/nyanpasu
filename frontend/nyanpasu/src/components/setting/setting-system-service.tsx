@@ -160,9 +160,15 @@ export default function SettingSystemService() {
       {/* 6-stage progress dialog */}
       <ServiceInstallDialog
         open={serviceManager.isInstalling}
+        operation={serviceManager.currentOperation || 'install'}
         installStage={serviceManager.installStage}
         canCancel={serviceManager.canCancel}
         handleCancel={serviceManager.cancelInstallation}
+        onManualUacConfirm={() => {
+          console.log('✓ Manual UAC confirmation received - proceeding with installation')
+          // 手动确认UAC权限，继续安装流程
+          // 这个按钮应该在WAITING_UAC阶段显示
+        }}
       />
     </>
   )

@@ -15,32 +15,66 @@ pub fn get_service_path() -> anyhow::Result<PathBuf> {
     // Try multiple possible locations in order of preference
     let candidates = get_service_path_candidates()?;
 
-    for path in candidates {
+    tracing::debug!("🔍 Searching for nyanpasu-service executable in {} locations", candidates.len());
+    
+    for (i, path) in candidates.iter().enumerate() {
+        tracing::debug!("  {}: {:?} - exists: {}", i + 1, path, path.exists());
         if path.exists() {
-            return Ok(path);
+            tracing::info!("✅ Found nyanpasu-service at: {:?}", path);
+            return Ok(path.clone());
         }
     }
 
     // If none found, return the most likely fallback
     let app_path = app_install_dir()?;
-    Ok(app_path.join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX)))
+    let fallback_path = app_path.join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX));
+    tracing::warn!("❌ Service executable not found in any candidate location. Using fallback: {:?}", fallback_path);
+    Ok(fallback_path)
 }
 
 fn get_service_path_candidates() -> anyhow::Result<Vec<PathBuf>> {
-    let app_path = app_install_dir()?;
     let mut candidates = Vec::new();
 
-    // 1. Try sidecar directory (development/unpacked)
-    candidates.push(app_path.join("sidecar").join(format!(
-        "{}{}",
-        SERVICE_NAME,
-        std::env::consts::EXE_SUFFIX
-    )));
+    // 1. Try current exe directory first (most reliable in development)
+    if let Ok(current_exe) = std::env::current_exe() {
+        if let Some(exe_dir) = current_exe.parent() {
+            // Development: backend/target/debug/sidecar/
+            candidates.push(exe_dir.join("sidecar").join(format!(
+                "{}{}",
+                SERVICE_NAME,
+                std::env::consts::EXE_SUFFIX
+            )));
+            // Production: same directory as exe
+            candidates.push(exe_dir.join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX)));
+        }
+    }
 
-    // 2. Try app directory (same folder as main exe)
-    candidates.push(app_path.join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX)));
+    // 2. Try common installation paths
+    #[cfg(windows)]
+    {
+        // Program Files installation path
+        if let Some(program_files) = std::env::var_os("PROGRAMFILES") {
+            let program_files_path = PathBuf::from(program_files)
+                .join("nyanpasu")
+                .join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX));
+            candidates.push(program_files_path);
+        }
+    }
 
-    // 3. Try installed service location (Windows)
+    // 3. Try app install directory with sidecar subdirectory  
+    if let Ok(app_path) = app_install_dir() {
+        candidates.push(app_path.join("sidecar").join(format!(
+            "{}{}",
+            SERVICE_NAME,
+            std::env::consts::EXE_SUFFIX
+        )));
+        
+        // 4. Try app directory (same folder as main exe)
+        candidates.push(app_path.join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX)));
+    }
+
+
+    // 5. Try installed service location (Windows)
     #[cfg(windows)]
     {
         if let Some(program_data) = std::env::var_os("PROGRAMDATA") {

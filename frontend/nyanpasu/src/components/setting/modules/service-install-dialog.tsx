@@ -6,6 +6,7 @@ import {
 } from '@mui/icons-material'
 import {
   Box,
+  Button,
   CircularProgress,
   Dialog,
   IconButton,
@@ -13,11 +14,17 @@ import {
   Typography,
 } from '@mui/material'
 
+export type ServiceOperation = 'install' | 'uninstall' | 'start' | 'stop' | 'restart'
+
 interface ServiceInstallDialogProps {
   /**
    * 是否显示 Dialog
    */
   open: boolean
+  /**
+   * 服务操作类型
+   */
+  operation?: ServiceOperation
   /**
    * 当前安装阶段
    */
@@ -30,6 +37,33 @@ interface ServiceInstallDialogProps {
    * 取消按钮点击回调
    */
   handleCancel: () => void
+  /**
+   * 手动确认UAC权限回调
+   */
+  onManualUacConfirm?: () => void
+}
+
+/**
+ * 获取操作类型的标题
+ */
+const getOperationTitle = (
+  operation: ServiceOperation,
+  t: (key: string) => string,
+): string => {
+  switch (operation) {
+    case 'install':
+      return t('Installing Service')
+    case 'uninstall':
+      return t('Uninstalling Service')
+    case 'start':
+      return t('Starting Service')
+    case 'stop':
+      return t('Stopping Service')
+    case 'restart':
+      return t('Restarting Service')
+    default:
+      return t('Service Operation')
+  }
 }
 
 /**
@@ -123,9 +157,11 @@ const getStageDescription = (
  */
 export const ServiceInstallDialog = ({
   open,
+  operation = 'install',
   installStage,
   canCancel,
   handleCancel,
+  onManualUacConfirm,
 }: ServiceInstallDialogProps) => {
   const { t } = useTranslation()
 
@@ -155,7 +191,7 @@ export const ServiceInstallDialog = ({
           mb={2}
         >
           <Typography variant="h6" color="text.primary">
-            {t('Installing Service')}
+            {getOperationTitle(operation, t)}
           </Typography>
           {canCancel && (
             <IconButton onClick={handleCancel} size="small" aria-label="cancel">
@@ -204,21 +240,35 @@ export const ServiceInstallDialog = ({
 
         {/* UAC 特殊提示 */}
         {installStage === InstallStage.WAITING_UAC && (
-          <Box
-            mt={2}
-            p={1.5}
-            sx={{
-              bgcolor: 'warning.main',
-              color: 'warning.contrastText',
-              borderRadius: 1,
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{ fontWeight: 'medium', fontSize: '0.85rem' }}
+          <Box mt={2}>
+            <Box
+              p={1.5}
+              sx={{
+                bgcolor: 'warning.main',
+                color: 'warning.contrastText',
+                borderRadius: 1,
+                mb: 2,
+              }}
             >
-              ⚠️ {t('Please check for UAC permission dialog')}
-            </Typography>
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 'medium', fontSize: '0.85rem' }}
+              >
+                ⚠️ {t('Please check for UAC permission dialog')}
+              </Typography>
+            </Box>
+            
+            {onManualUacConfirm && (
+              <Button
+                variant="contained"
+                color="warning"
+                fullWidth
+                onClick={onManualUacConfirm}
+                sx={{ fontWeight: 'medium' }}
+              >
+                ✓ {t('I have confirmed UAC permission')}
+              </Button>
+            )}
           </Box>
         )}
 

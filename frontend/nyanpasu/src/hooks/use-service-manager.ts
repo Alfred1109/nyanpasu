@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { commands, restartSidecar, type StatusInfo } from '@nyanpasu/interface'
+import { IS_IN_TAURI } from '@/utils/tauri'
 
 export enum InstallStage {
   PREPARING = 'preparing',
@@ -31,6 +32,10 @@ export interface ServiceManagerState {
    * 是否正在进行服务安装/卸载操作
    */
   isInstalling: boolean
+  /**
+   * 当前操作类型
+   */
+  currentOperation: 'install' | 'uninstall' | 'start' | 'stop' | 'restart' | null
   /**
    * 当前安装阶段
    */
@@ -98,8 +103,11 @@ export interface UseServiceManagerReturn
  */
 export const useServiceManager = (): UseServiceManagerReturn => {
   const queryClient = useQueryClient()
-  const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+  const isInTauri = IS_IN_TAURI
   const isBrowser = typeof window !== 'undefined'
+
+  // Operation tracking state
+  const [currentOperation, setCurrentOperation] = useState<'install' | 'uninstall' | 'start' | 'stop' | 'restart' | null>(null)
 
   const unwrap = <T, E>(
     res: { status: 'ok'; data: T } | { status: 'error'; error: E },
@@ -115,7 +123,9 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     queryKey: ['system-service'],
     enabled: isInTauri || isBrowser,
     queryFn: async () => {
+      console.log('🔍 Service Manager - isInTauri:', isInTauri)
       if (!isInTauri) {
+        console.log('❌ Not in Tauri, using local API fallback')
         try {
           const res = await fetch('/__local_api/service/status', {
             cache: 'no-store',
@@ -234,9 +244,10 @@ export const useServiceManager = (): UseServiceManagerReturn => {
 
         await new Promise((resolve) => setTimeout(resolve, 1000))
         const result = await query.refetch()
+        console.log(`⏱️ Installation check ${i + 1}/${maxSeconds}s: status = ${result.data?.status}`)
 
         if (result.data?.status !== 'not_installed') {
-          console.log(`Service installation verified after ${i + 1}s`)
+          console.log(`✅ Service installation verified after ${i + 1}s - status: ${result.data?.status}`)
           return true
         }
 
@@ -257,11 +268,13 @@ export const useServiceManager = (): UseServiceManagerReturn => {
    * 安装服务（统一流程）
    */
   const installService = useCallback(
-    async (options: ServiceInstallOptions = {}): Promise<boolean> => {
-      const { autoStart = false, onConfigureProxy, onConfigureTun } = options
-
+    async (options: ServiceInstallOptions = {}) => {
+      const { autoStart, onConfigureProxy, onConfigureTun } = options
+      console.log('🚀 Starting service installation with 6-stage progress')
+      setCurrentOperation('install')
       setIsInstalling(true)
-      setCancelRequested(false)
+      setInstallStage(InstallStage.PREPARING)
+      setCanCancel(true)
 
       try {
         // Stage 1: Preparing
@@ -275,7 +288,14 @@ export const useServiceManager = (): UseServiceManagerReturn => {
         // Stage 2: Waiting for UAC
         setInstallStage(InstallStage.WAITING_UAC)
         setCanCancel(true)
-        await upsert.mutateAsync('install')
+        console.log('🔧 Calling service install command...')
+        try {
+          await upsert.mutateAsync('install')
+          console.log('✅ Service install command completed')
+        } catch (error) {
+          console.error('❌ Service install command failed:', error)
+          throw error
+        }
         if (cancelRequested) {
           console.log('Installation cancelled at WAITING_UAC stage')
           return false
@@ -371,6 +391,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
   return {
     // State
     isInstalling,
+    currentOperation,
     installStage,
     canCancel,
     serviceStatus: query.data?.status,

@@ -56,29 +56,37 @@ function MUIColorSchemeSync({ themeMode }: { themeMode: ThemeMode }) {
     }
 
     const apply = (mode: 'light' | 'dark') => {
+      console.log('🎨 Applying theme mode:', mode)
       changeHtmlThemeMode(mode)
       setMode(mode)
     }
 
     if (appWindow) {
+      console.log('🏷️ Using Tauri window theme detection')
       appWindow
         .theme()
         .then((mode) => {
+          console.log('🪟 Tauri window theme:', mode)
           if (mode === 'dark' || mode === 'light') {
             apply(mode)
           }
         })
-        .catch(() => {})
+        .catch((err) => {
+          console.error('❌ Failed to get Tauri window theme:', err)
+        })
 
       return
     }
 
+    console.log('🌐 Using browser media query theme detection')
     const mql = window.matchMedia?.('(prefers-color-scheme: dark)')
     if (!mql) {
+      console.log('❌ Media query not supported, defaulting to light')
       apply('light')
       return
     }
 
+    console.log('🔍 Media query matches dark:', mql.matches)
     apply(mql.matches ? 'dark' : 'light')
 
     const onChange = (e: MediaQueryListEvent) => {
@@ -158,7 +166,11 @@ export function ExperimentalThemeProvider({ children }: PropsWithChildren) {
         setThemeMode,
       }}
     >
-      <CssVarsProvider theme={muiTheme} modeStorageKey="mui-mode-v1">
+      <CssVarsProvider 
+        theme={muiTheme} 
+        modeStorageKey="mui-mode-v1"
+        defaultMode="system"
+      >
         <MUIColorSchemeSync themeMode={ThemeMode.SYSTEM} />
         {children}
       </CssVarsProvider>

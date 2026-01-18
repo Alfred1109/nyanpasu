@@ -29,7 +29,7 @@ export const PaperButton = memo(function PaperButton({
       elevation={0}
       sx={{
         borderRadius: 6,
-        backgroundColor: '#e3f2fd',
+        backgroundColor: 'background.paper',
         ...sxPaper,
       }}
     >

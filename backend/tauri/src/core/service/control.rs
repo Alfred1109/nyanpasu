@@ -183,44 +183,67 @@ pub async fn get_service_install_args() -> Result<Vec<OsString>, anyhow::Error> 
 }
 
 pub async fn install_service() -> anyhow::Result<()> {
+    tracing::info!("🚀 Starting service installation process");
+    
     if let Ok(info) = status().await {
+        tracing::info!("📊 Current service status: {:?}", info.status);
         if !matches!(info.status, ServiceStatus::NotInstalled) {
+            tracing::info!("✅ Service already installed, skipping installation");
             return Ok(());
         }
     }
+    
     let args = get_service_install_args().await?;
+    tracing::info!("🔧 Service install args prepared: {:?}", args);
+    
+    tracing::info!("🔍 Checking service executable path: {}", SERVICE_PATH.display());
     if !SERVICE_PATH.as_path().exists() {
+        tracing::error!("❌ Service executable not found at: {}", SERVICE_PATH.display());
         anyhow::bail!(
             "nyanpasu-service executable not found at: {}",
             SERVICE_PATH.display()
         );
     }
+    tracing::info!("✅ Service executable found at: {}", SERVICE_PATH.display());
+    tracing::info!("⚡ Executing service installation command with elevated privileges");
     let child = tokio::task::spawn_blocking(move || {
         #[cfg(windows)]
         {
-            run_elevated(SERVICE_PATH.as_path(), &args, true)
+            tracing::info!("🔧 Windows: Running elevated command: {} {:?}", SERVICE_PATH.display(), args);
+            let result = run_elevated(SERVICE_PATH.as_path(), &args, true);
+            tracing::info!("📋 Elevated command result: {:?}", result);
+            result
         }
         #[cfg(all(not(windows), not(target_os = "macos")))]
         {
             let mut cmd = RunasCommand::new(SERVICE_PATH.as_path());
             cmd.args(&args);
             cmd.gui(false).show(false);
-            cmd.status()
+            tracing::info!("🔧 Linux: Running runas command: {} {:?}", SERVICE_PATH.display(), args);
+            let result = cmd.status();
+            tracing::info!("📋 Runas command result: {:?}", result);
+            result
         }
         #[cfg(target_os = "macos")]
         {
             use crate::utils::sudo::sudo;
             let args = args.iter().map(|s| s.to_string_lossy()).collect::<Vec<_>>();
+            tracing::info!("🔧 macOS: Running sudo command: {} {:?}", SERVICE_PATH.display(), args);
             match sudo(SERVICE_PATH.to_string_lossy(), &args) {
-                Ok(()) => Ok(std::process::ExitStatus::from_raw(0)),
+                Ok(()) => {
+                    tracing::info!("✅ Sudo command succeeded");
+                    Ok(std::process::ExitStatus::from_raw(0))
+                }
                 Err(e) => {
-                    tracing::error!("failed to install service: {}", e);
-                    Err(e)
+                    tracing::error!("❌ Sudo command failed: {}", e);
+                    Err(std::io::Error::new(std::io::ErrorKind::Other, e))
                 }
             }
         }
     })
     .await??;
+    
+    tracing::info!("🎉 Service installation command completed successfully");
     if !child.success() {
         anyhow::bail!(
             "failed to install service, exit code: {}, signal: {:?}",
