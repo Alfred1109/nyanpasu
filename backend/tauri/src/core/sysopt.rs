@@ -124,7 +124,6 @@ impl Sysopt {
         Ok(())
     }
 
-
     /// reset the sysproxy
     pub fn reset_sysproxy(&self) -> Result<()> {
         // Check if PAC is enabled first

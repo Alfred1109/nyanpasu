@@ -57,7 +57,11 @@ pub const OTHERS_FIELDS: [&str; 31] = [
 
 // Simplified functions for extreme cleanup
 pub fn use_clash_fields() -> Vec<String> {
-    DEFAULT_FIELDS.into_iter().chain(OTHERS_FIELDS).map(|s| s.to_string()).collect()
+    DEFAULT_FIELDS
+        .into_iter()
+        .chain(OTHERS_FIELDS)
+        .map(|s| s.to_string())
+        .collect()
 }
 
 pub fn use_valid_fields(valid: &[String]) -> Vec<String> {

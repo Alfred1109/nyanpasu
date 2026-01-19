@@ -135,7 +135,9 @@ pub fn run() -> std::io::Result<()> {
                 let _ = crate::utils::open::that(data_dir.join("migration.log"));
             }
 
-            log::error!("Failed to finish migration event: {e}\nYou can see the detailed information at migration.log in your local data dir.");
+            log::error!(
+                "Failed to finish migration event: {e}\nYou can see the detailed information at migration.log in your local data dir."
+            );
             std::process::exit(1);
         }
 
@@ -465,7 +467,9 @@ pub fn run() -> std::io::Result<()> {
             utils::help::cleanup_processes(app_handle);
         }
         tauri::RunEvent::WindowEvent { label, event, .. } if label == "main" => match event {
-            tauri::WindowEvent::ScaleFactorChanged { scale_factor: _, .. } => {
+            tauri::WindowEvent::ScaleFactorChanged {
+                scale_factor: _, ..
+            } => {
                 // Scale factor change handling removed in extreme cleanup
             }
             tauri::WindowEvent::CloseRequested { .. } => {

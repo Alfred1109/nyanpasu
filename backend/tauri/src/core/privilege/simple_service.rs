@@ -4,9 +4,9 @@ use specta::Type;
 use tauri::command;
 use tracing::{error, info, warn};
 
+use super::service_utils;
 use crate::core::service::control;
 use nyanpasu_ipc::types::ServiceStatus;
-use super::service_utils;
 
 #[command]
 #[specta::specta]
@@ -99,7 +99,7 @@ pub async fn service_setup() -> Result<String, String> {
     }
 
     info!("准备安装服务，即将请求UAC权限...");
-    
+
     // 执行安装 - 这里会触发UAC对话框
     match control::install_service().await {
         Ok(()) => {
@@ -114,14 +114,18 @@ pub async fn service_setup() -> Result<String, String> {
             info!("等待服务安装完成...");
             for i in 0..30 {
                 tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-                
+
                 let status = service_status_summary().await?;
-                info!("安装验证 {}/30: installed={}, running={}", i+1, status.installed, 
-                      service_utils::is_service_running().await.unwrap_or(false));
-                
+                info!(
+                    "安装验证 {}/30: installed={}, running={}",
+                    i + 1,
+                    status.installed,
+                    service_utils::is_service_running().await.unwrap_or(false)
+                );
+
                 if status.installed {
                     info!("服务安装验证成功！");
-                    
+
                     // 尝试启动服务
                     if !service_utils::is_service_running().await.unwrap_or(false) {
                         info!("服务已安装但未运行，尝试启动...");
@@ -129,15 +133,15 @@ pub async fn service_setup() -> Result<String, String> {
                             warn!("启动服务失败: {}", e);
                             return Ok("✅ 服务安装成功，但启动失败。请手动启动服务。".to_string());
                         }
-                        
+
                         // 等待服务启动
                         tokio::time::sleep(std::time::Duration::from_secs(3)).await;
                     }
-                    
+
                     return Ok("✅ 服务安装成功！现在可以享受丝滑的TUN模式体验。".to_string());
                 }
             }
-            
+
             // 安装超时
             warn!("服务安装验证超时");
             Ok("服务安装可能成功，但验证超时。请检查服务状态。".to_string())

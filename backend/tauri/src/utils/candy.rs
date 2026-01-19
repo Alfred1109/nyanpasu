@@ -1,6 +1,6 @@
 // Simplified candy module - keeping only essential functions
-use reqwest::Client;
 use anyhow::Result;
+use reqwest::Client;
 
 pub const INTERNAL_MIRRORS: &[&str] = &["https://github.com"];
 

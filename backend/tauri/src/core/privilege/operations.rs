@@ -26,7 +26,6 @@ pub async fn set_tun_mode(enable: bool) -> Result<()> {
     Ok(())
 }
 
-
 /// 切换TUN模式（保持与现有API兼容）
 pub async fn toggle_tun_mode() -> Result<()> {
     let current_enable = Config::verge().latest().enable_tun_mode.unwrap_or(false);

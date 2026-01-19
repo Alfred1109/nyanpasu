@@ -23,8 +23,7 @@ use std::time::Duration;
 use sysproxy::Sysproxy;
 use url::Url;
 
-const FALLBACK_BROWSER_UA: &str =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+const FALLBACK_BROWSER_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 const PROFILE_TYPE: ProfileItemType = ProfileItemType::Remote;
 
@@ -211,12 +210,12 @@ async fn subscribe_url(
                                         err.status().unwrap()
                                     );
                                     let client = build_client(None, FALLBACK_BROWSER_UA)?;
-                                    perform_req(client)
-                                        .await
-                                        .map_err(|e| SubscribeError::Network {
+                                    perform_req(client).await.map_err(|e| {
+                                        SubscribeError::Network {
                                             url: url.to_string(),
                                             source: e,
-                                        })?
+                                        }
+                                    })?
                                 } else {
                                     return Err(SubscribeError::Network {
                                         url: url.to_string(),

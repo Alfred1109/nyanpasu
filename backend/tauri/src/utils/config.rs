@@ -1,4 +1,3 @@
-
 use crate::config::Config;
 
 pub fn get_current_clash_mode() -> String {
@@ -21,4 +20,3 @@ impl NyanpasuReqwestProxyExt for reqwest::ClientBuilder {
         self // No proxy configuration in extreme cleanup version
     }
 }
-

@@ -181,7 +181,6 @@ impl PrivilegeManager {
         }
     }
 
-
     /// 获取权限状态（纯服务模式）
     pub async fn get_privilege_status(&self) -> PrivilegeStatus {
         let service_available = self.service_handler.is_some();

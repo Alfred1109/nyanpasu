@@ -37,7 +37,6 @@ pub const STORAGE_DB: &str = "storage.db";
 
 pub static APP_VERSION: &str = env!("NYANPASU_VERSION");
 
-
 #[cfg(target_os = "windows")]
 pub fn get_portable_flag() -> bool {
     *crate::consts::IS_PORTABLE
@@ -222,7 +221,6 @@ pub fn cache_dir() -> Result<PathBuf> {
     });
     Ok(path)
 }
-
 
 #[cfg(windows)]
 #[deprecated(since = "1.6.0", note = "should use nyanpasu_utils::dirs mod instead")]

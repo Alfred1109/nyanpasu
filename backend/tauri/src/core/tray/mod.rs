@@ -339,9 +339,13 @@ impl Tray {
         {
             // Dynamic tray icon based on TUN mode status
             let icon_image = if tun_mode {
-                tauri::image::Image::from_bytes(include_bytes!("../../../icons/win-tray-icon-blue.png"))?
+                tauri::image::Image::from_bytes(include_bytes!(
+                    "../../../icons/win-tray-icon-blue.png"
+                ))?
             } else {
-                tauri::image::Image::from_bytes(include_bytes!("../../../icons/win-tray-icon-pink.png"))?
+                tauri::image::Image::from_bytes(include_bytes!(
+                    "../../../icons/win-tray-icon-pink.png"
+                ))?
             };
             let _ = tray.set_icon(Some(icon_image));
         }

@@ -174,7 +174,6 @@ pub fn get_clash_external_port(
     Ok(port)
 }
 
-
 #[instrument(skip(app_handle))]
 pub fn cleanup_processes(app_handle: &AppHandle) {
     let _ = super::resolve::save_window_state(app_handle, true);

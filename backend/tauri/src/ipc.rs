@@ -481,8 +481,6 @@ pub async fn patch_verge_config(payload: IVerge) -> Result {
     Ok(())
 }
 
-
-
 /// toggle tun mode with service dependency
 #[tauri::command]
 #[specta::specta]
