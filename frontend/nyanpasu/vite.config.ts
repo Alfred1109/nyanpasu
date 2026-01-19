@@ -52,12 +52,19 @@ export default defineConfig(({ command, mode }) => {
               }
 
               const repoRoot = path.resolve(__dirname, '../..')
+              const rustHost = process.env.TAURI_ENV_TARGET_TRIPLE
               const candidates = [
                 process.env.NYANPASU_SERVICE_BIN,
                 path.resolve(
                   repoRoot,
                   'backend/tauri/sidecar/nyanpasu-service.exe',
                 ),
+                rustHost
+                  ? path.resolve(
+                      repoRoot,
+                      `backend/tauri/sidecar/nyanpasu-service-${rustHost}.exe`,
+                    )
+                  : undefined,
                 'C:/ProgramData/nyanpasu-service/data/nyanpasu-service.exe',
               ].filter(Boolean) as string[]
 

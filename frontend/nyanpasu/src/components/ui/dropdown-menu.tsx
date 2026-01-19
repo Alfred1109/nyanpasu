@@ -29,7 +29,7 @@ export const DropdownMenu = ({
   onOpenChange,
   ...props
 }: ComponentProps<typeof DropdownMenuPrimitive.Root>) => {
-  const [open, setOpen] = useControllableState({
+  const [open = false, setOpen] = useControllableState<boolean>({
     prop: inputOpen,
     defaultProp: defaultOpen ?? false,
     onChange: onOpenChange,
@@ -76,18 +76,25 @@ export const DropdownMenuRadioGroup = ({
   onValueChange,
   ...props
 }: ComponentProps<typeof DropdownMenuPrimitive.RadioGroup>) => {
-  const [value, setValue] = useControllableState({
-    prop: inputValue,
-    defaultProp: String(defaultValue),
+  const [valueRaw, setValueRaw] = useControllableState<string>({
+    prop: inputValue ?? undefined,
+    defaultProp: defaultValue ? String(defaultValue) : undefined,
     onChange: onValueChange,
   })
+
+  const value = valueRaw ?? null
+
+  const handleValueChange = (next: string) => {
+    setValueRaw(next)
+    onValueChange?.(next)
+  }
 
   return (
     <DropdownMenuRadioGroupContext.Provider value={{ value }}>
       <DropdownMenuPrimitive.RadioGroup
         {...props}
-        value={value}
-        onValueChange={setValue}
+        value={value ?? undefined}
+        onValueChange={handleValueChange}
       />
     </DropdownMenuRadioGroupContext.Provider>
   )

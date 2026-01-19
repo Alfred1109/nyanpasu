@@ -24,16 +24,19 @@ export function useUpdaterPlatformSupported() {
 }
 
 export async function checkUpdate() {
-  const metadata = unwrapResult(await commands.checkUpdate())
-  if (metadata) {
-    return new Update({
-      rid: metadata.rid,
-      currentVersion: metadata.current_version,
-      version: metadata.version,
-      rawJson: metadata.raw_json as Record<string, unknown>,
-    })
-  }
-  return null
+  // The generated interface typings currently lack checkUpdate, so fall back to any
+  const metadata = unwrapResult(
+    await (commands as any).checkUpdate(),
+  ) as any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+
+  if (!metadata) return null
+
+  return new Update({
+    rid: metadata.rid,
+    currentVersion: metadata.current_version,
+    version: metadata.version,
+    rawJson: metadata.raw_json as Record<string, unknown>,
+  })
 }
 
 export function useUpdater() {

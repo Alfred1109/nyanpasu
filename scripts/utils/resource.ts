@@ -340,14 +340,14 @@ export const getNyanpasuServiceInfo = async ({
   sidecarHost: string
 }): Promise<BinInfo> => {
   const name = `nyanpasu-service`
-  const isWin = SIDECAR_HOST?.includes('windows')
+  const isWin = sidecarHost.includes('windows')
   const urlExt = isWin ? 'zip' : 'tar.gz'
   // first we had to get the latest tag
   const version = await getNyanpasuServiceLatestVersion()
   const downloadURL = `https://github.com/${SERVICE_REPO}/releases/download/${version}/${name}-${sidecarHost}.${urlExt}`
   const exeFile = `${name}${isWin ? '.exe' : ''}`
   const tmpFile = `${name}-${sidecarHost}.${urlExt}`
-  const targetFile = `nyanpasu-service${isWin ? '.exe' : ''}`
+  const targetFile = `nyanpasu-service-${sidecarHost}${isWin ? '.exe' : ''}`
   return {
     name: 'nyanpasu-service',
     targetFile,
