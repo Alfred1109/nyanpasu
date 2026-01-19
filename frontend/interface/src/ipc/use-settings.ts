@@ -1,4 +1,5 @@
 import { merge } from 'lodash-es'
+import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { unwrapResult } from '../utils'
 import { commands, type IVerge } from './bindings'
@@ -32,6 +33,24 @@ const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
  */
 export const useSettings = () => {
   const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (!isInTauri) {
+      return
+    }
+
+    const handleSettingChanged = () => {
+      queryClient.invalidateQueries({
+        queryKey: [NYANPASU_SETTING_QUERY_KEY],
+      })
+    }
+
+    window.addEventListener('nyanpasu-setting-changed', handleSettingChanged)
+
+    return () => {
+      window.removeEventListener('nyanpasu-setting-changed', handleSettingChanged)
+    }
+  }, [queryClient])
 
   /**
    * A query hook that fetches Verge configuration settings.

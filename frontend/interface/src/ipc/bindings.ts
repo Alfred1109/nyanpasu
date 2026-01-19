@@ -1194,10 +1194,6 @@ export type PrivilegeTestResult = { overall_status: string; test_results: string
  */
 export type PrivilegedOperation = 
 /**
- * 设置系统代理
- */
-{ type: "SetSystemProxy"; data: { enable: boolean } } | 
-/**
  * 设置TUN模式
  */
 { type: "SetTunMode"; data: { enable: boolean } } | 

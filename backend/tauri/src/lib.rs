@@ -21,6 +21,27 @@ mod utils;
 mod widget;
 mod window;
 
+#[cfg(all(target_os = "windows", not(debug_assertions)))]
+fn ensure_windows_admin() {
+    use deelevate::{PrivilegeLevel, Token};
+    use tauri::utils::platform::current_exe;
+
+    let token = match Token::with_current_process() {
+        Ok(token) => token,
+        Err(_) => return,
+    };
+
+    if let Ok(PrivilegeLevel::NotPrivileged) = token.privilege_level() {
+        let Ok(exe) = current_exe() else {
+            return;
+        };
+        let args: Vec<String> = std::env::args().skip(1).collect();
+        let status = runas::Command::new(exe).args(args).status();
+        let code = status.ok().and_then(|s| s.code()).unwrap_or(1);
+        std::process::exit(code);
+    }
+}
+
 #[cfg(debug_assertions)]
 use std::io;
 
@@ -68,6 +89,9 @@ pub fn run() -> std::io::Result<()> {
     // share the tauri async runtime to nyanpasu-utils
     #[cfg(feature = "deadlock-detection")]
     deadlock_detection();
+
+    #[cfg(all(target_os = "windows", not(debug_assertions)))]
+    ensure_windows_admin();
 
     let export_bindings =
         cfg!(debug_assertions) && std::env::var_os("NYANPASU_EXPORT_BINDINGS").is_some();

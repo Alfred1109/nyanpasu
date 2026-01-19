@@ -9,10 +9,6 @@ use std::sync::Arc;
 use sysproxy::Sysproxy;
 use tauri::{async_runtime::Mutex as TokioMutex, utils::platform::current_exe};
 
-// Import PAC manager
-#[cfg(feature = "default-meta")]
-use crate::core::pac::PacManager;
-
 pub struct Sysopt {
     /// current system proxy setting
     cur_sysproxy: Arc<Mutex<Option<Sysproxy>>>,
@@ -69,70 +65,8 @@ impl Sysopt {
         })
     }
 
-    /// init the sysproxy
-    pub fn init_sysproxy(&self) -> Result<()> {
-        // Check if PAC is enabled first
-        #[cfg(feature = "default-meta")]
-        if PacManager::is_pac_enabled() {
-            log::info!(target: "app", "Initializing PAC proxy");
-            // For PAC, we don't set the regular system proxy
-            // Instead, we let the PAC manager handle it
-            tauri::async_runtime::spawn(async {
-                if let Err(e) = PacManager::init_pac_proxy().await {
-                    log::error!(target: "app", "Failed to initialize PAC proxy: {}", e);
-                }
-            });
-            // run the system proxy guard
-            self.guard_proxy();
-            return Ok(());
-        }
-
-        let port = Config::verge()
-            .latest()
-            .verge_mixed_port
-            .unwrap_or(Config::clash().data().get_mixed_port());
-
-        let (enable, bypass) = {
-            let verge = Config::verge();
-            let verge = verge.latest();
-            (
-                verge.enable_system_proxy.unwrap_or(false),
-                verge.system_proxy_bypass.clone(),
-            )
-        };
-
-        let current = Sysproxy {
-            enable,
-            host: String::from("127.0.0.1"),
-            port,
-            bypass: bypass.unwrap_or(DEFAULT_BYPASS.into()),
-        };
-
-        if enable {
-            let old = Sysproxy::get_system_proxy().ok();
-            if let Err(e) = current.set_system_proxy() {
-                log::error!(target: "app", "Failed to set system proxy: {}", e);
-                return Err(e.into()); // Convert sysproxy::Error to anyhow::Error
-            }
-
-            *self.old_sysproxy.lock() = old;
-            *self.cur_sysproxy.lock() = Some(current);
-        }
-
-        // run the system proxy guard
-        self.guard_proxy();
-        Ok(())
-    }
-
     /// reset the sysproxy
     pub fn reset_sysproxy(&self) -> Result<()> {
-        // Check if PAC is enabled first
-        #[cfg(feature = "default-meta")]
-        if PacManager::is_pac_enabled() {
-            log::info!(target: "app", "Resetting PAC proxy");
-            // Disable PAC proxy
-            log_err!(PacManager::disable_pac_proxy());
-        }
 
         let mut cur_sysproxy = self.cur_sysproxy.lock();
         let mut old_sysproxy = self.old_sysproxy.lock();

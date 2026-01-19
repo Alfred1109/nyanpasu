@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { commands, restartSidecar, type StatusInfo } from '@nyanpasu/interface'
+import type { ServiceOperation } from '@/components/setting/modules/service-install-dialog'
 import { IS_IN_TAURI } from '@/utils/tauri'
 
 export enum InstallStage {
   PREPARING = 'preparing',
-  WAITING_UAC = 'waiting_uac',
   INSTALLING = 'installing',
   VERIFYING = 'verifying',
   STARTING = 'starting',
@@ -25,6 +25,10 @@ export interface ServiceInstallOptions {
    * 安装并启动后，配置 TUN 模式的回调
    */
   onConfigureTun?: () => Promise<void>
+  /**
+   * 覆盖当前操作类型（用于仅启动场景，避免 UI 显示为“安装”）
+   */
+  operation?: ServiceOperation
 }
 
 export interface ServiceManagerState {
@@ -52,6 +56,10 @@ export interface ServiceManagerState {
    * 服务是否已安装
    */
   isServiceInstalled: boolean
+  /**
+   * 最近一次操作的错误信息（用于前端展示）
+   */
+  lastError?: string
 }
 
 export interface ServiceManagerActions {
@@ -71,6 +79,11 @@ export interface ServiceManagerActions {
    * @returns Promise<boolean> 是否停止成功
    */
   stopService: () => Promise<boolean>
+  /**
+   * 启动服务（不触发安装流程）
+   * @returns Promise<boolean> 是否启动成功
+   */
+  startService: () => Promise<boolean>
   /**
    * 取消当前的安装操作
    */
@@ -231,6 +244,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
   const [installStage, setInstallStage] = useState<InstallStage | null>(null)
   const [canCancel, setCanCancel] = useState(false)
   const [cancelRequested, setCancelRequested] = useState(false)
+  const [lastError, setLastError] = useState<string | undefined>(undefined)
 
   /**
    * 等待服务安装完成
@@ -289,12 +303,14 @@ export const useServiceManager = (): UseServiceManagerReturn => {
    */
   const installService = useCallback(
     async (options: ServiceInstallOptions = {}) => {
-      const { autoStart, onConfigureProxy, onConfigureTun } = options
+      const { autoStart, onConfigureProxy, onConfigureTun, operation } = options
+      const op: ServiceOperation = operation ?? (autoStart ? 'start' : 'install')
       console.log('🚀 Starting service installation with 6-stage progress')
-      setCurrentOperation('install')
+      setCurrentOperation(op)
       setIsInstalling(true)
       setInstallStage(InstallStage.PREPARING)
       setCanCancel(true)
+      setLastError(undefined)
 
       try {
         // Stage 1: Preparing
@@ -305,8 +321,8 @@ export const useServiceManager = (): UseServiceManagerReturn => {
           return false
         }
 
-        // Stage 2: Waiting for UAC
-        setInstallStage(InstallStage.WAITING_UAC)
+        // Stage 2: Installing (app is already running elevated)
+        setInstallStage(InstallStage.INSTALLING)
         setCanCancel(true)
         console.log('🔧 Calling service install command...')
         try {
@@ -317,18 +333,10 @@ export const useServiceManager = (): UseServiceManagerReturn => {
           throw error
         }
         if (cancelRequested) {
-          console.log('Installation cancelled at WAITING_UAC stage')
-          return false
-        }
-        setCanCancel(false)
-
-        // Stage 3: Installing - 立即进入安装阶段
-        setInstallStage(InstallStage.INSTALLING)
-        console.log('📦 Service installation in progress...')
-        if (cancelRequested) {
           console.log('Installation cancelled at INSTALLING stage')
           return false
         }
+        setCanCancel(false)
 
         // Stage 4: Verifying - waitForInstallation 会根据真实状态更新阶段
         const installed = await waitForInstallation(40)
@@ -366,6 +374,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
         return true
       } catch (error) {
         console.error('Service installation failed:', error)
+        setLastError(error instanceof Error ? error.message : String(error))
         throw error
       } finally {
         setIsInstalling(false)
@@ -381,6 +390,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
    * 卸载服务
    */
   const uninstallService = useCallback(async (): Promise<boolean> => {
+    setCurrentOperation('uninstall')
     setIsInstalling(true)
     setInstallStage(InstallStage.INSTALLING) // Reuse installing stage for uninstall
 
@@ -396,6 +406,31 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     } finally {
       setIsInstalling(false)
       setInstallStage(null)
+      setCurrentOperation(null)
+    }
+  }, [upsert, query])
+
+  /**
+   * 启动服务（不做安装）
+   */
+  const startService = useCallback(async (): Promise<boolean> => {
+    setCurrentOperation('start')
+    setIsInstalling(true)
+    setInstallStage(InstallStage.STARTING)
+
+    try {
+      await upsert.mutateAsync('start')
+      await restartSidecar()
+      await query.refetch()
+      console.log('Service started successfully')
+      return true
+    } catch (error) {
+      console.error('Service start failed:', error)
+      throw error
+    } finally {
+      setIsInstalling(false)
+      setInstallStage(null)
+      setCurrentOperation(null)
     }
   }, [upsert, query])
 
@@ -441,11 +476,13 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     serviceStatus: query.data?.status,
     isServiceInstalled:
       !!query.data?.status && query.data.status !== 'not_installed',
+    lastError,
 
     // Methods
     installService,
     uninstallService,
     stopService,
+    startService,
     cancelInstallation,
 
     // Query

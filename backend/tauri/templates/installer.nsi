@@ -652,6 +652,14 @@ Section Install
     File /a "/oname={{this}}" "{{@key}}"
   {{/each}}
 
+  ; Register nyanpasu service after install (runs with admin rights)
+  nsExec::ExecToLog '"$INSTDIR\\nyanpasu-service.exe" install --user "%USERNAME%" --nyanpasu-data-dir "$APPDATA\\Clash Nyanpasu" --nyanpasu-config-dir "$APPDATA\\Clash Nyanpasu" --nyanpasu-app-dir "$INSTDIR"'
+  Pop $0
+  DetailPrint "install service with exit code $0"
+  ${If} $0 != 0
+    Abort "Failed to install service (exit code $0)."
+  ${EndIf}
+
   ; Create uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"
 

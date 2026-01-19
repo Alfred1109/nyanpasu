@@ -65,8 +65,9 @@ export const AppContainer = ({
       elevation={0}
       className={styles.layout}
       sx={(theme) => ({
-        backgroundColor: theme.palette.background.default,
-        color: theme.palette.text.primary,
+        backgroundColor:
+          theme.vars?.palette.background.default ?? theme.palette.background.default,
+        color: theme.vars?.palette.text.primary ?? theme.palette.text.primary,
       })}
       onPointerDown={(e: React.PointerEvent) => {
         if ((e.target as HTMLElement)?.dataset?.windrag) {
@@ -88,7 +89,8 @@ export const AppContainer = ({
       <Box 
         className={styles.container}
         sx={(theme) => ({
-          backgroundColor: theme.palette.background.paper,
+          backgroundColor:
+            theme.vars?.palette.background.paper ?? theme.palette.background.paper,
         })}
       >
         {/* Window control buttons for all platforms in extreme cleanup version */}

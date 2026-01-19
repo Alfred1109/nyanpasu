@@ -5,7 +5,6 @@ pub mod hotkey;
 pub mod logger;
 pub mod manager;
 pub mod migration;
-pub mod pac;
 pub mod privilege;
 pub mod service;
 pub mod state;

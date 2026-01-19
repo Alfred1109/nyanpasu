@@ -2,11 +2,9 @@ import { useTranslation } from 'react-i18next'
 import { InstallStage } from '@/hooks/use-service-manager'
 import {
   Close as CloseIcon,
-  Security as SecurityIcon,
 } from '@mui/icons-material'
 import {
   Box,
-  Button,
   CircularProgress,
   Dialog,
   IconButton,
@@ -37,10 +35,6 @@ interface ServiceInstallDialogProps {
    * 取消按钮点击回调
    */
   handleCancel: () => void
-  /**
-   * 手动确认UAC权限回调
-   */
-  onManualUacConfirm?: () => void
 }
 
 /**
@@ -73,10 +67,8 @@ const getStageProgress = (stage: InstallStage): number => {
   switch (stage) {
     case InstallStage.PREPARING:
       return 10
-    case InstallStage.WAITING_UAC:
-      return 25
     case InstallStage.INSTALLING:
-      return 40
+      return 30
     case InstallStage.VERIFYING:
       return 60
     case InstallStage.STARTING:
@@ -99,12 +91,6 @@ const getStageText = (
   switch (stage) {
     case InstallStage.PREPARING:
       return operation === 'uninstall' ? '准备卸载服务...' : '准备安装服务...'
-    case InstallStage.WAITING_UAC:
-      if (operation === 'uninstall') return '等待管理员权限确认 (卸载)'
-      if (operation === 'start') return '等待管理员权限确认 (启动)'
-      if (operation === 'stop') return '等待管理员权限确认 (停止)'
-      if (operation === 'restart') return '等待管理员权限确认 (重启)'
-      return '等待管理员权限确认 (安装)'
     case InstallStage.INSTALLING:
       if (operation === 'uninstall') return '正在卸载服务...'
       if (operation === 'start') return '正在启动服务...'
@@ -136,8 +122,6 @@ const getStageDescription = (
   t: (key: string) => string,
 ): string => {
   switch (stage) {
-    case InstallStage.WAITING_UAC:
-      return '请确认 Windows 用户账户控制 (UAC) 权限提示。如果没有看到弹窗，请检查任务栏或其他窗口。'
     case InstallStage.INSTALLING:
       if (operation === 'uninstall') return '正在使用管理员权限卸载系统服务...'
       if (operation === 'start') return '正在使用管理员权限启动服务...'
@@ -181,7 +165,6 @@ export const ServiceInstallDialog = ({
   installStage,
   canCancel,
   handleCancel,
-  onManualUacConfirm,
 }: ServiceInstallDialogProps) => {
   const { t } = useTranslation()
 
@@ -222,11 +205,7 @@ export const ServiceInstallDialog = ({
 
         {/* 当前阶段描述 */}
         <Box display="flex" alignItems="flex-start" gap={2} mb={2}>
-          {installStage === InstallStage.WAITING_UAC ? (
-            <SecurityIcon color="warning" sx={{ fontSize: 24, mt: 0.5 }} />
-          ) : (
-            <CircularProgress size={24} sx={{ mt: 0.5 }} />
-          )}
+          <CircularProgress size={24} sx={{ mt: 0.5 }} />
           <Box flex={1}>
             <Typography variant="body1" color="text.primary" sx={{ lineHeight: 1.4 }}>
               {getStageText(installStage, operation, t)}
@@ -258,40 +237,6 @@ export const ServiceInstallDialog = ({
           >
             {getStageDescription(installStage, operation, t)}
           </Typography>
-        )}
-
-        {/* UAC 特殊提示 */}
-        {installStage === InstallStage.WAITING_UAC && (
-          <Box mt={2}>
-            <Box
-              p={1.5}
-              sx={{
-                bgcolor: 'warning.main',
-                color: 'warning.contrastText',
-                borderRadius: 1,
-                mb: 2,
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{ fontWeight: 'medium', fontSize: '0.85rem' }}
-              >
-                ⚠️ 请检查 UAC 权限确认弹窗
-              </Typography>
-            </Box>
-            
-            {onManualUacConfirm && (
-              <Button
-                variant="contained"
-                color="warning"
-                fullWidth
-                onClick={onManualUacConfirm}
-                sx={{ fontWeight: 'medium' }}
-              >
-                ✓ 我已确认 UAC 权限
-              </Button>
-            )}
-          </Box>
         )}
 
         {/* 验证阶段提示 */}

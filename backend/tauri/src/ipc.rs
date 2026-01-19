@@ -71,11 +71,9 @@ impl specta::Type for IpcError {
 
 type Result<T = ()> = StdResult<T, IpcError>;
 
-// TODO: remove this struct use Sysproxy
+// because specta not support serde(flatten)
 #[derive(specta::Type, serde::Serialize)]
 pub struct GetSysProxyResponse {
-    // Sysproxy fields (manually defined),
-    // because specta not support serde(flatten)
     pub enable: bool,
     pub host: String,
     pub port: u16,
@@ -83,6 +81,22 @@ pub struct GetSysProxyResponse {
 
     // old version compatible
     pub server: String,
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+#[specta::specta]
+#[allow(dead_code)] // Used by frontend via IPC
+pub fn get_system_theme_mode() -> Result<Option<String>> {
+    Ok(crate::utils::winreg::get_windows_theme_mode()?)
+}
+
+#[cfg(not(target_os = "windows"))]
+#[tauri::command]
+#[specta::specta]
+#[allow(dead_code)] // Used by frontend via IPC
+pub fn get_system_theme_mode() -> Result<Option<String>> {
+    Ok(None)
 }
 
 #[tauri::command]

@@ -15,6 +15,7 @@ import {
 import { CssVarsProvider, useColorScheme } from '@mui/material/styles'
 import { createMDYTheme } from '@nyanpasu/ui'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { isLinux } from '@/consts'
 
 // Check if we're in Tauri environment before calling Tauri APIs
 const isInTauri = IS_IN_TAURI
@@ -61,56 +62,70 @@ function MUIColorSchemeSync() {
       }, 100)
     }
 
-    if (appWindow) {
-      console.log('🏷️ Using Tauri window theme detection')
-      appWindow
-        .theme()
-        .then((mode) => {
-          console.log('🪟 Tauri window theme:', mode)
-          if (mode === 'dark' || mode === 'light') {
+    const applyFromMediaQuery = () => {
+      console.log('🌐 Using browser media query theme detection')
+      const mql = window.matchMedia?.('(prefers-color-scheme: dark)')
+      if (!mql) {
+        console.log('❌ Media query not supported, defaulting to light')
+        apply('light')
+        return () => {}
+      }
+
+      console.log('🔍 Media query matches dark:', mql.matches)
+      apply(mql.matches ? 'dark' : 'light')
+
+      const onChange = (e: MediaQueryListEvent) => {
+        console.log('🔄 Media query changed:', e.matches ? 'dark' : 'light')
+        apply(e.matches ? 'dark' : 'light')
+      }
+
+      mql.addEventListener('change', onChange)
+      return () => {
+        mql.removeEventListener('change', onChange)
+      }
+    }
+
+    if (isLinux) {
+      return applyFromMediaQuery()
+    }
+
+    if (isInTauri) {
+      const applyFromWindowsRegistry = async () => {
+        try {
+          const { invoke } = await import('@tauri-apps/api/core')
+          const mode = (await invoke('get_system_theme_mode')) as
+            | 'light'
+            | 'dark'
+            | null
+          if (mode === 'light' || mode === 'dark') {
             apply(mode)
+            return
           }
-        })
-        .catch((err) => {
-          console.error('❌ Failed to get Tauri window theme:', err)
-        })
+        } catch (error) {
+          console.error('❌ Failed to get system theme mode:', error)
+        }
+        applyFromMediaQuery()
+      }
 
+      applyFromWindowsRegistry()
       return
     }
 
-    console.log('🌐 Using browser media query theme detection')
-    const mql = window.matchMedia?.('(prefers-color-scheme: dark)')
-    if (!mql) {
-      console.log('❌ Media query not supported, defaulting to light')
-      apply('light')
-      return
-    }
-
-    console.log('🔍 Media query matches dark:', mql.matches)
-    apply(mql.matches ? 'dark' : 'light')
-
-    const onChange = (e: MediaQueryListEvent) => {
-      console.log('🔄 Media query changed:', e.matches ? 'dark' : 'light')
-      apply(e.matches ? 'dark' : 'light')
-    }
-
-    mql.addEventListener('change', onChange)
-    return () => {
-      mql.removeEventListener('change', onChange)
-    }
+    return applyFromMediaQuery()
   }, [setMode])
 
   useEffect(() => {
-    if (!appWindow) {
+    if (!appWindow || isLinux) {
       return () => {}
     }
 
     const unlisten = appWindow.onThemeChanged((e) => {
       console.log('🪟 Tauri theme changed:', e.payload)
-      // Always follow system theme changes
-      changeHtmlThemeMode(e.payload)
-      setMode(e.payload)
-      
+      if (e.payload === 'dark' || e.payload === 'light') {
+        changeHtmlThemeMode(e.payload)
+        setMode(e.payload)
+      }
+
       // Update body background when theme changes
       setTimeout(() => {
         const computedStyle = getComputedStyle(document.documentElement)

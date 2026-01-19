@@ -1,5 +1,3 @@
-#[cfg(windows)]
-use crate::utils::dirs::app_resources_dir;
 use crate::utils::dirs::{app_config_dir, app_data_dir, app_install_dir};
 use runas::Command as RunasCommand;
 use std::ffi::OsString;
@@ -11,88 +9,15 @@ use super::SERVICE_PATH;
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
 
-#[cfg(windows)]
-use std::os::windows::process::CommandExt;
 
 #[cfg(windows)]
-fn escape_windows_cmd_arg(arg: &OsString) -> String {
-    let s = arg.to_string_lossy();
-    if !s.chars().any(|c| c.is_whitespace() || c == '"') {
-        return s.into_owned();
-    }
-
-    let mut out = String::with_capacity(s.len() + 2);
-    out.push('"');
-
-    let mut backslashes = 0usize;
-    for ch in s.chars() {
-        match ch {
-            '\\' => {
-                backslashes += 1;
-            }
-            '"' => {
-                out.extend(std::iter::repeat('\\').take(backslashes * 2 + 1));
-                out.push('"');
-                backslashes = 0;
-            }
-            _ => {
-                out.extend(std::iter::repeat('\\').take(backslashes));
-                out.push(ch);
-                backslashes = 0;
-            }
-        }
-    }
-
-    out.extend(std::iter::repeat('\\').take(backslashes * 2));
-    out.push('"');
-    out
-}
-
-#[cfg(windows)]
-fn run_service_script(
-    action: &str,
+fn run_service_command(
     service_exe: &std::path::Path,
     service_args: &[OsString],
 ) -> anyhow::Result<(std::process::ExitStatus, String)> {
-    let resources_dir = app_resources_dir()?;
-    let script_path = resources_dir.join("scripts").join("nyanpasu-service.cmd");
-    if !script_path.exists() {
-        anyhow::bail!(
-            "service script not found at: {}",
-            script_path.to_string_lossy()
-        );
-    }
-
-    let log_path = std::env::temp_dir().join(format!(
-        "nyanpasu-service-{}-{}.log",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis()
-    ));
-
-    let mut cmd_line_args: Vec<OsString> = Vec::with_capacity(6 + service_args.len());
-    cmd_line_args.push(script_path.into_os_string());
-    cmd_line_args.push(action.into());
-    cmd_line_args.push(service_exe.as_os_str().to_os_string());
-    cmd_line_args.push("-LogPath".into());
-    cmd_line_args.push(log_path.as_os_str().to_os_string());
-    cmd_line_args.extend_from_slice(service_args);
-
-    let args_str = cmd_line_args
-        .iter()
-        .map(escape_windows_cmd_arg)
-        .collect::<Vec<_>>()
-        .join(" ");
-    let wrapped = format!("\"{}\"", args_str);
-
-    let mut cmd = std::process::Command::new("cmd.exe");
-    cmd.args(["/S", "/C"]);
-    cmd.arg(wrapped);
-    cmd.creation_flags(0x08000000);
-
-    let output = cmd.output()?;
+    let output = std::process::Command::new(service_exe)
+        .args(service_args)
+        .output()?;
     let mut out = String::new();
     out.push_str(&String::from_utf8_lossy(&output.stdout));
     if !output.stderr.is_empty() {
@@ -101,7 +26,6 @@ fn run_service_script(
         }
         out.push_str(&String::from_utf8_lossy(&output.stderr));
     }
-
     Ok((output.status, out))
 }
 
@@ -184,11 +108,11 @@ pub async fn install_service() -> anyhow::Result<()> {
             #[cfg(windows)]
             {
                 tracing::info!(
-                    "🔧 Windows: Running service script: {} {:?}",
+                    "🔧 Windows: Running service command: {} {:?}",
                     SERVICE_PATH.display(),
                     args
                 );
-                let result = run_service_script("install", SERVICE_PATH.as_path(), &args);
+                let result = run_service_command(SERVICE_PATH.as_path(), &args);
                 tracing::info!(
                     "📋 Service script result: {:?}",
                     result.as_ref().map(|r| r.0)
@@ -328,7 +252,7 @@ pub async fn update_service() -> anyhow::Result<()> {
         move || -> anyhow::Result<(std::process::ExitStatus, String)> {
             #[cfg(windows)]
             {
-                run_service_script("update", SERVICE_PATH.as_path(), &["update".into()])
+                run_service_command(SERVICE_PATH.as_path(), &["update".into()])
             }
             #[cfg(all(not(windows), not(target_os = "macos")))]
             {
@@ -374,7 +298,7 @@ pub async fn uninstall_service() -> anyhow::Result<()> {
         move || -> anyhow::Result<(std::process::ExitStatus, String)> {
             #[cfg(windows)]
             {
-                run_service_script("uninstall", SERVICE_PATH.as_path(), &["uninstall".into()])
+                run_service_command(SERVICE_PATH.as_path(), &["uninstall".into()])
             }
             #[cfg(all(not(windows), not(target_os = "macos")))]
             {
@@ -433,7 +357,7 @@ pub async fn start_service() -> anyhow::Result<()> {
             };
 
             #[cfg(windows)]
-            let status = run_service_script("start", SERVICE_PATH.as_path(), &["start".into()]);
+            let status = run_service_command(SERVICE_PATH.as_path(), &["start".into()]);
 
             #[cfg(all(not(windows), not(all(unix, not(target_os = "macos")))))]
             let status = {
@@ -515,11 +439,19 @@ pub async fn stop_service() -> anyhow::Result<()> {
         }
     }
 
+    if !SERVICE_PATH.as_path().exists() {
+        tracing::warn!(
+            "nyanpasu-service executable not found at: {}, skip stopping",
+            SERVICE_PATH.display()
+        );
+        return Ok(());
+    }
+
     let (child, output) = tokio::task::spawn_blocking(
         move || -> anyhow::Result<(std::process::ExitStatus, String)> {
             #[cfg(windows)]
             {
-                run_service_script("stop", SERVICE_PATH.as_path(), &["stop".into()])
+                run_service_command(SERVICE_PATH.as_path(), &["stop".into()])
             }
             #[cfg(all(not(windows), not(target_os = "macos")))]
             {
@@ -591,7 +523,7 @@ pub async fn restart_service() -> anyhow::Result<()> {
             let status = {
                 #[cfg(windows)]
                 {
-                    run_service_script("restart", SERVICE_PATH.as_path(), &["restart".into()])
+                    run_service_command(SERVICE_PATH.as_path(), &["restart".into()])
                 }
                 #[cfg(not(windows))]
                 {

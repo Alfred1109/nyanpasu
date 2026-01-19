@@ -44,6 +44,34 @@ pub fn set_app_dir(path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Get Windows app theme mode from registry.
+/// Returns Some("light" | "dark") when available.
+pub fn get_windows_theme_mode() -> Result<Option<String>> {
+    let hcu = RegKey::predef(HKEY_CURRENT_USER);
+    let key_path = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+    let key = match hcu.open_subkey(key_path) {
+        Ok(key) => key,
+        Err(e) => {
+            if let ErrorKind::NotFound = e.kind() {
+                return Ok(None);
+            }
+            return Err(e.into());
+        }
+    };
+
+    let value: u32 = match key.get_value("AppsUseLightTheme") {
+        Ok(v) => v,
+        Err(e) => {
+            if let ErrorKind::NotFound = e.kind() {
+                return Ok(None);
+            }
+            return Err(e.into());
+        }
+    };
+
+    Ok(Some(if value == 0 { "dark" } else { "light" }.to_string()))
+}
+
 /// Get current Windows user SID
 #[cfg(windows)]
 pub fn get_current_user_sid() -> Result<String> {

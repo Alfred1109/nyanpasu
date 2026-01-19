@@ -41,8 +41,7 @@ export default function SettingSystemService() {
     }
     setMessage('')
     try {
-      // Use installService with autoStart to properly start the service
-      const success = await serviceManager.installService({ autoStart: true })
+      const success = await serviceManager.startService()
       if (success) {
         setMessage('服务启动成功！')
       } else {
@@ -106,9 +105,17 @@ export default function SettingSystemService() {
             </Alert>
           )}
           
-          {message && (
-            <Alert severity={message.includes('失败') ? 'error' : 'success'} sx={{ mt: 1 }}>
+          {(message || serviceManager.lastError) && (
+            <Alert severity={(message && message.includes('失败')) || serviceManager.lastError ? 'error' : 'success'} sx={{ mt: 1 }}>
               {message}
+              {serviceManager.lastError && (
+                <>
+                  <br />
+                  详细: {serviceManager.lastError}
+                  <br />
+                  请在任务栏确认是否有 UAC 弹窗；若无弹窗，可查看 %TEMP%/nyanpasu-service-*.log 便于排查。
+                </>
+              )}
             </Alert>
           )}
 
@@ -168,11 +175,6 @@ export default function SettingSystemService() {
         installStage={serviceManager.installStage}
         canCancel={serviceManager.canCancel}
         handleCancel={serviceManager.cancelInstallation}
-        onManualUacConfirm={() => {
-          console.log('✓ Manual UAC confirmation received - proceeding with installation')
-          // 手动确认UAC权限，继续安装流程
-          // 这个按钮应该在WAITING_UAC阶段显示
-        }}
       />
     </>
   )

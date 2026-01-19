@@ -192,10 +192,7 @@ pub async fn patch_clash(patch: Mapping) -> Result<()> {
             handle::Handle::refresh_clash();
         }
 
-        // 系统代理功能已移除，只保留TUN模式
-        // if mixed_port.is_some() {
-        //     log_err!(sysopt::Sysopt::global().init_sysproxy());
-        // }
+        // System proxy functionality removed, only TUN mode remains
 
         if patch.get("mode").is_some() {
             crate::feat::update_proxies_buff(None);

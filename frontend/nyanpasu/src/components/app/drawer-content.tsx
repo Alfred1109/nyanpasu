@@ -27,8 +27,10 @@ export const DrawerContent = ({
         className,
       )}
       sx={(theme) => ({
-        backgroundColor: theme.palette.background.default,
-        color: theme.palette.text.primary,
+        backgroundColor:
+          theme.vars?.palette.background.default ??
+          theme.palette.background.default,
+        color: theme.vars?.palette.text.primary ?? theme.palette.text.primary,
       })}
       data-tauri-drag-region
     >
@@ -47,7 +49,7 @@ export const DrawerContent = ({
         )}
       </div>
 
-      <div className="scrollbar-hidden flex flex-col gap-2 !overflow-x-hidden overflow-y-auto">
+      <div className="scrollbar-hidden flex flex-col gap-2 overflow-x-hidden! overflow-y-auto">
         {Object.entries(routes).map(([name, { path, icon }]) => {
           return (
             <RouteListItem
