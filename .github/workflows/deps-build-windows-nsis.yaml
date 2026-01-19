@@ -3,6 +3,12 @@ name: '[Single] Build Windows NSIS'
 on:
   workflow_dispatch:
     inputs:
+      upload-release:
+        description: 'Upload artifacts to GitHub Release (requires tag/release)'
+        required: true
+        type: boolean
+        default: false
+
       portable:
         description: 'Build Portable pkg'
         required: true
@@ -23,8 +29,9 @@ on:
 
       tag:
         description: 'Release Tag'
-        required: true
+        required: false
         type: string
+        default: 'local-build'
 
       arch:
         type: choice
@@ -38,6 +45,12 @@ on:
 
   workflow_call:
     inputs:
+      upload-release:
+        description: 'Upload artifacts to GitHub Release (requires tag/release)'
+        required: true
+        type: boolean
+        default: false
+
       portable:
         description: 'Build Portable pkg'
         required: true
@@ -58,8 +71,9 @@ on:
 
       tag:
         description: 'Release Tag'
-        required: true
+        required: false
         type: string
+        default: 'local-build'
 
       arch:
         type: string
@@ -200,6 +214,7 @@ jobs:
           }
 
       - name: Upload to release
+        if: ${{ inputs.upload-release == true }}
         run: |
           $files = Get-ChildItem -Path "./backend/target" -Recurse -Include "*.exe", "*.zip", "*.zip.sig" | Where-Object { $_.FullName -like "*\bundle\*" }
           foreach ($file in $files) {
@@ -209,6 +224,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload NSIS Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Clash.Nyanpasu-windows-${{ inputs.arch }}${{ inputs.fixed-webview == true && '-fixed-webview' || '' }}-nsis-installer
+          path: |
+            ./backend/target/**/bundle/*.exe
 
       - name: Portable Bundle
         if: ${{ inputs.portable == true }}
@@ -221,13 +243,6 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           NIGHTLY: ${{ inputs.nightly == true  && 'true' || 'false' }}
           VITE_WIN_PORTABLE: 1
-
-      - name: Upload NSIS Installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: Clash.Nyanpasu-windows-${{ inputs.arch }}${{ inputs.fixed-webview == true && '-fixed-webview' || '' }}-nsis-installer
-          path: |
-            ./backend/target/**/bundle/*.exe
 
       - name: Upload portable
         if: ${{ inputs.portable == true }}
