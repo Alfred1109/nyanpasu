@@ -75,7 +75,7 @@ clap = { version = "4.5.4", features = ["derive"] }
 
 # GUI Utilities
 rfd = { version = "0.15.0", default-features = false, features = [
-  "xdg-portal",
+  "gtk3",
   "tokio",
   "common-controls-v6",
 ] } # cross platform dialog
