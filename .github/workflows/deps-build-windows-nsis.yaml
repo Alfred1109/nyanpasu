@@ -112,7 +112,7 @@ jobs:
       - name: Install Node.js dependencies
         run: |
           pnpm i
-      - name: Prepare sidecars and resources
+      - name: Prepare sidecars and resources (includes nyanpasu-service)
         run: |
           $condition = '${{ inputs.arch }}'
           switch ($condition) {
@@ -125,6 +125,16 @@ jobs:
             'aarch64' {
               pnpm prepare:check --arch arm64 --sidecar-host aarch64-pc-windows-msvc
             }
+            default {
+              Write-Error "Unsupported arch $condition"; exit 1
+            }
+          }
+
+          # Ensure expected Windows sidecar binary is present (fail fast if missing)
+          $expected = Join-Path "backend/tauri/sidecar" "nyanpasu-service-$condition-pc-windows-msvc.exe"
+          if (-Not (Test-Path $expected)) {
+            Write-Error "nyanpasu-service sidecar missing: $expected"
+            exit 1
           }
 
       - name: Download fixed WebView
