@@ -1,11 +1,10 @@
-import MdiTrayFull from '~icons/mdi/tray-full'
+import { Feedback, GitHub, Inventory, Keyboard } from '@mui/icons-material'
 import { useLockFn } from 'ahooks'
 import React, { lazy } from 'react'
 import { useTranslation } from 'react-i18next'
 import HotkeyDialog from '@/components/setting/modules/hotkey-dialog'
 import TrayIconDialog from '@/components/setting/modules/tray-icon-dialog'
 import { formatEnvInfos } from '@/utils'
-import { Feedback, GitHub, Keyboard } from '@mui/icons-material'
 import { IconButton } from '@mui/material'
 import { collectEnvs, openThat } from '@nyanpasu/interface'
 import { BasePage } from '@nyanpasu/ui'
@@ -42,7 +41,7 @@ function SettingPage() {
       const formattedEnv = encodeURIComponent(
         formatEnvInfos(envs)
           .split('\n')
-          .map((v) => `> ${v}`)
+          .map((v: string) => `> ${v}`)
           .join('\n'),
       )
       return openThat(
@@ -85,7 +84,7 @@ function SettingPage() {
           title={t('Tray Icons')}
           onClick={() => setOpen(true)}
         >
-          <MdiTrayFull fontSize="inherit" />
+          <Inventory fontSize="inherit" />
         </IconButton>
       </>
     )

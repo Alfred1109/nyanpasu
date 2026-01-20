@@ -1,4 +1,4 @@
-import MdiTextBoxCheckOutline from '~icons/mdi/text-box-check-outline'
+import TextSnippetOutlined from '@mui/icons-material/TextSnippetOutlined'
 import { useLockFn, useSize } from 'ahooks'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAtom } from 'jotai'
@@ -189,7 +189,7 @@ function ProfilePage() {
               setRuntimeConfigViewerOpen(true)
             }}
           >
-            <MdiTextBoxCheckOutline
+            <TextSnippetOutlined
             // style={{
             //   color: theme.vars.palette.text.primary,
             // }}
