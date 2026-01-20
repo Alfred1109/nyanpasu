@@ -4,6 +4,7 @@ use crate::ID;
 /// Common utilities shared across all platform implementations
 
 /// Format socket address with ID - now used in cross-platform implementations
+#[allow(dead_code)]
 pub fn format_socket_addr() -> String {
     format!("/tmp/{}-deep-link.sock", ID.get().unwrap_or(&"nyanpasu".to_string()))
 }
