@@ -12,7 +12,7 @@ import MonacoEditor, { type Monaco } from '@monaco-editor/react'
 import { openThat } from '@nyanpasu/interface'
 import { cn } from '@nyanpasu/ui'
 
-export interface ProfileMonacoViewProps {
+interface ProfileMonacoViewProps {
   value?: string
   onChange?: (value: string) => void
   language?: string
@@ -22,7 +22,7 @@ export interface ProfileMonacoViewProps {
   onValidate?: (markers: editor.IMarker[]) => void
 }
 
-export interface ProfileMonacoViewRef {
+interface ProfileMonacoViewRef {
   getValue: () => string | undefined
 }
 

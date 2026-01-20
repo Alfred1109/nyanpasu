@@ -1,11 +1,12 @@
 import { merge } from 'lodash-es'
 import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { message } from 'antd'
+import { useTranslation } from 'react-i18next'
+import { isInTauri } from '@nyanpasu/utils'
 import { unwrapResult } from '../utils'
 import { commands, type IVerge } from './bindings'
 import { NYANPASU_SETTING_QUERY_KEY } from './consts'
-
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
 
 /**
  * Custom hook for managing Verge configuration settings using React Query.

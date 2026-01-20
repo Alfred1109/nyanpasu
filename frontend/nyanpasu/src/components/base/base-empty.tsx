@@ -7,7 +7,7 @@ interface Props {
   extra?: React.ReactNode
 }
 
-export const BaseEmpty = (props: Props) => {
+const BaseEmpty = (props: Props) => {
   const { text = 'Empty', extra } = props
 
   return (

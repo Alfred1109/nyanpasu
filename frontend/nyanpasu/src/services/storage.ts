@@ -23,7 +23,7 @@ export function dispatchStorageValueChanged(
   }
 }
 
-export const NyanpasuStorage = {
+const NyanpasuStorage = {
   async getItem(key) {
     const value = await getStorageItem(key)
     return value ?? null

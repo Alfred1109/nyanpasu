@@ -5,7 +5,7 @@ import { cn } from '@nyanpasu/ui'
 import AnimatedLogo from '../layout/animated-logo'
 import RouteListItem from './modules/route-list-item'
 
-export const DrawerContent = ({
+const DrawerContent = ({
   className,
   onlyIcon,
 }: {

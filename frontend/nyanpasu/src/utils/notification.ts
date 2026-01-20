@@ -44,7 +44,7 @@ const checkPermission = async () => {
   return permissionGranted
 }
 
-export type NotificationOptions = {
+type NotificationOptions = {
   title: string
   body?: string
   type?: NotificationType

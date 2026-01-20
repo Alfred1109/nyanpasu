@@ -28,7 +28,7 @@ const commonTransition = {
   duration: 0.35,
 } satisfies Transition
 
-export const pageTransitionVariants: { [name: string]: PageVariant } = {
+const pageTransitionVariants: { [name: string]: PageVariant } = {
   blur: {
     initial: { opacity: 0, filter: 'blur(10px)' },
     visible: { opacity: 1, filter: 'blur(0px)' },

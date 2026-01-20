@@ -8,7 +8,7 @@ import {
   NYANPASU_SETTING_QUERY_KEY,
 } from './consts'
 
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+import { isInTauri } from '@nyanpasu/utils'
 
 export const SUPPORTED_CLASH_CORES = [
   'clash',

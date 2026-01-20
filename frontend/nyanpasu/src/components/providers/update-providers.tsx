@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { useClashRulesProvider } from '@nyanpasu/interface'
 import { UpdateProviderButton } from './update-provider-button'
 
-export const UpdateProviders = () => {
+const UpdateProviders = () => {
   const { t } = useTranslation()
   const rulesProvider = useClashRulesProvider()
 

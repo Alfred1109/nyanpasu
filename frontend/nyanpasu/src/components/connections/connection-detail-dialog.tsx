@@ -7,7 +7,7 @@ import { Tooltip } from '@mui/material'
 import { Connection } from '@nyanpasu/interface'
 import { BaseDialog, BaseDialogProps, cn } from '@nyanpasu/ui'
 
-export type ConnectionDetailDialogProps = { item?: Connection.Item } & Omit<
+type ConnectionDetailDialogProps = { item?: Connection.Item } & Omit<
   BaseDialogProps,
   'title'
 >

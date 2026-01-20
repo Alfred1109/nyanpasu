@@ -109,7 +109,7 @@ function TrayIconItem({ mode }: { mode: 'system_proxy' | 'tun' | 'normal' }) {
   )
 }
 
-export type TrayIconDialogProps = Omit<BaseDialogProps, 'title'>
+type TrayIconDialogProps = Omit<BaseDialogProps, 'title'>
 
 export default function TrayIconDialog({
   open,

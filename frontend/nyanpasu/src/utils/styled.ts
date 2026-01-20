@@ -9,7 +9,7 @@ export function insertStyle(id: string, style: string) {
   return waitInsertStyle
 }
 
-export function removeStyle(id: string) {
+function removeStyle(id: string) {
   const originalElement = document.getElementById(id)
 
   if (originalElement) {

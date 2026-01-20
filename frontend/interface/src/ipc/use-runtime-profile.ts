@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { unwrapResult } from '../utils'
 import { commands } from './bindings'
 
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+import { isInTauri } from '@nyanpasu/utils'
 
 /**
  * Custom hook for retrieving the runtime profile.

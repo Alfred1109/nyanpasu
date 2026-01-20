@@ -55,16 +55,16 @@ export const atomIsDrawerOnlyIcon = atomWithStorage<boolean>(
 )
 
 // save the state of each profile item loading
-export const atomLoadingCache = atom<Record<string, boolean>>({})
+const atomLoadingCache = atom<Record<string, boolean>>({})
 
 // save update state
-export const atomUpdateState = atom<boolean>(false)
+const atomUpdateState = atom<boolean>(false)
 
 interface IConnectionSetting {
   layout: 'table' | 'list'
 }
 
-export const atomConnectionSetting = atom<IConnectionSetting>({
+const atomConnectionSetting = atom<IConnectionSetting>({
   layout: 'table',
 })
 

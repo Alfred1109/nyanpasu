@@ -5,7 +5,7 @@ import { IS_IN_TAURI } from '@/utils/tauri'
 
 const isInTauri = IS_IN_TAURI
 
-export const SchemeProvider = () => {
+const SchemeProvider = () => {
   const navigate = useNavigate()
   const unlistenRef = useRef<UnlistenFn | null>(null)
   useEffect(() => {

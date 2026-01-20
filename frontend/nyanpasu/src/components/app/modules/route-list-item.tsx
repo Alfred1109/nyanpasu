@@ -7,7 +7,7 @@ import { useSetting } from '@nyanpasu/interface'
 import { alpha, cn } from '@nyanpasu/ui'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 
-export const RouteListItem = ({
+const RouteListItem = ({
   name,
   path,
   icon,

@@ -11,11 +11,11 @@ import { SideLog } from './modules/side-log'
 import { atomChainsSelected, atomGlobalChainCurrent } from './modules/store'
 import { ScriptDialog } from './script-dialog'
 
-export interface ProfileSideProps {
+interface ProfileSideProps {
   onClose: () => void
 }
 
-export const ProfileSide = ({ onClose }: ProfileSideProps) => {
+const ProfileSide = ({ onClose }: ProfileSideProps) => {
   const { t } = useTranslation()
 
   const [open, setOpen] = useState(false)

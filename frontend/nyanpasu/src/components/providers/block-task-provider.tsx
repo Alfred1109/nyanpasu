@@ -29,7 +29,7 @@ interface BlockTaskContextType {
 
 const BlockContext = createContext<BlockTaskContextType | null>(null)
 
-export const useBlockTaskContext = () => {
+const useBlockTaskContext = () => {
   const context = useContext(BlockContext)
 
   if (!context) {
@@ -39,7 +39,7 @@ export const useBlockTaskContext = () => {
   return context
 }
 
-export const useBlockTask = <T,>(key: string, fn: () => Promise<T>) => {
+const useBlockTask = <T,>(key: string, fn: () => Promise<T>) => {
   const { run, tasks } = useBlockTaskContext()
 
   const execute = useLockFn(async () => {

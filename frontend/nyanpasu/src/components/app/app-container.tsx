@@ -21,7 +21,7 @@ const appWindow = isInTauri ? getCurrentWebviewWindow() : null
 
 const OS = getSystem()
 
-export const AppContainer = ({
+const AppContainer = ({
   children,
   isDrawer,
 }: {

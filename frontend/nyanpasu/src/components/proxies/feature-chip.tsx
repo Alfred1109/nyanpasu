@@ -2,7 +2,7 @@ import { memo } from 'react'
 // mergeSxProps removed in extreme cleanup
 import { Chip, ChipProps } from '@mui/material'
 
-export const FeatureChip = memo(function FeatureChip(props: ChipProps) {
+const FeatureChip = memo(function FeatureChip(props: ChipProps) {
   return (
     <Chip
       variant="outlined"

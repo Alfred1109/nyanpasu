@@ -9,7 +9,7 @@ const REFRESH_SECONDS = 5
 
 const isInTauri = IS_IN_TAURI
 
-export const HealthPanel = () => {
+const HealthPanel = () => {
   const [health, setHealth] = useState({
     Google: 0,
     GitHub: 0,

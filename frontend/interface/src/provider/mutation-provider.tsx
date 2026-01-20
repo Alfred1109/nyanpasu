@@ -15,10 +15,9 @@ import {
   NYANPASU_SYSTEM_PROXY_QUERY_KEY,
   RROFILES_QUERY_KEY,
 } from '../ipc/consts'
+import { isInTauri } from '@nyanpasu/utils'
 
 type EventPayload = 'nyanpasu_config' | 'clash_config' | 'proxies' | 'profiles'
-
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
 
 const NYANPASU_CONFIG_MUTATION_KEYS = [
   NYANPASU_SETTING_QUERY_KEY,

@@ -36,7 +36,7 @@ import { ProfileDialog } from './profile-dialog'
 import { GlobalUpdatePendingContext } from './provider'
 import { ClashProfile } from './utils'
 
-export interface ProfileItemProps {
+interface ProfileItemProps {
   item: ProfileQueryResultItem
   selected?: boolean
   maxLogLevelTriggered?: {
@@ -47,7 +47,7 @@ export interface ProfileItemProps {
   chainsSelected?: boolean
 }
 
-export const ProfileItem = memo(function ProfileItem({
+const ProfileItem = memo(function ProfileItem({
   item,
   selected,
   onClickChains,

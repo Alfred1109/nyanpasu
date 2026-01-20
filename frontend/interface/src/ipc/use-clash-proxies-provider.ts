@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useClashAPI, type ClashProviderProxies } from '../service/clash-api'
 import { CLASH_PROXIES_PROVIDER_QUERY_KEY } from './consts'
 
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+import { isInTauri } from '@nyanpasu/utils'
 
 export interface ClashProxiesProviderQueryItem extends ClashProviderProxies {
   mutate: () => Promise<void>

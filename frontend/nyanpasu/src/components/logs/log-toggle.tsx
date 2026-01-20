@@ -5,7 +5,7 @@ import {
 import { IconButton } from '@mui/material'
 import { useClashLogs } from '@nyanpasu/interface'
 
-export const LogToggle = () => {
+const LogToggle = () => {
   const { status, disable, enable } = useClashLogs()
 
   const handleClick = () => {

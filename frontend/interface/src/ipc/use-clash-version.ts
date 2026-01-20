@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
+import { isInTauri } from '@nyanpasu/utils'
 import { useClashAPI } from '../service/clash-api'
 import { CLASH_VERSION_QUERY_KEY } from './consts'
-
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
 
 export const useClashVersion = () => {
   const { version } = useClashAPI()

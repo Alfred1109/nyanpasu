@@ -3,7 +3,7 @@ import { changeLanguage } from 'i18next'
 import { useEffect } from 'react'
 import { useSetting } from '@nyanpasu/interface'
 
-export const LocalesProvider = () => {
+const LocalesProvider = () => {
   const { value } = useSetting('language')
 
   useEffect(() => {

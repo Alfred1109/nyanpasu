@@ -4,6 +4,6 @@ export const IS_IN_TAURI =
     ('__TAURI__' in (window as unknown as Record<string, unknown>))) ||
     window.location?.protocol === 'tauri:')
 
-export function isInTauri() {
+function isInTauri() {
   return IS_IN_TAURI
 }

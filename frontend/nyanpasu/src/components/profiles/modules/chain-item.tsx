@@ -13,7 +13,7 @@ interface Context {
   scoped: boolean
 }
 
-export const ChainItem = memo(function ChainItem({
+const ChainItem = memo(function ChainItem({
   item,
   selected,
   context,

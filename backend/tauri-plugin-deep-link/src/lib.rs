@@ -2,6 +2,8 @@ use std::io::{ErrorKind, Result};
 
 use once_cell::sync::OnceCell;
 
+mod shared;
+
 #[cfg(target_os = "windows")]
 #[path = "windows.rs"]
 mod platform_impl;

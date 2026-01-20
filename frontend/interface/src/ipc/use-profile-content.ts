@@ -1,8 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, UseQueryOptions } from '@tanstack/react-query'
+import { isInTauri } from '@nyanpasu/utils'
 import { unwrapResult } from '../utils'
 import { commands } from './bindings'
-
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
 
 /**
  * A custom hook that manages profile content data fetching and updating.

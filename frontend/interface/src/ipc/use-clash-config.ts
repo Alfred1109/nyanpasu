@@ -4,7 +4,7 @@ import { unwrapResult } from '../utils'
 import { commands, PatchRuntimeConfig } from './bindings'
 import { CLASH_CONFIG_QUERY_KEY } from './consts'
 
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+import { isInTauri } from '@nyanpasu/utils'
 
 /**
  * A hook that manages fetching and updating the Clash configuration.

@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { useClashProxiesProvider } from '@nyanpasu/interface'
 import { UpdateProviderButton } from './update-provider-button'
 
-export const UpdateProxiesProviders = () => {
+const UpdateProxiesProviders = () => {
   const { t } = useTranslation()
   const proxiesProvider = useClashProxiesProvider()
 

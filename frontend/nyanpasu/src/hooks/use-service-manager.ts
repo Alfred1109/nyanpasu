@@ -12,7 +12,7 @@ export enum InstallStage {
   CONFIGURING = 'configuring',
 }
 
-export interface ServiceInstallOptions {
+interface ServiceInstallOptions {
   /**
    * 是否在安装后自动启动服务
    */
@@ -31,7 +31,7 @@ export interface ServiceInstallOptions {
   operation?: ServiceOperation
 }
 
-export interface ServiceManagerState {
+interface ServiceManagerState {
   /**
    * 是否正在进行服务安装/卸载操作
    */
@@ -62,7 +62,7 @@ export interface ServiceManagerState {
   lastError?: string
 }
 
-export interface ServiceManagerActions {
+interface ServiceManagerActions {
   /**
    * 安装服务（统一流程）
    * @param options 安装选项
@@ -90,7 +90,7 @@ export interface ServiceManagerActions {
   cancelInstallation: () => void
 }
 
-export interface UseServiceManagerReturn
+interface UseServiceManagerReturn
   extends ServiceManagerState, ServiceManagerActions {
   /**
    * 服务状态查询对象

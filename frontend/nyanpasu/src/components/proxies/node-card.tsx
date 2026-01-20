@@ -10,7 +10,7 @@ import FeatureChip from './feature-chip'
 import styles from './node-card.module.scss'
 import { filterDelay } from './utils'
 
-export const NodeCard = memo(function NodeCard({
+const NodeCard = memo(function NodeCard({
   node,
   now,
   disabled,

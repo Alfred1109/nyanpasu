@@ -6,7 +6,7 @@ import type { SxProps, Theme } from '@mui/material/styles'
 // alpha removed in extreme cleanup
 import { PaperButton, PaperButtonProps } from './nyanpasu-path'
 
-export interface PaperSwitchButtonProps extends PaperButtonProps {
+interface PaperSwitchButtonProps extends PaperButtonProps {
   label?: string
   checked: boolean
   loading?: boolean

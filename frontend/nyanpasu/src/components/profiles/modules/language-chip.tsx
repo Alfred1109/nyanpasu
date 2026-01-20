@@ -1,7 +1,7 @@
 import { Box } from '@mui/material'
 import { alpha } from '@nyanpasu/ui'
 
-export const LanguageChip = ({ lang }: { lang: string }) => {
+const LanguageChip = ({ lang }: { lang: string }) => {
   return (
     lang && (
       <Box

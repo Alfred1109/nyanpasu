@@ -25,11 +25,11 @@ export type TableConnection = ClashConnectionItem & {
   uploadSpeed?: number
 }
 
-export interface TableMessage extends Omit<ClashConnection, 'connections'> {
+interface TableMessage extends Omit<ClashConnection, 'connections'> {
   connections: TableConnection[]
 }
 
-export const ConnectionsTable = ({ searchTerm }: { searchTerm?: string }) => {
+const ConnectionsTable = ({ searchTerm }: { searchTerm?: string }) => {
   const { t, i18n } = useTranslation()
 
   const {

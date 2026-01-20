@@ -17,7 +17,7 @@ import { unwrapResult } from '../utils'
 import { ManifestVersion } from './core'
 import { EnvInfos, InspectUpdater, SystemProxy, VergeConfig } from './types'
 
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+import { isInTauri } from '@nyanpasu/utils'
 
 export const getNyanpasuConfig = async () => {
   return unwrapResult(await commands.getVergeConfig()) as VergeConfig

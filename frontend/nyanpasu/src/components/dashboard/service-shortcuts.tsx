@@ -17,7 +17,7 @@ type Status = {
   sx: SxProps<Theme>
 }
 
-export const ServiceShortcuts = () => {
+const ServiceShortcuts = () => {
   const { t } = useTranslation()
 
   const isDrawer = useAtomValue(atomIsDrawer)

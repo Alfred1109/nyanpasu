@@ -35,7 +35,7 @@ const EmojiCounty = ({ countryCode }: { countryCode: string }) => {
 
 const MAX_WIDTH = 'calc(100% - 48px - 16px)'
 
-export const IPASNPanel = ({ refreshCount }: { refreshCount: number }) => {
+const IPASNPanel = ({ refreshCount }: { refreshCount: number }) => {
   const { t } = useTranslation()
 
   const { data, refetch, isFetching } = useIPSB()

@@ -7,7 +7,7 @@ import { Refresh } from '@mui/icons-material'
 import { Button, Chip, Paper } from '@mui/material'
 import { ClashRulesProviderQueryItem } from '@nyanpasu/interface'
 
-export interface RulesProviderProps {
+interface RulesProviderProps {
   provider: ClashRulesProviderQueryItem
 }
 

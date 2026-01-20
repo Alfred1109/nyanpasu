@@ -12,7 +12,7 @@ export interface ProxiesProviderProps {
   provider: ClashProxiesProviderQueryItem
 }
 
-export const ProxiesProvider = ({ provider }: ProxiesProviderProps) => {
+const ProxiesProvider = ({ provider }: ProxiesProviderProps) => {
   const { t } = useTranslation()
 
   const [loading, setLoading] = useState(false)

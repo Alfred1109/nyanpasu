@@ -1,7 +1,7 @@
 import { getIpsbASN } from '@/service'
 import { useQuery, UseQueryOptions } from '@tanstack/react-query'
 
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+import { isInTauri } from '@nyanpasu/utils'
 
 export interface IPSBResponse {
   organization: string

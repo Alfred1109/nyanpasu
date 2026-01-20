@@ -13,7 +13,7 @@ import Typography from '@mui/material/Typography'
 import { openThat } from '@nyanpasu/interface'
 import { alpha, LoadingSwitch } from '@nyanpasu/ui'
 
-export interface LabelSwitchProps extends SwitchProps {
+interface LabelSwitchProps extends SwitchProps {
   label: string
   url?: string
   onChange?: (
@@ -88,7 +88,7 @@ export const LabelSwitch = ({
   )
 }
 
-export interface ClashFieldItemProps extends ButtonBaseProps {
+interface ClashFieldItemProps extends ButtonBaseProps {
   label: string
   fields: string[]
 }
@@ -106,7 +106,7 @@ export interface ClashFieldItemProps extends ButtonBaseProps {
  * @author keiko233 <i@elaina.moe>
  * @copyright LibNyanpasu org. 2024
  */
-export const ClashFieldItem = ({
+const ClashFieldItem = ({
   label,
   fields,
   ...props

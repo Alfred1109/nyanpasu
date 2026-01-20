@@ -3,7 +3,7 @@ import { Radar } from '@mui/icons-material'
 import { Button, Tooltip } from '@mui/material'
 import { alpha } from '@nyanpasu/ui'
 
-export const ScrollCurrentNode = ({ onClick }: { onClick?: () => void }) => {
+const ScrollCurrentNode = ({ onClick }: { onClick?: () => void }) => {
   const { t } = useTranslation()
 
   return (

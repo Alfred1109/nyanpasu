@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useRef } from 'react'
 
-export type LockFn<P extends any[] = any[], T = any> = (
+type LockFn<P extends any[] = any[], T = any> = (
   ...args: P
 ) => Promise<T>
 

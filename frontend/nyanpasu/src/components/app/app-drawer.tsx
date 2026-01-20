@@ -10,7 +10,7 @@ import DrawerContent from './drawer-content'
 
 const OS = getSystem()
 
-export const AppDrawer = () => {
+const AppDrawer = () => {
   const [open, setOpen] = useState(false)
 
   const DrawerTitle = () => {

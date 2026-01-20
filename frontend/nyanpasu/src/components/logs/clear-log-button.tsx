@@ -5,7 +5,7 @@ import { Tooltip } from '@mui/material'
 import { useClashLogs } from '@nyanpasu/interface'
 import { FloatingButton } from '@nyanpasu/ui'
 
-export const ClearLogButton = () => {
+const ClearLogButton = () => {
   const { t } = useTranslation()
 
   const { clean } = useClashLogs()

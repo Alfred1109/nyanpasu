@@ -9,7 +9,7 @@ import {
 } from './bindings'
 import { RROFILES_QUERY_KEY } from './consts'
 
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+import { isInTauri } from '@nyanpasu/utils'
 
 type URLImportParams = Parameters<typeof commands.importProfile>
 

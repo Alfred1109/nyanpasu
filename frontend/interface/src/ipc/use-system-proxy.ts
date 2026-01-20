@@ -5,7 +5,7 @@ import { commands } from './bindings'
 import { NYANPASU_SYSTEM_PROXY_QUERY_KEY } from './consts'
 import { useSetting } from './use-settings'
 
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+import { isInTauri } from '@nyanpasu/utils'
 
 /**
  * Custom hook to fetch and manage the system proxy settings.

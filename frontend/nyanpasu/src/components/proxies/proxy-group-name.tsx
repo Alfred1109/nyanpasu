@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { memo } from 'react'
 import { useSetting } from '@nyanpasu/interface'
 
-export const ProxyGroupName = memo(function ProxyGroupName({
+const ProxyGroupName = memo(function ProxyGroupName({
   name,
 }: {
   name: string

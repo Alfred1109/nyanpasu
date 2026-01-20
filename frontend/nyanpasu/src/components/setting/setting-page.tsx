@@ -2,7 +2,7 @@ import { Stack, Typography, Box } from '@mui/material'
 import SettingSystemService from './setting-system-service'
 import SettingSystemProxy from './setting-system-proxy'
 
-export const SettingPage = () => {
+const SettingPage = () => {
   return (
     <Box p={2}>
       <Box mb={3} textAlign="center">

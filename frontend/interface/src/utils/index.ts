@@ -1,8 +1,2 @@
-import type { Result } from '../ipc/bindings'
-
-export function unwrapResult<T, E>(res: Result<T, E>) {
-  if (res.status === 'error') {
-    throw res.error
-  }
-  return res.status === 'ok' ? res.data : undefined
-}
+// Re-export unwrapResult from the centralized utils package
+export { unwrapResult } from '@nyanpasu/utils'

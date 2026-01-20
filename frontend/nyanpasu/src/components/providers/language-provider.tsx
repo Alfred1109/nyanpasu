@@ -10,7 +10,7 @@ const LanguageContext = createContext<{
   setLanguage: (value: Language) => Promise<void>
 } | null>(null)
 
-export const useLanguage = () => {
+const useLanguage = () => {
   const context = useContext(LanguageContext)
 
   if (!context) {

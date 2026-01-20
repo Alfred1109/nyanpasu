@@ -8,7 +8,7 @@ import { useSetting } from '@nyanpasu/interface'
 import { BaseDialog, BaseDialogProps } from '@nyanpasu/ui'
 import HotkeyInput from './hotkey-input'
 
-export type HotkeyDialogProps = Omit<BaseDialogProps, 'title'>
+type HotkeyDialogProps = Omit<BaseDialogProps, 'title'>
 
 const HOTKEY_FUNC = [
   'open_or_close_dashboard',

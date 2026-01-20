@@ -5,7 +5,7 @@ import ContentDisplay from '../base/content-display'
 import { atomRulePage } from './modules/store'
 import RuleItem from './rule-item'
 
-export const RulePage = () => {
+const RulePage = () => {
   const { t } = useTranslation()
 
   const rule = useAtomValue(atomRulePage)

@@ -62,7 +62,7 @@ const convertTypeMapping = (data: Profile) => {
   return data
 }
 
-export interface ScriptDialogProps extends Omit<BaseDialogProps, 'title'> {
+interface ScriptDialogProps extends Omit<BaseDialogProps, 'title'> {
   open: boolean
   onClose: () => void
   profile?: Profile

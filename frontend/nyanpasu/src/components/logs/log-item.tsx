@@ -18,7 +18,7 @@ const colorMapping: { [key: string]: SxProps<Theme> } = {
   }),
 }
 
-export const LogItem = ({
+const LogItem = ({
   value,
   className,
 }: {

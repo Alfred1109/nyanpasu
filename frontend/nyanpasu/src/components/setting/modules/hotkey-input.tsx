@@ -6,7 +6,7 @@ import { CSSProperties, useEffect, useRef, useState } from 'react'
 import { alpha, cn, Kbd } from '@nyanpasu/ui'
 import styles from './hotkey-input.module.scss'
 
-export interface Props extends React.HTMLAttributes<HTMLInputElement> {
+interface Props extends React.HTMLAttributes<HTMLInputElement> {
   isDuplicate?: boolean
   value?: string[]
   onValueChange?: (value: string[]) => void

@@ -6,7 +6,7 @@ import { listen, UnlistenFn } from '@tauri-apps/api/event'
 
 const isInTauri = IS_IN_TAURI
 
-export const NoticeProvider = () => {
+const NoticeProvider = () => {
   const { t } = useTranslation()
   const unlistenFn = useRef<UnlistenFn>(null)
   useEffect(() => {

@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import type { ProxyGroupItem, SubscriptionInfo } from '../ipc/bindings'
 import { useClashInfo } from '../ipc/use-clash-info'
 
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+import { isInTauri } from '@nyanpasu/utils'
 
 const prepareServer = (server?: string) => {
   if (server?.startsWith(':')) {

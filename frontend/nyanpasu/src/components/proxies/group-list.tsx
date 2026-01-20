@@ -46,7 +46,7 @@ const IconRender = memo(function IconRender({ icon }: { icon: string }) {
   )
 })
 
-export interface GroupListProps extends ListItemButtonProps {
+interface GroupListProps extends ListItemButtonProps {
   scrollRef: RefObject<HTMLElement>
 }
 

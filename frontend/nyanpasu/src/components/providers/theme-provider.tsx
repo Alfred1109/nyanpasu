@@ -21,7 +21,7 @@ import { isLinux } from '@/consts'
 const isInTauri = IS_IN_TAURI
 const appWindow = isInTauri ? getCurrentWebviewWindow() : null
 
-export const DEFAULT_COLOR = '#1867C0'
+const DEFAULT_COLOR = '#1867C0'
 
 const CUSTOM_THEME_KEY = 'custom-theme' as const
 
@@ -151,7 +151,7 @@ const ThemeContext = createContext<{
   setThemeColor: (color: string) => Promise<void>
 } | null>(null)
 
-export function useExperimentalThemeContext() {
+function useExperimentalThemeContext() {
   const context = useContext(ThemeContext)
 
   if (!context) {

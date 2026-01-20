@@ -5,7 +5,7 @@ import { Tooltip } from '@mui/material'
 import { useClashConnections } from '@nyanpasu/interface'
 import { FloatingButton } from '@nyanpasu/ui'
 
-export const CloseConnectionsButton = () => {
+const CloseConnectionsButton = () => {
   const { t } = useTranslation()
 
   const { deleteConnections } = useClashConnections()

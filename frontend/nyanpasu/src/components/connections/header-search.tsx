@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { FilledInputProps, TextField, TextFieldProps } from '@mui/material'
 import { alpha } from '@nyanpasu/ui'
 
-export const HeaderSearch = (props: TextFieldProps) => {
+const HeaderSearch = (props: TextFieldProps) => {
   const { t } = useTranslation()
 
   const inputProps: Partial<FilledInputProps> = {

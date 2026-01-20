@@ -6,7 +6,7 @@ import { NYANPASU_SETTING_QUERY_KEY } from '../ipc/consts'
 import { unwrapResult } from '../utils'
 import { useDebouncedConfigUpdate } from './use-debounced-config'
 
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
+import { isInTauri } from '@nyanpasu/utils'
 
 /**
  * Optimized settings hook with debounced updates for better performance

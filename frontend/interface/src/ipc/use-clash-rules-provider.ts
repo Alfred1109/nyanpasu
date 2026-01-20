@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
+import { isInTauri } from '@nyanpasu/utils'
 import { useClashAPI, type ClashProviderRule } from '../service/clash-api'
 import { CLASH_RULES_PROVIDER_QUERY_KEY } from './consts'
 
-const isInTauri = typeof window !== 'undefined' && '__TAURI__' in window
 
 export interface ClashRulesProviderQueryItem extends ClashProviderRule {
   mutate: () => Promise<void>

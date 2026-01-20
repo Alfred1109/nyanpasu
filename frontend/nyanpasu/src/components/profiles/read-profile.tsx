@@ -7,7 +7,7 @@ import { readTextFile } from '@tauri-apps/plugin-fs'
 
 const isWin = getSystem() === 'windows'
 
-export interface ReadProfileProps {
+interface ReadProfileProps {
   onSelected: (content: string) => void
 }
 

@@ -1,6 +1,6 @@
 import { FC, memo, ReactNode } from 'react'
 
-export const Header: FC<{ title?: ReactNode; header?: ReactNode }> = memo(
+const Header: FC<{ title?: ReactNode; header?: ReactNode }> = memo(
   function Header({
     title,
     header,

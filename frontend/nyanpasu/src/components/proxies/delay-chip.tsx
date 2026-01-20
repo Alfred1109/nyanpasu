@@ -6,7 +6,7 @@ import { CircularProgress } from '@mui/material'
 import { cn } from '@nyanpasu/ui'
 import FeatureChip from './feature-chip'
 
-export const DelayChip = memo(function DelayChip({
+const DelayChip = memo(function DelayChip({
   className,
   delay,
   onClick,

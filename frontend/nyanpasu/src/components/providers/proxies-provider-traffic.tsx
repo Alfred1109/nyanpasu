@@ -2,7 +2,7 @@ import parseTraffic from '@/utils/parse-traffic'
 import { LinearProgress, Tooltip } from '@mui/material'
 import { ProxiesProviderProps } from './proxies-provider'
 
-export const ProxiesProviderTraffic = ({ provider }: ProxiesProviderProps) => {
+const ProxiesProviderTraffic = ({ provider }: ProxiesProviderProps) => {
   const calc = () => {
     let progress = 0
     let total = 0

@@ -5,7 +5,7 @@ import { proxyGroupSortAtom } from '@/store'
 import { Button, Menu, MenuItem } from '@mui/material'
 import { alpha } from '@nyanpasu/ui'
 
-export const SortSelector = memo(function SortSelector() {
+const SortSelector = memo(function SortSelector() {
   const { t } = useTranslation()
 
   const [proxyGroupSort, setProxyGroupSort] = useAtom(proxyGroupSortAtom)

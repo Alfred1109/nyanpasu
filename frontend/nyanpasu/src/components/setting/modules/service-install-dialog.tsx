@@ -159,7 +159,7 @@ const getStageDescription = (
  * />
  * ```
  */
-export const ServiceInstallDialog = ({
+const ServiceInstallDialog = ({
   open,
   operation = 'install',
   installStage,

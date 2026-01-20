@@ -30,7 +30,7 @@ const LogListItem = memo(function LogListItem({
   )
 })
 
-export interface SideLogProps {
+interface SideLogProps {
   className?: string
 }
 

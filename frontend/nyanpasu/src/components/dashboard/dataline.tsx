@@ -15,7 +15,7 @@ export interface DatalineProps {
   visible?: boolean
 }
 
-export const Dataline: FC<DatalineProps> = ({
+const Dataline: FC<DatalineProps> = ({
   data,
   icon,
   title,

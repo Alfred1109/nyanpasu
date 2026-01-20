@@ -3,7 +3,7 @@ import { Add } from '@mui/icons-material'
 import { cn, FloatingButton } from '@nyanpasu/ui'
 import { AddProfileContext, ProfileDialog } from './profile-dialog'
 
-export const NewProfileButton = ({ className }: { className?: string }) => {
+const NewProfileButton = ({ className }: { className?: string }) => {
   const addProfileCtx = use(AddProfileContext)
   const [open, setOpen] = useState(!!addProfileCtx)
   useEffect(() => {

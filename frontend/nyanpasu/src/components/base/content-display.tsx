@@ -2,13 +2,13 @@ import { ReactNode } from 'react'
 import { Public } from '@mui/icons-material'
 import { cn } from '@nyanpasu/ui'
 
-export interface ContentDisplayProps {
+interface ContentDisplayProps {
   className?: string
   message?: string
   children?: ReactNode
 }
 
-export const ContentDisplay = ({
+const ContentDisplay = ({
   message,
   children,
   className,

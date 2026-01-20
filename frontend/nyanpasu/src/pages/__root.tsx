@@ -28,7 +28,7 @@ import styles from './-__root.module.scss'
 dayjs.extend(relativeTime)
 dayjs.extend(customParseFormat)
 
-export const Catch = ({ error }: ErrorComponentProps) => {
+const Catch = ({ error }: ErrorComponentProps) => {
   const { mode } = useColorScheme()
   return (
     <div className={cn(styles.oops, mode === 'dark' && styles.dark)}>
@@ -42,7 +42,7 @@ export const Catch = ({ error }: ErrorComponentProps) => {
   )
 }
 
-export const Pending = () => <div>Loading from _root...</div>
+const Pending = () => <div>Loading from _root...</div>
 
 const TanStackRouterDevtools = import.meta.env.PROD
   ? () => null // Render nothing in production
@@ -61,7 +61,7 @@ export const Route = createRootRoute({
   pendingComponent: Pending,
 })
 
-export default function App() {
+function App() {
   useNyanpasuStorageSubscribers()
 
   useMount(() => {

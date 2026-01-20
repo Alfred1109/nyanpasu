@@ -23,7 +23,7 @@ function LatencyTag({ name, value }: { name: string; value: number }) {
   )
 }
 
-export const TimingPanel = ({ data }: { data: { [key: string]: number } }) => {
+const TimingPanel = ({ data }: { data: { [key: string]: number } }) => {
   const isDrawer = useAtomValue(atomIsDrawer)
 
   const { value } = useSetting('clash_core')

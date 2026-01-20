@@ -161,7 +161,7 @@ export const useColumns = (): Array<MRT_ColumnDef<TableConnection>> => {
   )
 }
 
-export type ConnectionColumnFilterDialogProps = {} & Omit<
+type ConnectionColumnFilterDialogProps = {} & Omit<
   BaseDialogProps,
   'title'
 >

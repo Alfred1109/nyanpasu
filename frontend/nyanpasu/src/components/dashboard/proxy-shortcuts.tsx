@@ -28,7 +28,7 @@ const TitleComp = () => {
   )
 }
 
-export const ProxyShortcuts = () => {
+const ProxyShortcuts = () => {
   const { t } = useTranslation()
 
   const isDrawer = useAtomValue(atomIsDrawer)

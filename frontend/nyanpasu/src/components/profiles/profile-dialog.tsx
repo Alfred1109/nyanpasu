@@ -35,7 +35,7 @@ import { ClashProfile, ClashProfileBuilder } from './utils'
 
 const ProfileMonacoViewer = lazy(() => import('./profile-monaco-viewer'))
 
-export interface ProfileDialogProps {
+interface ProfileDialogProps {
   profile?: ProfileQueryResultItem
   open: boolean
   onClose: () => void

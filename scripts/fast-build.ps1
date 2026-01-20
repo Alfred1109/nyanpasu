@@ -1,45 +1,25 @@
-# 高性能构建脚本 - 充分利用 i7-13700KF 24线程 + 64GB内存
+# 高性能构建脚本 - 使用共享构建模块
 param(
     [string]$BuildType = "release",
     [switch]$SkipFrontend = $false,
     [switch]$UseCache
 )
 
+# 导入共享构建函数模块
+Import-Module "$PSScriptRoot\shared-build-functions.psm1" -Force
+
 Write-Host "🚀 Starting Fast Build Process..." -ForegroundColor Green
-Write-Host "Hardware: i7-13700KF (24 threads) + 64GB RAM" -ForegroundColor Cyan
 
-# 设置环境变量优化编译
-$env:CARGO_BUILD_JOBS = "20"           # 使用20个并行任务
-$env:CARGO_NET_OFFLINE = "false"       # 确保能下载依赖
-$env:RUSTC_WRAPPER = ""                # 清除可能的wrapper
-$env:CARGO_TARGET_DIR = "target"       # 使用标准target目录以利用缓存
+# 获取最优构建设置
+$buildSettings = Get-OptimalBuildSettings
 
-# Node.js 构建优化
-$env:NODE_OPTIONS = "--max-old-space-size=8192"  # 分配8GB内存给Node.js
-$env:UV_THREADPOOL_SIZE = "20"         # 增加libuv线程池大小
+# 设置优化的构建环境
+Set-OptimizedBuildEnvironment -ParallelJobs $buildSettings.RecommendedParallelJobs -NodeMemoryLimit $buildSettings.NodeMemoryLimit -ThreadPoolSize $buildSettings.ThreadPoolSize
 
-# 根据构建类型设置不同的优化策略
-switch ($BuildType) {
-    "debug" {
-        Write-Host "🔧 Using debug build profile..." -ForegroundColor Yellow
-        $cargoProfile = "dev"
-        $viteBuildArgs = "--mode development"
-    }
-    "fast" {
-        Write-Host "⚡ Using fast build profile..." -ForegroundColor Yellow
-        $cargoProfile = "fast-build"
-        $viteBuildArgs = "--mode production --minify esbuild"
-    }
-    "release" {
-        Write-Host "🎯 Using release build profile..." -ForegroundColor Yellow
-        $cargoProfile = "release"
-        $viteBuildArgs = "--mode production"
-    }
-}
-
-# 检查并行构建能力
-$cpuCores = (Get-WmiObject -Class Win32_ComputerSystem).NumberOfLogicalProcessors
-Write-Host "💻 Detected $cpuCores logical cores, using optimized parallel settings" -ForegroundColor Cyan
+# 获取构建配置
+$buildProfile = Get-BuildProfile -BuildType $BuildType
+$cargoProfile = $buildProfile.CargoProfile
+$viteBuildArgs = $buildProfile.ViteBuildArgs
 
 # 前端构建阶段
 if (-not $SkipFrontend) {

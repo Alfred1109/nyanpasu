@@ -3,7 +3,7 @@ import { SxProps } from '@mui/material'
 import ListItem from '@mui/material/ListItem'
 import ListItemText from '@mui/material/ListItemText'
 
-export interface BaseItemProps {
+interface BaseItemProps {
   title: ReactNode
   children: ReactNode
   sxItem?: SxProps

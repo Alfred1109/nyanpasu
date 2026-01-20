@@ -12,7 +12,7 @@ import { BaseDialog, cn } from '@nyanpasu/ui'
 
 const MonacoDiffEditor = lazy(() => import('./profile-monaco-diff-viewer'))
 
-export type RuntimeConfigDiffDialogProps = {
+type RuntimeConfigDiffDialogProps = {
   open: boolean
   onClose: () => void
 }

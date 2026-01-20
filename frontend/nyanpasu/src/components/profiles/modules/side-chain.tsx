@@ -13,7 +13,7 @@ import { ClashProfile, ClashProfileBuilder, filterProfiles } from '../utils'
 import ChainItem from './chain-item'
 import { atomChainsSelected, atomGlobalChainCurrent } from './store'
 
-export interface SideChainProps {
+interface SideChainProps {
   onChainEdit: (item?: ProfileQueryResultItem) => void | Promise<void>
 }
 

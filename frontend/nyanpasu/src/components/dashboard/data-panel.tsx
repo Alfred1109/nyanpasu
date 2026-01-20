@@ -20,7 +20,7 @@ import {
   useSetting,
 } from '@nyanpasu/interface'
 
-export const DataPanel = ({ visible = true }: { visible?: boolean }) => {
+const DataPanel = ({ visible = true }: { visible?: boolean }) => {
   const { t } = useTranslation()
 
   const { data: clashTraffic } = useClashTraffic()

@@ -66,4 +66,3 @@ export const UpdateProviderButton = ({
   )
 }
 
-export default UpdateProviderButton
