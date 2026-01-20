@@ -192,7 +192,7 @@ const EnhancedTunModeButton = () => {
         <Box
           sx={{
             position: 'absolute',
-            top: 8,
+            top: 36,
             left: 8,
             display: 'flex',
             alignItems: 'center',

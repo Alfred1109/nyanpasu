@@ -9,6 +9,16 @@ use super::SERVICE_PATH;
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
 
+#[cfg(all(unix, not(target_os = "macos")))]
+fn map_privilege_tool_not_found_error(e: std::io::Error) -> anyhow::Error {
+    if e.kind() == std::io::ErrorKind::NotFound {
+        return anyhow::anyhow!(
+            "failed to run privileged command: privilege escalation tool not found (pkexec/polkit). Please install polkit (pkexec) and try again"
+        );
+    }
+    anyhow::Error::from(e)
+}
+
 
 #[cfg(windows)]
 fn run_service_command(
@@ -132,7 +142,7 @@ pub async fn install_service() -> anyhow::Result<()> {
                 let result = cmd
                     .status()
                     .map(|status| (status, String::new()))
-                    .map_err(anyhow::Error::from);
+                    .map_err(map_privilege_tool_not_found_error);
                 tracing::info!(
                     "📋 Runas command result: {:?}",
                     result.as_ref().map(|r| r.0)
@@ -261,7 +271,7 @@ pub async fn update_service() -> anyhow::Result<()> {
                 cmd.gui(false).show(false);
                 cmd.status()
                     .map(|status| (status, String::new()))
-                    .map_err(anyhow::Error::from)
+                    .map_err(map_privilege_tool_not_found_error)
             }
             #[cfg(target_os = "macos")]
             {
@@ -294,6 +304,22 @@ pub async fn update_service() -> anyhow::Result<()> {
 }
 
 pub async fn uninstall_service() -> anyhow::Result<()> {
+    // If service is not installed, treat uninstall as success
+    if let Ok(info) = status().await {
+        if matches!(info.status, ServiceStatus::NotInstalled) {
+            tracing::info!("service not installed, skip uninstall");
+            return Ok(());
+        }
+    }
+
+    if !SERVICE_PATH.as_path().exists() {
+        tracing::warn!(
+            "nyanpasu-service executable not found at: {}, skip uninstall",
+            SERVICE_PATH.display()
+        );
+        return Ok(());
+    }
+
     let (child, output) = tokio::task::spawn_blocking(
         move || -> anyhow::Result<(std::process::ExitStatus, String)> {
             #[cfg(windows)]
@@ -307,7 +333,7 @@ pub async fn uninstall_service() -> anyhow::Result<()> {
                 cmd.gui(false).show(false);
                 cmd.status()
                     .map(|status| (status, String::new()))
-                    .map_err(anyhow::Error::from)
+                    .map_err(map_privilege_tool_not_found_error)
             }
             #[cfg(target_os = "macos")]
             {
@@ -353,7 +379,7 @@ pub async fn start_service() -> anyhow::Result<()> {
                     .show(false)
                     .status()
                     .map(|status| (status, String::new()))
-                    .map_err(anyhow::Error::from)
+                    .map_err(map_privilege_tool_not_found_error)
             };
 
             #[cfg(windows)]
@@ -460,7 +486,7 @@ pub async fn stop_service() -> anyhow::Result<()> {
                 cmd.gui(false).show(false);
                 cmd.status()
                     .map(|status| (status, String::new()))
-                    .map_err(anyhow::Error::from)
+                    .map_err(map_privilege_tool_not_found_error)
             }
             #[cfg(target_os = "macos")]
             {
@@ -516,7 +542,7 @@ pub async fn restart_service() -> anyhow::Result<()> {
                     .show(false)
                     .status()
                     .map(|status| (status, String::new()))
-                    .map_err(anyhow::Error::from)
+                    .map_err(map_privilege_tool_not_found_error)
             };
 
             #[cfg(not(all(unix, not(target_os = "macos"))))]
@@ -533,7 +559,7 @@ pub async fn restart_service() -> anyhow::Result<()> {
                         .show(false)
                         .status()
                         .map(|status| (status, String::new()))
-                        .map_err(anyhow::Error::from)
+                        .map_err(map_privilege_tool_not_found_error)
                 }
             };
 
