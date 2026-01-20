@@ -1,4 +1,4 @@
-import { useMutation, useQuery, UseQueryOptions } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isInTauri } from '@nyanpasu/utils'
 import { unwrapResult } from '../utils'
 import { commands } from './bindings'
@@ -49,7 +49,7 @@ export const useProfileContent = (uid: string) => {
     queryFn: async () => {
       return unwrapResult(await commands.readProfileFile(uid))
     },
-    enabled: isInTauri && !!uid,
+    enabled: isInTauri() && !!uid,
   })
 
   /**

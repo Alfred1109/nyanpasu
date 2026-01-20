@@ -1,12 +1,11 @@
 import { merge } from 'lodash-es'
 import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { message } from 'antd'
-import { useTranslation } from 'react-i18next'
 import { isInTauri } from '@nyanpasu/utils'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { unwrapResult } from '../utils'
 import { commands, type IVerge } from './bindings'
-import { NYANPASU_SETTING_QUERY_KEY } from './consts'
+import { NYANPASU_BACKEND_EVENT_NAME, NYANPASU_SETTING_QUERY_KEY } from './consts'
 
 /**
  * Custom hook for managing Verge configuration settings using React Query.
@@ -48,8 +47,29 @@ export const useSettings = () => {
 
     window.addEventListener('nyanpasu-setting-changed', handleSettingChanged)
 
+    // Root fix: listen to backend mutation event emitted by Tauri
+    // backend emits: event = 'nyanpasu://mutation', payload = 'nyanpasu_config' | 'clash_config' | ...
+    let unlisten: UnlistenFn | null = null
+    listen<'nyanpasu_config' | 'clash_config' | 'proxies' | 'profiles'>(
+      NYANPASU_BACKEND_EVENT_NAME,
+      ({ payload }) => {
+        if (payload === 'nyanpasu_config') {
+          handleSettingChanged()
+        }
+      },
+    )
+      .then((fn) => {
+        unlisten = fn
+      })
+      .catch(() => {
+        // ignore: fallback to DOM event + manual dispatch
+      })
+
     return () => {
       window.removeEventListener('nyanpasu-setting-changed', handleSettingChanged)
+      if (unlisten) {
+        unlisten()
+      }
     }
   }, [queryClient])
 

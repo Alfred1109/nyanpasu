@@ -26,6 +26,14 @@ export const PaperButton = memo(function PaperButton({
 }: PaperButtonProps) {
   const normalizeSx = (sx?: SxProps<Theme>) => (Array.isArray(sx) ? sx : sx ? [sx] : [])
 
+  const mergedPaperSx = [
+    {
+      borderRadius: 6,
+      backgroundColor: 'background.paper',
+    },
+    ...normalizeSx(sxPaper),
+  ] as SxProps<Theme>
+
   const mergedSx = [
     {
       borderRadius: 6,
@@ -47,11 +55,7 @@ export const PaperButton = memo(function PaperButton({
   return (
     <Paper
       elevation={0}
-      sx={{
-        borderRadius: 6,
-        backgroundColor: 'background.paper',
-        ...sxPaper,
-      }}
+      sx={mergedPaperSx}
     >
       <ButtonBase
         sx={mergedSx}

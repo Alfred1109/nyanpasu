@@ -12,8 +12,10 @@ interface PaperSwitchButtonProps extends PaperButtonProps {
   loading?: boolean
   disableLoading?: boolean
   children?: ReactNode
+  statusText?: ReactNode
   onClick?: () => Promise<void> | void
   sxPaper?: SxProps<Theme>
+  sxButton?: SxProps<Theme>
 }
 
 export const PaperSwitchButton = memo(function PaperSwitchButton({
@@ -22,8 +24,10 @@ export const PaperSwitchButton = memo(function PaperSwitchButton({
   loading,
   disableLoading,
   children,
+  statusText,
   onClick,
   sxPaper,
+  sxButton,
   ...props
 }: PaperSwitchButtonProps) {
   const [pending, setPending] = useControllableValue<boolean>(
@@ -39,92 +43,145 @@ export const PaperSwitchButton = memo(function PaperSwitchButton({
         return onClick()
       }
 
+      if (pending === true) {
+        return
+      }
+
       setPending(true)
-      await onClick()
-      setPending(false)
+      try {
+        await onClick()
+      } finally {
+        setPending(false)
+      }
     }
   }
 
+  const normalizeSx = (sx?: SxProps<Theme>) => (Array.isArray(sx) ? sx : sx ? [sx] : [])
+  const resolvedStatusText = statusText === undefined ? (checked ? '已开启' : '已关闭') : statusText
+
   return (
     <PaperButton
-      label={label}
-      sxPaper={{
-        backgroundColor: checked 
-          ? 'primary.main' 
-          : 'background.paper',
-        border: checked 
-          ? '2px solid' 
-          : '1px solid',
-        borderColor: checked 
-          ? 'primary.main' 
-          : 'divider',
-        transition: 'all 0.3s ease',
-        '&:hover': {
-          backgroundColor: checked 
-            ? 'primary.dark' 
-            : 'action.hover',
+      sxPaper={[
+        {
+          backgroundColor: checked ? 'primary.main' : 'background.paper',
+          border: checked ? '2px solid' : '1px solid',
+          borderColor: checked ? 'primary.main' : 'divider',
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            backgroundColor: checked ? 'primary.dark' : 'action.hover',
+          },
         },
-      }}
-      sxButton={{
-        flexDirection: 'column',
-        alignItems: 'start',
-        gap: 0.5,
-        position: 'relative',
-      }}
-      onClick={handleClick}
+        ...normalizeSx(sxPaper),
+      ]}
+      sxButton={[
+        {
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          gap: 1,
+        },
+        ...normalizeSx(sxButton),
+      ]}
       {...props}
+      onClick={handleClick}
     >
-      {/* Switch indicator */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 8,
-          right: 8,
-        }}
-      >
-        <Switch
-          checked={checked}
-          size="small"
-          sx={{
-            pointerEvents: 'none',
-            '& .MuiSwitch-thumb': {
-              backgroundColor: checked ? 'primary.contrastText' : 'text.secondary',
-            },
-            '& .MuiSwitch-track': {
-              backgroundColor: checked ? 'primary.light' : 'action.disabled',
-            },
-          }}
-        />
-      </Box>
+      {label ? (
+        <>
+          <Box display="flex" alignItems="center" justifyContent="space-between" gap={1} width="100%">
+            <Box flex={1} minWidth={0}>
+              <Typography
+                noWrap
+                component="p"
+                sx={{
+                  fontWeight: 700,
+                  textOverflow: 'ellipsis',
+                  overflow: 'hidden',
+                  color: checked ? 'primary.contrastText' : 'text.primary',
+                }}
+              >
+                {label}
+              </Typography>
+            </Box>
 
-      {/* Status text */}
-      <Typography
-        variant="caption"
-        sx={{
-          position: 'absolute',
-          bottom: 8,
-          right: 8,
-          color: checked ? 'primary.contrastText' : 'text.secondary',
-          fontWeight: 'medium',
-          fontSize: '0.7rem',
-        }}
-      >
-        {checked ? '已开启' : '已关闭'}
-      </Typography>
+            <Box display="flex" alignItems="center" gap={1}>
+              {pending === true && <CircularProgress color="inherit" size={18} />}
 
-      {pending === true && (
-        <CircularProgress
-          sx={{
-            position: 'absolute',
-            bottom: 'calc(50% - 12px)',
-            right: 12,
-          }}
-          color="inherit"
-          size={24}
-        />
+              <Switch
+                checked={checked}
+                size="small"
+                sx={{
+                  pointerEvents: 'none',
+                  '& .MuiSwitch-thumb': {
+                    backgroundColor: checked ? 'primary.contrastText' : 'text.secondary',
+                  },
+                  '& .MuiSwitch-track': {
+                    backgroundColor: checked ? 'primary.light' : 'action.disabled',
+                  },
+                }}
+              />
+            </Box>
+          </Box>
+
+          <Box display="flex" alignItems="center" justifyContent="space-between" gap={1} width="100%">
+            <Box flex={1} minWidth={0}>
+              {children}
+            </Box>
+
+            {resolvedStatusText !== null && (
+              <Typography
+                variant="caption"
+                sx={{
+                  color: checked ? 'primary.contrastText' : 'text.secondary',
+                  fontWeight: 'medium',
+                  fontSize: '0.7rem',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {resolvedStatusText}
+              </Typography>
+            )}
+          </Box>
+        </>
+      ) : (
+        <Box display="flex" alignItems="center" justifyContent="space-between" gap={1} width="100%">
+          <Box flex={1} minWidth={0}>
+            {children}
+          </Box>
+
+          <Box display="flex" flexDirection="column" alignItems="flex-end" gap={0.5}>
+            <Box display="flex" alignItems="center" gap={1}>
+              {pending === true && <CircularProgress color="inherit" size={18} />}
+
+              <Switch
+                checked={checked}
+                size="small"
+                sx={{
+                  pointerEvents: 'none',
+                  '& .MuiSwitch-thumb': {
+                    backgroundColor: checked ? 'primary.contrastText' : 'text.secondary',
+                  },
+                  '& .MuiSwitch-track': {
+                    backgroundColor: checked ? 'primary.light' : 'action.disabled',
+                  },
+                }}
+              />
+            </Box>
+
+            {resolvedStatusText !== null && (
+              <Typography
+                variant="caption"
+                sx={{
+                  color: checked ? 'primary.contrastText' : 'text.secondary',
+                  fontWeight: 'medium',
+                  fontSize: '0.7rem',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {resolvedStatusText}
+              </Typography>
+            )}
+          </Box>
+        </Box>
       )}
-
-      {children}
     </PaperButton>
   )
 })

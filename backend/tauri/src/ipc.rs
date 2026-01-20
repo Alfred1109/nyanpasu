@@ -510,10 +510,16 @@ pub async fn toggle_tun_mode() -> Result<crate::core::privilege::PrivilegedOpera
         enable: !current_enable,
     };
 
-    PrivilegeManager::global()
+    let result = PrivilegeManager::global()
         .execute_operation(operation)
         .await
-        .map_err(|e| IpcError::Custom(e.to_string()))
+        .map_err(|e| IpcError::Custom(e.to_string()))?;
+
+    if result.success {
+        crate::core::handle::Handle::refresh_verge();
+    }
+
+    Ok(result)
 }
 
 #[tauri::command]

@@ -116,6 +116,7 @@ const EnhancedTunModeButton = () => {
   
   const [isToggling, setIsToggling] = useState(false)
   const [lastToggleError, setLastToggleError] = useState<string | null>(null)
+  const [optimisticTunEnabled, setOptimisticTunEnabled] = useState<boolean | null>(null)
 
   // 计算当前服务状态信息
   const statusInfo = getServiceStatusInfo(
@@ -137,6 +138,9 @@ const EnhancedTunModeButton = () => {
 
     setIsToggling(true)
     setLastToggleError(null)
+    const currentEnabled = Boolean(tunMode.value)
+    const nextEnabled = !currentEnabled
+    setOptimisticTunEnabled(nextEnabled)
 
     try {
       const result = await toggleTunMode()
@@ -148,12 +152,18 @@ const EnhancedTunModeButton = () => {
           kind: 'success' in result && result.success ? 'info' : 'warning',
         })
       }
+
+      // If backend reports failure (but not thrown), rollback optimistic UI
+      if (result && typeof result === 'object' && 'success' in result && result.success === false) {
+        setOptimisticTunEnabled(currentEnabled)
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       setLastToggleError(errorMessage)
+      // rollback optimistic state
+      setOptimisticTunEnabled(currentEnabled)
       
-      const isCurrentlyEnabled = Boolean(tunMode.value)
-      const action = isCurrentlyEnabled ? '关闭' : '开启'
+      const action = currentEnabled ? '关闭' : '开启'
       
       message(`${action} TUN Mode 失败: ${errorMessage}`, {
         title: t('Error'),
@@ -171,69 +181,87 @@ const EnhancedTunModeButton = () => {
     }
   }, [serviceManager.serviceStatus])
 
-  const isTunEnabled = Boolean(tunMode.value)
-  const isDisabled = !statusInfo.canUseTun || isToggling || serviceManager.isInstalling
+  // When underlying setting changes (query refresh), clear optimistic override
+  useEffect(() => {
+    setOptimisticTunEnabled(null)
+  }, [tunMode.value])
+
+  const isTunEnabled = optimisticTunEnabled ?? Boolean(tunMode.value)
+  const isDisabled = isToggling || serviceManager.isInstalling
 
   return (
     <Box>
       {/* 主要的TUN模式开关 */}
       <PaperSwitchButton
         label={t('TUN Mode')}
-        checked={isTunEnabled && statusInfo.canUseTun}
+        checked={isTunEnabled}
         loading={isToggling}
         onClick={handleTunMode}
         disabled={isDisabled}
+        statusText={null}
+        sxPaper={{
+          backgroundColor:
+            isTunEnabled && statusInfo.canUseTun ? 'primary.main' : 'background.paper',
+          border: isTunEnabled && statusInfo.canUseTun ? '2px solid' : '1px solid',
+          borderColor:
+            isTunEnabled && statusInfo.canUseTun ? 'primary.main' : 'divider',
+          '&:hover': {
+            backgroundColor:
+              isTunEnabled && statusInfo.canUseTun ? 'primary.dark' : 'action.hover',
+          },
+        }}
         sx={{
-          position: 'relative',
           opacity: statusInfo.canUseTun ? 1 : 0.6,
         }}
       >
         {/* 服务状态指示器 */}
         <Box
           sx={{
-            position: 'absolute',
-            top: 36,
-            left: 8,
             display: 'flex',
             alignItems: 'center',
-            gap: 0.5,
+            justifyContent: 'space-between',
+            gap: 1,
+            width: '100%',
           }}
         >
-          {statusInfo.canUseTun ? (
-            <Chip
-              icon={getStatusIcon('success')}
-              label="可用"
-              size="small"
-              color="success"
-              variant="filled"
-              sx={{ fontSize: '0.65rem', height: 20 }}
-            />
-          ) : (
-            <Chip
-              icon={getStatusIcon(statusInfo.severity)}
-              label="不可用"
-              size="small"
-              color={statusInfo.severity}
-              variant="outlined" 
-              sx={{ fontSize: '0.65rem', height: 20 }}
-            />
-          )}
-        </Box>
+          <Box display="flex" alignItems="center" gap={0.75}>
+            {statusInfo.canUseTun ? (
+              <Chip
+                icon={getStatusIcon('success')}
+                label="可用"
+                size="small"
+                color="success"
+                variant="filled"
+                sx={{ fontSize: '0.65rem', height: 20 }}
+              />
+            ) : (
+              <Chip
+                icon={getStatusIcon(statusInfo.severity)}
+                label="不可用"
+                size="small"
+                color={statusInfo.severity}
+                variant="outlined"
+                sx={{ fontSize: '0.65rem', height: 20 }}
+              />
+            )}
+          </Box>
 
-        {/* TUN模式状态文本 */}
-        <Typography
-          variant="caption"
-          sx={{
-            position: 'absolute',
-            bottom: 8,
-            left: 8,
-            color: isTunEnabled && statusInfo.canUseTun ? 'success.main' : 'text.secondary',
-            fontWeight: 'medium',
-            fontSize: '0.7rem',
-          }}
-        >
-          {isTunEnabled && statusInfo.canUseTun ? 'TUN已开启' : 'TUN已关闭'}
-        </Typography>
+          {/* TUN模式状态文本 */}
+          <Typography
+            variant="caption"
+            sx={{
+              color:
+                isTunEnabled
+                  ? (statusInfo.canUseTun ? 'success.main' : 'warning.main')
+                  : 'text.secondary',
+              fontWeight: 'medium',
+              fontSize: '0.7rem',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {isTunEnabled ? 'TUN已开启' : 'TUN已关闭'}
+          </Typography>
+        </Box>
       </PaperSwitchButton>
 
       {/* 状态提示信息 */}

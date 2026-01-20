@@ -20,11 +20,11 @@ import { isInTauri } from '@nyanpasu/utils'
 export const useSystemProxy = () => {
   const query = useQuery({
     queryKey: [NYANPASU_SYSTEM_PROXY_QUERY_KEY],
-    enabled: isInTauri,
+    enabled: isInTauri(),
     queryFn: async () => {
       return unwrapResult(await commands.getSysProxy())
     },
-    refetchInterval: isInTauri ? 5000 : false,
+    refetchInterval: isInTauri() ? 5000 : false,
     refetchIntervalInBackground: true,
   })
 

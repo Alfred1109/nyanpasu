@@ -11,7 +11,9 @@ use std::os::unix::process::ExitStatusExt;
 
 #[cfg(all(unix, not(target_os = "macos")))]
 fn map_privilege_tool_not_found_error(e: std::io::Error) -> anyhow::Error {
-    if e.kind() == std::io::ErrorKind::NotFound {
+    // Linux: missing privilege escalation tool (commonly pkexec from polkit)
+    // Some environments report ENOENT via raw_os_error=2 but with a non-NotFound kind.
+    if e.kind() == std::io::ErrorKind::NotFound || e.raw_os_error() == Some(2) {
         return anyhow::anyhow!(
             "failed to run privileged command: privilege escalation tool not found (pkexec/polkit). Please install polkit (pkexec) and try again"
         );
@@ -362,6 +364,21 @@ pub async fn uninstall_service() -> anyhow::Result<()> {
 }
 
 pub async fn start_service() -> anyhow::Result<()> {
+    // If service is already running, treat start as success
+    if let Ok(status_info) = status().await {
+        if matches!(status_info.status, ServiceStatus::Running) {
+            tracing::info!("service already running, skip start");
+            return Ok(());
+        }
+    }
+
+    if !SERVICE_PATH.as_path().exists() {
+        anyhow::bail!(
+            "nyanpasu-service executable not found at: {}",
+            SERVICE_PATH.display()
+        );
+    }
+
     let (child, output) = tokio::task::spawn_blocking(move || -> anyhow::Result<(std::process::ExitStatus, String)> {
         #[cfg(not(target_os = "macos"))]
         {

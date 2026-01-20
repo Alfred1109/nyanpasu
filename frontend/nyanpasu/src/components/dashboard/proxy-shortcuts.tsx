@@ -1,6 +1,7 @@
 import { useLockFn } from 'ahooks'
 import { useTranslation } from 'react-i18next'
 import { useAtomValue } from 'jotai'
+import { useEffect, useState } from 'react'
 import { message } from '@tauri-apps/plugin-dialog'
 import { Chip, Grid, Paper } from '@mui/material'
 import { SettingsEthernet } from '@mui/icons-material'
@@ -34,9 +35,20 @@ const ProxyShortcuts = () => {
   const isDrawer = useAtomValue(atomIsDrawer)
 
   const tunMode = useSetting('enable_tun_mode')
+  const [optimisticTunEnabled, setOptimisticTunEnabled] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    setOptimisticTunEnabled(null)
+  }, [tunMode.value])
+
+  const checked = optimisticTunEnabled ?? (tunMode.value || false)
 
   const handleTunMode = useLockFn(async () => {
     try {
+      const currentEnabled = Boolean(tunMode.value)
+      const nextEnabled = !currentEnabled
+      setOptimisticTunEnabled(nextEnabled)
+
       const result = await toggleTunMode()
       
       // 如果后端返回了消息（比如服务未安装/未启动的提示），显示给用户
@@ -46,8 +58,13 @@ const ProxyShortcuts = () => {
           kind: 'success' in result && result.success ? 'info' : 'warning',
         })
       }
+
+      if (result && typeof result === 'object' && 'success' in result && result.success === false) {
+        setOptimisticTunEnabled(currentEnabled)
+      }
     } catch (error) {
       const isCurrentlyEnabled = Boolean(tunMode.value)
+      setOptimisticTunEnabled(isCurrentlyEnabled)
       const action = isCurrentlyEnabled ? 'Deactivation' : 'Activation'
       message(`${action} TUN Mode failed!`, {
         title: t('Error'),
@@ -71,7 +88,7 @@ const ProxyShortcuts = () => {
         <div className="flex gap-3">
           <div className="!w-full">
             <PaperSwitchButton
-              checked={tunMode.value || false}
+              checked={checked}
               onClick={handleTunMode}
             >
               <div className="flex flex-col gap-2">

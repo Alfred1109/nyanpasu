@@ -32,12 +32,16 @@ export const toggleTunMode = async () => {
   const result = unwrapResult(await commands.toggleTunMode())
 
   // Trigger a small delay to allow backend to emit mutation event
-  setTimeout(() => {
-    // Force a page refresh to update UI state if needed
+  const dispatchSettingChanged = () => {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('nyanpasu-setting-changed'))
     }
-  }, 100)
+  }
+
+  // Fast refresh
+  setTimeout(dispatchSettingChanged, 100)
+  // Delayed refresh for slow backends / file flush
+  setTimeout(dispatchSettingChanged, 800)
 
   return result
 }
