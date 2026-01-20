@@ -62,7 +62,7 @@ export const ObjectUtils = {
       for (const key in source) {
         if (this.isObject(source[key])) {
           if (!target[key]) Object.assign(target, { [key]: {} })
-          this.deepMerge(target[key], source[key])
+          this.deepMerge(target[key] as any, source[key] as any)
         } else {
           Object.assign(target, { [key]: source[key] })
         }

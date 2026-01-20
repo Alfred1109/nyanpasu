@@ -44,7 +44,6 @@ pub use parking_lot::{Mutex as ParkingMutex, RwLock as ParkingRwLock};
 // 重新导出Tauri相关
 pub use tauri::{
     command, AppHandle, Manager, Runtime, State, Window,
-    api::notification::Notification,
 };
 
 // 重新导出specta相关（用于类型生成）

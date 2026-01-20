@@ -70,7 +70,7 @@ const legacyConnectionsRoute = legacyConnectionsRouteImport.update({
   getParentRoute: () => legacyRouteRoute,
 } as any)
 
-interface FileRoutesByFullPath {
+export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/connections': typeof legacyConnectionsRoute
   '/dashboard': typeof legacyDashboardRoute
@@ -81,7 +81,7 @@ interface FileRoutesByFullPath {
   '/rules': typeof legacyRulesRoute
   '/settings': typeof legacySettingsRoute
 }
-interface FileRoutesByTo {
+export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/connections': typeof legacyConnectionsRoute
   '/dashboard': typeof legacyDashboardRoute
@@ -92,7 +92,7 @@ interface FileRoutesByTo {
   '/rules': typeof legacyRulesRoute
   '/settings': typeof legacySettingsRoute
 }
-interface FileRoutesById {
+export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/(legacy)': typeof legacyRouteRouteWithChildren
@@ -142,7 +142,7 @@ export interface FileRouteTypes {
     | '/(legacy)/settings'
   fileRoutesById: FileRoutesById
 }
-interface RootRouteChildren {
+export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   legacyRouteRoute: typeof legacyRouteRouteWithChildren
 }

@@ -1,4 +1,4 @@
-use std::io::{Error, ErrorKind, Result};
+use std::io::{Error, ErrorKind};
 use crate::ID;
 
 /// Common utilities shared across all platform implementations
@@ -58,16 +58,16 @@ pub trait DeepLinkHandler {
     type Error: std::error::Error + Send + Sync + 'static;
     
     /// Register a scheme with the system
-    fn register_scheme(&mut self, scheme: &str) -> Result<(), Self::Error>;
+    fn register_scheme(&mut self, scheme: &str) -> std::result::Result<(), Self::Error>;
     
     /// Unregister a scheme from the system
-    fn unregister_scheme(&mut self, scheme: &str) -> Result<(), Self::Error>;
+    fn unregister_scheme(&mut self, scheme: &str) -> std::result::Result<(), Self::Error>;
     
     /// Start listening for deep-link events
-    fn start_listener(&mut self) -> Result<(), Self::Error>;
+    fn start_listener(&mut self) -> std::result::Result<(), Self::Error>;
     
     /// Stop listening for deep-link events
-    fn stop_listener(&mut self) -> Result<(), Self::Error>;
+    fn stop_listener(&mut self) -> std::result::Result<(), Self::Error>;
 }
 
 /// Common socket operations used across platforms

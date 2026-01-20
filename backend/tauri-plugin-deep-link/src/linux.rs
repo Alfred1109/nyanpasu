@@ -7,13 +7,13 @@ use std::{
 
 use dirs::data_dir;
 
-use crate::{shared::{utils, errors}, ID};
+use crate::ID;
 
 pub fn register<F: FnMut(String) + Send + 'static>(schemes: &[&str], handler: F) -> Result<()> {
     listen(handler)?;
 
     let mut target = data_dir()
-        .ok_or_else(|| errors::data_directory_not_found())?
+        .ok_or_else(|| Error::new(ErrorKind::NotFound, "Data directory not found"))?
         .join("applications");
 
     create_dir_all(&target)?;
@@ -23,7 +23,7 @@ pub fn register<F: FnMut(String) + Send + 'static>(schemes: &[&str], handler: F)
     let file_name = format!(
         "{}-handler.desktop",
         exe.file_name()
-            .ok_or_else(|| errors::executable_name_not_found())?
+            .ok_or_else(|| Error::new(ErrorKind::NotFound, "Executable name not found"))?
             .to_string_lossy()
     );
 
@@ -42,7 +42,7 @@ pub fn register<F: FnMut(String) + Send + 'static>(schemes: &[&str], handler: F)
     file.write_all(
         format!(
             include_str!("template.desktop"),
-            name = utils::expect_id_set("register")
+            name = ID.get().unwrap_or(&"nyanpasu".to_string())
                 .split('.')
                 .last()
                 .unwrap(),
