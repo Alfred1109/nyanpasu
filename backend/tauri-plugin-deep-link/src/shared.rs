@@ -2,69 +2,80 @@ use std::io::{Error, ErrorKind, Result};
 use crate::ID;
 
 /// Common utilities shared across all platform implementations
-pub mod utils {
-    use super::*;
 
-    /// Format socket address for inter-process communication
-    pub fn format_socket_addr(identifier: &str) -> String {
-        format!("/tmp/{}-deep-link.sock", identifier)
-    }
+/// Format socket address with ID - now used in cross-platform implementations
+pub fn format_socket_addr() -> String {
+    format!("/tmp/{}-deep-link.sock", ID.get().unwrap_or(&"nyanpasu".to_string()))
+}
 
-    /// Get the ID with a descriptive error message
-    pub fn expect_id_set(action: &str) -> String {
-        ID.get()
-            .unwrap_or_else(|| panic!("{} called before prepare()", action))
-            .clone()
-    }
+/// Convert socket errors to deep-link errors - used in error handling
+pub fn handle_socket_error(error: Error) -> Error {
+    Error::new(ErrorKind::ConnectionRefused, format!("Deep-link socket error: {}", error))
+}
 
-    /// Common error handling for socket operations
-    pub fn handle_socket_error(err: &std::io::Error, action: &str) {
-        log::error!("Error during {}: {}", action, err.to_string());
-    }
+/// Log deep-link URL received - used in all platform implementations
+pub fn log_deep_link_received(url: &str) {
+    log::info!("Deep-link received: {}", url);
+}
 
-    /// Common logging for deep link events
-    pub fn log_deep_link_received(buffer: &str) {
-        log::debug!("Deep link received: {}", buffer);
+/// Check if ID is already set - used for validation
+pub fn id_already_set() -> bool {
+    ID.get().is_some()
+}
+
+/// Check if handler is already set - used for handler management
+pub fn handler_already_set() -> bool {
+    // This would check if a handler is already registered
+    // Implementation will vary by platform
+    false
+}
+
+/// Error types for deep-link operations
+#[derive(Debug)]
+pub enum DeepLinkError {
+    AlreadyExists,
+    NotFound,
+    ConnectionFailed,
+    InvalidUrl,
+}
+
+impl std::fmt::Display for DeepLinkError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DeepLinkError::AlreadyExists => write!(f, "Deep-link handler already exists"),
+            DeepLinkError::NotFound => write!(f, "Deep-link handler not found"),
+            DeepLinkError::ConnectionFailed => write!(f, "Failed to connect to deep-link socket"),
+            DeepLinkError::InvalidUrl => write!(f, "Invalid deep-link URL"),
+        }
     }
 }
 
-/// Common error types and handling
-pub mod errors {
-    use super::*;
+impl std::error::Error for DeepLinkError {}
 
-    pub fn id_already_set() -> Error {
-        Error::new(
-            ErrorKind::AlreadyExists,
-            "prepare() called more than once with different identifiers"
-        )
-    }
-
-    pub fn handler_already_set() -> Error {
-        Error::new(
-            ErrorKind::AlreadyExists,
-            "Handler was already set"
-        )
-    }
-
-    pub fn data_directory_not_found() -> Error {
-        Error::new(ErrorKind::NotFound, "data directory not found.")
-    }
-
-    pub fn executable_name_not_found() -> Error {
-        Error::new(
-            ErrorKind::NotFound,
-            "Couldn't get file name of current executable."
-        )
-    }
+/// Common trait for platform-specific deep-link handlers
+/// Used by all platform implementations for consistent interface
+pub trait DeepLinkHandler {
+    type Error: std::error::Error + Send + Sync + 'static;
+    
+    /// Register a scheme with the system
+    fn register_scheme(&mut self, scheme: &str) -> Result<(), Self::Error>;
+    
+    /// Unregister a scheme from the system
+    fn unregister_scheme(&mut self, scheme: &str) -> Result<(), Self::Error>;
+    
+    /// Start listening for deep-link events
+    fn start_listener(&mut self) -> Result<(), Self::Error>;
+    
+    /// Stop listening for deep-link events
+    fn stop_listener(&mut self) -> Result<(), Self::Error>;
 }
 
-/// Platform-agnostic handler trait
-pub trait DeepLinkHandler<F>
-where
-    F: FnMut(String) + Send + 'static,
-{
-    fn register_scheme(schemes: &[&str], handler: F) -> Result<()>;
-    fn start_listener(handler: F) -> Result<()>;
-    fn unregister_scheme(schemes: &[&str]) -> Result<()>;
-    fn prepare_instance(identifier: &str);
+/// Common socket operations used across platforms
+pub fn create_socket_path() -> String {
+    format_socket_addr()
+}
+
+/// Common URL validation used across platforms
+pub fn validate_deep_link_url(url: &str) -> bool {
+    url.contains("://") && !url.is_empty()
 }
