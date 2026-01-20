@@ -1,0 +1,358 @@
+/**
+ * 统一样式变量库
+ * 集中管理项目中重复的样式变量，避免在多个SCSS文件中重复定义
+ */
+
+// 颜色变量 - 统一Material Design颜色系统
+:root {
+  // 主色调变量
+  --primary-main: #5b5c9d;
+  --primary-light: #8a8bc8;
+  --primary-dark: #2f306e;
+  
+  // 文本颜色变量
+  --text-primary: #637381;
+  --text-secondary: rgba(99, 115, 129, 0.7);
+  --text-disabled: rgba(99, 115, 129, 0.5);
+  
+  // 背景颜色变量
+  --background-paper: #ffffff;
+  --background-default: #fafafa;
+  --background-surface: var(--color-md-surface);
+  
+  // 边框和分割线
+  --border-color: rgba(145, 158, 171, 0.24);
+  --divider-color: rgba(145, 158, 171, 0.24);
+  
+  // 选择和高亮
+  --selection-color: #f5f5f5;
+  --highlight-color: rgba(91, 92, 157, 0.08);
+  
+  // 滚动条样式
+  --scroller-color: #90939980;
+  --scroller-width: 6px;
+  --scroller-border-radius: 6px;
+  
+  // 圆角变量
+  --border-radius: 12px;
+  --border-radius-sm: 8px;
+  --border-radius-lg: 16px;
+  --border-radius-xl: 24px;
+  
+  // 间距变量
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+  
+  // 阴影变量
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  
+  // z-index 变量
+  --z-tooltip: 1000;
+  --z-modal: 1100;
+  --z-popover: 1200;
+  --z-dropdown: 1300;
+  --z-fixed: 1400;
+  --z-modal-backdrop: 1500;
+  
+  // 过渡动画变量
+  --transition-duration-fast: 150ms;
+  --transition-duration-normal: 250ms;
+  --transition-duration-slow: 350ms;
+  --transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-easing-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --transition-easing-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  
+  // 字体变量
+  --font-family-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 
+                      Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', 
+                      Consolas, 'Courier New', monospace;
+  
+  // 字体大小变量
+  --font-size-xs: 0.75rem;    // 12px
+  --font-size-sm: 0.875rem;   // 14px
+  --font-size-md: 1rem;       // 16px
+  --font-size-lg: 1.125rem;   // 18px
+  --font-size-xl: 1.25rem;    // 20px
+  --font-size-2xl: 1.5rem;    // 24px
+  --font-size-3xl: 1.875rem;  // 30px
+  --font-size-4xl: 2.25rem;   // 36px
+  
+  // 行高变量
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  // 字重变量
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+}
+
+// 深色主题变量
+:root.dark {
+  // 重写深色主题下的变量
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-disabled: rgba(255, 255, 255, 0.5);
+  
+  --background-paper: #1a1a1a;
+  --background-default: #121212;
+  
+  --border-color: rgba(255, 255, 255, 0.12);
+  --divider-color: rgba(255, 255, 255, 0.12);
+  
+  --selection-color: #333333;
+  --highlight-color: rgba(255, 255, 255, 0.08);
+  
+  --scroller-color: rgba(255, 255, 255, 0.3);
+}
+
+// 混入(Mixins) - 统一重复的样式模式
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin absolute-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+@mixin text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@mixin text-clamp($lines: 2) {
+  display: -webkit-box;
+  -webkit-line-clamp: $lines;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@mixin hover-lift {
+  transition: transform var(--transition-duration-fast) var(--transition-easing);
+  
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@mixin card-shadow {
+  box-shadow: var(--shadow-md);
+  transition: box-shadow var(--transition-duration-fast) var(--transition-easing);
+  
+  &:hover {
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+@mixin scrollbar-style {
+  &::-webkit-scrollbar {
+    width: var(--scroller-width);
+    height: var(--scroller-width);
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--scroller-color);
+    border-radius: var(--scroller-border-radius);
+  }
+
+  &::-webkit-scrollbar-track {
+    margin-block: calc(var(--border-radius) + 3px);
+  }
+}
+
+@mixin focus-ring {
+  outline: 2px solid var(--primary-main);
+  outline-offset: 2px;
+}
+
+@mixin button-reset {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  outline: inherit;
+}
+
+@mixin input-base {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  transition: border-color var(--transition-duration-fast) var(--transition-easing);
+  
+  &:focus {
+    @include focus-ring;
+    border-color: var(--primary-main);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// 响应式断点混入
+@mixin mobile {
+  @media (max-width: 767px) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (min-width: 768px) and (max-width: 1023px) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: 1024px) {
+    @content;
+  }
+}
+
+@mixin large-desktop {
+  @media (min-width: 1440px) {
+    @content;
+  }
+}
+
+// 动画关键帧
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-down {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+// 工具类样式
+.animate-fade-in {
+  animation: fade-in var(--transition-duration-normal) var(--transition-easing);
+}
+
+.animate-slide-up {
+  animation: slide-up var(--transition-duration-normal) var(--transition-easing);
+}
+
+.animate-scale-in {
+  animation: scale-in var(--transition-duration-normal) var(--transition-easing);
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite;
+}
+
+// 通用工具类
+.flex-center {
+  @include flex-center;
+}
+
+.flex-between {
+  @include flex-between;
+}
+
+.text-ellipsis {
+  @include text-ellipsis;
+}
+
+.text-clamp-2 {
+  @include text-clamp(2);
+}
+
+.text-clamp-3 {
+  @include text-clamp(3);
+}
+
+.scrollbar-custom {
+  @include scrollbar-style;
+}
+
+.hover-lift {
+  @include hover-lift;
+}
+
+.card-shadow {
+  @include card-shadow;
+}
