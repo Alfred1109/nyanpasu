@@ -17,6 +17,7 @@ export default function MutationProvider() {
     listen<'nyanpasu_config' | 'clash_config' | 'proxies' | 'profiles'>(
       'nyanpasu://mutation',
       ({ payload }) => {
+        console.log('nyanpasu MutationProvider received event:', payload)
         switch (payload) {
           case 'nyanpasu_config':
             mutate((key: unknown) => {
@@ -54,9 +55,11 @@ export default function MutationProvider() {
             )
             break
           case 'profiles':
+            console.log('Processing profiles event - invalidating queries')
             mutate((key: unknown) => {
+              console.log('Checking query key for profiles:', key)
               if (typeof key === 'string') {
-                return (
+                const matches = (
                   key.includes('getClashRules') ||
                   key.includes('getClashInfo') ||
                   key.includes('getClashVersion') ||
@@ -66,6 +69,8 @@ export default function MutationProvider() {
                   key.includes('getProxiesProviders') ||
                   key.includes('getAllProxiesProviders')
                 )
+                console.log(`Query key "${key}" matches: ${matches}`)
+                return matches
               }
               return false
             })

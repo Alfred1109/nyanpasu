@@ -6,11 +6,10 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import 'allotment/dist/style.css'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAtomValue } from 'jotai'
-import { ReactNode, useEffect, useRef } from 'react'
+import { ReactNode } from 'react'
 import { atomIsDrawerOnlyIcon } from '@/store'
 import { alpha, cn } from '@nyanpasu/ui'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { TauriEvent, UnlistenFn } from '@tauri-apps/api/event'
+import { useQuery } from '@tanstack/react-query'
 import { LayoutControl } from '../layout/layout-control'
 import styles from './app-container.module.scss'
 import AppDrawer from './app-drawer'
@@ -37,27 +36,7 @@ const AppContainer = ({
     enabled: !!appWindow,
     initialData: false,
   })
-  const queryClient = useQueryClient()
-  const unlistenRef = useRef<UnlistenFn | null>(null)
   const onlyIcon = useAtomValue(atomIsDrawerOnlyIcon)
-
-  useEffect(() => {
-    if (!appWindow) return
-
-    appWindow
-      .listen(TauriEvent.WINDOW_RESIZED, () => {
-        queryClient.invalidateQueries({ queryKey: ['isMaximized'] })
-      })
-      .then((unlisten) => {
-        unlistenRef.current = unlisten
-      })
-      .catch((error) => {
-        console.error(error)
-      })
-    return () => {
-      unlistenRef.current?.()
-    }
-  }, [queryClient])
 
   return (
     <Paper

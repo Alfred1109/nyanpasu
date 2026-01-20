@@ -1,6 +1,5 @@
 import AppContainer from '@/components/app/app-container'
 import LocalesProvider from '@/components/app/locales-provider'
-import MutationProvider from '@/components/layout/mutation-provider'
 import NoticeProvider from '@/components/layout/notice-provider'
 import PageTransition from '@/components/layout/page-transition'
 import SchemeProvider from '@/components/layout/scheme-provider'
@@ -55,7 +54,6 @@ function Layout() {
   return (
     <QueryLoaderProvider>
       <LocalesProvider />
-      <MutationProvider />
       <NoticeProvider />
       <SchemeProvider />
       {/* <UpdaterDialog /> */}

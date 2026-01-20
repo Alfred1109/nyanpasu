@@ -31,17 +31,16 @@ export const patchNyanpasuConfig = async (payload: VergeConfig) => {
 export const toggleTunMode = async () => {
   const result = unwrapResult(await commands.toggleTunMode())
 
-  // Trigger a small delay to allow backend to emit mutation event
+  // Note: Backend now emits 'nyanpasu://mutation' event with payload 'nyanpasu_config'
+  // which is handled by MutationProvider. Manual DOM events are kept as fallback.
   const dispatchSettingChanged = () => {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('nyanpasu-setting-changed'))
     }
   }
 
-  // Fast refresh
+  // Fallback refresh (backend should handle this via Tauri events)
   setTimeout(dispatchSettingChanged, 100)
-  // Delayed refresh for slow backends / file flush
-  setTimeout(dispatchSettingChanged, 800)
 
   return result
 }
