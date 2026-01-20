@@ -7,15 +7,18 @@ const SettingPage = () => {
     <Box p={2}>
       <Box mb={3} textAlign="center">
         <Typography variant="h5" gutterBottom>
-          🎯 核心设置
+          🎯 系统服务管理
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          简化版本，只保留最重要的功能
+          管理系统服务和TUN模式，享受更好的代理体验
         </Typography>
       </Box>
       
-      <Stack spacing={3} maxWidth={600} mx="auto">
+      <Stack spacing={3} maxWidth={700} mx="auto">
+        {/* 系统服务管理 - 放在前面，因为TUN模式依赖于服务 */}
         <SettingSystemService />
+        
+        {/* TUN模式管理 - 现在使用增强版实现，智能显示服务依赖状态 */}
         <SettingSystemProxy />
       </Stack>
     </Box>
