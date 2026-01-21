@@ -36,3 +36,12 @@ rustflags = [
   "-C",
   "link-arg=/INCREMENTAL:NO", # 禁用增量链接提升性能
 ]
+
+[target.x86_64-pc-windows-gnu]
+# Windows GNU 交叉编译配置
+linker = "x86_64-w64-mingw32-gcc"
+ar = "x86_64-w64-mingw32-ar"
+rustflags = [
+  "-C",
+  "link-arg=-static-libgcc",
+]

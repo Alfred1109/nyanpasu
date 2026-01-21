@@ -36,7 +36,7 @@ fn ensure_windows_admin() {
             return;
         };
         let args: Vec<String> = std::env::args().skip(1).collect();
-        let status = runas::Command::new(exe).args(args).status();
+        let status = runas::Command::new(exe).args(&args).status();
         let code = status.ok().and_then(|s| s.code()).unwrap_or(1);
         std::process::exit(code);
     }
