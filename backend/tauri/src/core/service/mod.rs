@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use nyanpasu_ipc::types::StatusInfo;
-use once_cell::sync::Lazy;
 
 use crate::{config::Config, utils::dirs::app_install_dir};
 
@@ -56,9 +55,27 @@ pub fn get_service_path() -> anyhow::Result<PathBuf> {
 }
 
 fn get_service_path_candidates() -> anyhow::Result<Vec<PathBuf>> {
+    use crate::utils::dirs::app_data_dir;
+    
     let mut candidates = Vec::new();
 
-    // 1. Try current exe directory first (most reliable in development)
+    // 1. PRIORITY: Try app install directory first (bundled with the application)
+    // This is the version packaged with the app during build
+    if let Ok(app_path) = app_install_dir() {
+        for file_name in service_file_names() {
+            candidates.push(app_path.join(&file_name));
+        }
+    }
+
+    // 2. Try app data directory (user-downloaded/updated files)
+    // This is where users can manually place newer versions of the service
+    if let Ok(data_path) = app_data_dir() {
+        for file_name in service_file_names() {
+            candidates.push(data_path.join(&file_name));
+        }
+    }
+
+    // 3. Try current exe directory (development/portable)
     if let Ok(current_exe) = std::env::current_exe() {
         if let Some(exe_dir) = current_exe.parent() {
             // Development: backend/target/debug/sidecar/
@@ -72,7 +89,7 @@ fn get_service_path_candidates() -> anyhow::Result<Vec<PathBuf>> {
         }
     }
 
-    // 2. Try common installation paths
+    // 4. Try common installation paths (Windows)
     #[cfg(windows)]
     {
         // Program Files installation path
@@ -83,18 +100,6 @@ fn get_service_path_candidates() -> anyhow::Result<Vec<PathBuf>> {
                     .join(&file_name);
                 candidates.push(program_files_path);
             }
-        }
-    }
-
-    // 3. Try app install directory with sidecar subdirectory
-    if let Ok(app_path) = app_install_dir() {
-        for file_name in service_file_names() {
-            candidates.push(app_path.join("sidecar").join(&file_name));
-        }
-
-        // 4. Try app directory (same folder as main exe)
-        for file_name in service_file_names() {
-            candidates.push(app_path.join(&file_name));
         }
     }
 
