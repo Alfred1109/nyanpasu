@@ -4,7 +4,7 @@ use std::ffi::OsString;
 
 use nyanpasu_ipc::types::ServiceStatus;
 
-use super::SERVICE_PATH;
+use super::resolve_service_path;
 
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
@@ -99,21 +99,22 @@ pub async fn install_service() -> anyhow::Result<()> {
     let args = get_service_install_args().await?;
     tracing::info!("🔧 Service install args prepared: {:?}", args);
 
+    let service_path = resolve_service_path();
     tracing::info!(
         "🔍 Checking service executable path: {}",
-        SERVICE_PATH.display()
+        service_path.display()
     );
-    if !SERVICE_PATH.as_path().exists() {
+    if !service_path.as_path().exists() {
         tracing::error!(
             "❌ Service executable not found at: {}",
-            SERVICE_PATH.display()
+            service_path.display()
         );
         anyhow::bail!(
             "nyanpasu-service executable not found at: {}",
-            SERVICE_PATH.display()
+            service_path.display()
         );
     }
-    tracing::info!("✅ Service executable found at: {}", SERVICE_PATH.display());
+    tracing::info!("✅ Service executable found at: {}", service_path.display());
     tracing::info!("⚡ Executing service installation command with elevated privileges");
     let (child, output) = tokio::task::spawn_blocking(
         move || -> anyhow::Result<(std::process::ExitStatus, String)> {
@@ -121,10 +122,10 @@ pub async fn install_service() -> anyhow::Result<()> {
             {
                 tracing::info!(
                     "🔧 Windows: Running service command: {} {:?}",
-                    SERVICE_PATH.display(),
+                    service_path.display(),
                     args
                 );
-                let result = run_service_command(SERVICE_PATH.as_path(), &args);
+                let result = run_service_command(service_path.as_path(), &args);
                 tracing::info!(
                     "📋 Service script result: {:?}",
                     result.as_ref().map(|r| r.0)
@@ -133,12 +134,12 @@ pub async fn install_service() -> anyhow::Result<()> {
             }
             #[cfg(all(not(windows), not(target_os = "macos")))]
             {
-                let mut cmd = RunasCommand::new(SERVICE_PATH.as_path());
+                let mut cmd = RunasCommand::new(service_path.as_path());
                 cmd.args(&args);
                 cmd.gui(false).show(false);
                 tracing::info!(
                     "🔧 Linux: Running runas command: {} {:?}",
-                    SERVICE_PATH.display(),
+                    service_path.display(),
                     args
                 );
                 let result = cmd
@@ -157,10 +158,10 @@ pub async fn install_service() -> anyhow::Result<()> {
                 let args = args.iter().map(|s| s.to_string_lossy()).collect::<Vec<_>>();
                 tracing::info!(
                     "🔧 macOS: Running sudo command: {} {:?}",
-                    SERVICE_PATH.display(),
+                    service_path.display(),
                     args
                 );
-                sudo(SERVICE_PATH.to_string_lossy(), &args)
+                sudo(service_path.to_string_lossy(), &args)
                     .map(|()| {
                         tracing::info!("✅ Sudo command succeeded");
                         (std::process::ExitStatus::from_raw(0), String::new())
@@ -260,15 +261,24 @@ pub async fn install_service() -> anyhow::Result<()> {
 }
 
 pub async fn update_service() -> anyhow::Result<()> {
+    let service_path = resolve_service_path();
+    if !service_path.as_path().exists() {
+        tracing::warn!(
+            "nyanpasu-service executable not found at: {}, skip update",
+            service_path.display()
+        );
+        return Ok(());
+    }
+
     let (child, output) = tokio::task::spawn_blocking(
         move || -> anyhow::Result<(std::process::ExitStatus, String)> {
             #[cfg(windows)]
             {
-                run_service_command(SERVICE_PATH.as_path(), &["update".into()])
+                run_service_command(service_path.as_path(), &["update".into()])
             }
             #[cfg(all(not(windows), not(target_os = "macos")))]
             {
-                let mut cmd = RunasCommand::new(SERVICE_PATH.as_path());
+                let mut cmd = RunasCommand::new(service_path.as_path());
                 cmd.args(&["update"]);
                 cmd.gui(false).show(false);
                 cmd.status()
@@ -278,7 +288,7 @@ pub async fn update_service() -> anyhow::Result<()> {
             #[cfg(target_os = "macos")]
             {
                 use crate::utils::sudo::sudo;
-                sudo(SERVICE_PATH.to_string_lossy(), &["update"])
+                sudo(service_path.to_string_lossy(), &["update"])
                     .map(|()| (std::process::ExitStatus::from_raw(0), String::new()))
                     .map_err(anyhow::Error::from)
             }
@@ -314,10 +324,11 @@ pub async fn uninstall_service() -> anyhow::Result<()> {
         }
     }
 
-    if !SERVICE_PATH.as_path().exists() {
+    let service_path = resolve_service_path();
+    if !service_path.as_path().exists() {
         tracing::warn!(
             "nyanpasu-service executable not found at: {}, skip uninstall",
-            SERVICE_PATH.display()
+            service_path.display()
         );
         return Ok(());
     }
@@ -326,11 +337,11 @@ pub async fn uninstall_service() -> anyhow::Result<()> {
         move || -> anyhow::Result<(std::process::ExitStatus, String)> {
             #[cfg(windows)]
             {
-                run_service_command(SERVICE_PATH.as_path(), &["uninstall".into()])
+                run_service_command(service_path.as_path(), &["uninstall".into()])
             }
             #[cfg(all(not(windows), not(target_os = "macos")))]
             {
-                let mut cmd = RunasCommand::new(SERVICE_PATH.as_path());
+                let mut cmd = RunasCommand::new(service_path.as_path());
                 cmd.args(&["uninstall"]);
                 cmd.gui(false).show(false);
                 cmd.status()
@@ -340,7 +351,7 @@ pub async fn uninstall_service() -> anyhow::Result<()> {
             #[cfg(target_os = "macos")]
             {
                 use crate::utils::sudo::sudo;
-                sudo(SERVICE_PATH.to_string_lossy(), &["uninstall"])
+                sudo(service_path.to_string_lossy(), &["uninstall"])
                     .map(|()| (std::process::ExitStatus::from_raw(0), String::new()))
                     .map_err(anyhow::Error::from)
             }
@@ -372,10 +383,11 @@ pub async fn start_service() -> anyhow::Result<()> {
         }
     }
 
-    if !SERVICE_PATH.as_path().exists() {
+    let service_path = resolve_service_path();
+    if !service_path.as_path().exists() {
         anyhow::bail!(
             "nyanpasu-service executable not found at: {}",
-            SERVICE_PATH.display()
+            service_path.display()
         );
     }
 
@@ -400,11 +412,11 @@ pub async fn start_service() -> anyhow::Result<()> {
             };
 
             #[cfg(windows)]
-            let status = run_service_command(SERVICE_PATH.as_path(), &["start".into()]);
+            let status = run_service_command(service_path.as_path(), &["start".into()]);
 
             #[cfg(all(not(windows), not(all(unix, not(target_os = "macos")))))]
             let status = {
-                let mut cmd = RunasCommand::new(SERVICE_PATH.as_path());
+                let mut cmd = RunasCommand::new(service_path.as_path());
                 cmd.args(&["start"]);
                 cmd.gui(false).show(false);
                 cmd.status()
@@ -482,10 +494,11 @@ pub async fn stop_service() -> anyhow::Result<()> {
         }
     }
 
-    if !SERVICE_PATH.as_path().exists() {
+    let service_path = resolve_service_path();
+    if !service_path.as_path().exists() {
         tracing::warn!(
             "nyanpasu-service executable not found at: {}, skip stopping",
-            SERVICE_PATH.display()
+            service_path.display()
         );
         return Ok(());
     }
@@ -494,11 +507,11 @@ pub async fn stop_service() -> anyhow::Result<()> {
         move || -> anyhow::Result<(std::process::ExitStatus, String)> {
             #[cfg(windows)]
             {
-                run_service_command(SERVICE_PATH.as_path(), &["stop".into()])
+                run_service_command(service_path.as_path(), &["stop".into()])
             }
             #[cfg(all(not(windows), not(target_os = "macos")))]
             {
-                let mut cmd = RunasCommand::new(SERVICE_PATH.as_path());
+                let mut cmd = RunasCommand::new(service_path.as_path());
                 cmd.args(&["stop"]);
                 cmd.gui(false).show(false);
                 cmd.status()
@@ -508,7 +521,7 @@ pub async fn stop_service() -> anyhow::Result<()> {
             #[cfg(target_os = "macos")]
             {
                 use crate::utils::sudo::sudo;
-                sudo(SERVICE_PATH.to_string_lossy(), &["stop"])
+                sudo(service_path.to_string_lossy(), &["stop"])
                     .map(|()| (std::process::ExitStatus::from_raw(0), String::new()))
                     .map_err(anyhow::Error::from)
             }

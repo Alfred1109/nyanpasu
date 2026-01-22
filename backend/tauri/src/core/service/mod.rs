@@ -115,7 +115,9 @@ fn get_service_path_candidates() -> anyhow::Result<Vec<PathBuf>> {
     Ok(candidates)
 }
 
-static SERVICE_PATH: Lazy<PathBuf> = Lazy::new(|| {
+/// Get service path - dynamically resolved each time to avoid stale cached paths
+/// This ensures we always find the correct service executable even if files are moved/updated
+pub fn resolve_service_path() -> PathBuf {
     get_service_path().unwrap_or_else(|_| {
         // Final fallback
         app_install_dir()
@@ -128,7 +130,7 @@ static SERVICE_PATH: Lazy<PathBuf> = Lazy::new(|| {
             })
             .join(format!("{}{}", SERVICE_NAME, std::env::consts::EXE_SUFFIX))
     })
-});
+}
 
 pub async fn init_service() {
     let enable_service = {
