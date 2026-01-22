@@ -1,12 +1,11 @@
+use anyhow::{Context, Result as AnyhowResult};
+use serde::{Deserialize, Serialize};
+use specta::Type;
 /**
  * 统一Rust错误处理模块
  * 标准化20+文件中重复的Result返回模式和错误处理逻辑
  */
-
 use std::{fmt, io};
-use anyhow::{Context, Result as AnyhowResult};
-use serde::{Deserialize, Serialize};
-use specta::Type;
 
 /// 应用级标准Result类型
 pub type AppResult<T> = AnyhowResult<T>;
@@ -16,11 +15,20 @@ pub type AppResult<T> = AnyhowResult<T>;
 #[serde(tag = "type", content = "data")]
 pub enum AppError {
     /// 配置相关错误
-    Config { message: String, source: Option<String> },
+    Config {
+        message: String,
+        source: Option<String>,
+    },
     /// 网络请求错误
-    Network { message: String, status_code: Option<u16> },
+    Network {
+        message: String,
+        status_code: Option<u16>,
+    },
     /// 文件系统错误
-    FileSystem { message: String, path: Option<String> },
+    FileSystem {
+        message: String,
+        path: Option<String>,
+    },
     /// 权限错误
     Permission { message: String, required: String },
     /// 服务相关错误
@@ -28,9 +36,15 @@ pub enum AppError {
     /// 解析错误
     Parse { message: String, format: String },
     /// 验证错误
-    Validation { message: String, field: Option<String> },
+    Validation {
+        message: String,
+        field: Option<String>,
+    },
     /// 外部命令执行错误
-    Command { message: String, exit_code: Option<i32> },
+    Command {
+        message: String,
+        exit_code: Option<i32>,
+    },
     /// 超时错误
     Timeout { message: String, duration_ms: u64 },
     /// 通用错误
@@ -47,7 +61,10 @@ impl fmt::Display for AppError {
                     write!(f, "Config error: {}", message)
                 }
             }
-            AppError::Network { message, status_code } => {
+            AppError::Network {
+                message,
+                status_code,
+            } => {
                 if let Some(code) = status_code {
                     write!(f, "Network error: {} (status: {})", message, code)
                 } else {
@@ -84,7 +101,10 @@ impl fmt::Display for AppError {
                     write!(f, "Command error: {}", message)
                 }
             }
-            AppError::Timeout { message, duration_ms } => {
+            AppError::Timeout {
+                message,
+                duration_ms,
+            } => {
                 write!(f, "Timeout error: {} ({}ms)", message, duration_ms)
             }
             AppError::Generic { message } => {
@@ -100,7 +120,7 @@ impl std::error::Error for AppError {}
 pub trait StandardErrorHandler<T> {
     /// 转换为应用标准Result
     fn to_app_result(self) -> AppResult<T>;
-    
+
     /// 转换为应用标准Result并添加上下文
     fn to_app_result_with_context<F>(self, f: F) -> AppResult<T>
     where
@@ -114,7 +134,7 @@ where
     fn to_app_result(self) -> AppResult<T> {
         self.map_err(|e| anyhow::Error::from(e))
     }
-    
+
     fn to_app_result_with_context<F>(self, f: F) -> AppResult<T>
     where
         F: FnOnce() -> String,
@@ -127,7 +147,7 @@ impl<T> StandardErrorHandler<T> for Option<T> {
     fn to_app_result(self) -> AppResult<T> {
         self.ok_or_else(|| anyhow::anyhow!("Value is None"))
     }
-    
+
     fn to_app_result_with_context<F>(self, f: F) -> AppResult<T>
     where
         F: FnOnce() -> String,
@@ -164,7 +184,10 @@ pub mod error_constructors {
         anyhow::Error::msg(msg)
     }
 
-    pub fn permission_error(message: impl Into<String>, required: impl Into<String>) -> anyhow::Error {
+    pub fn permission_error(
+        message: impl Into<String>,
+        required: impl Into<String>,
+    ) -> anyhow::Error {
         anyhow::Error::msg(format!(
             "Permission error: {} (required: {})",
             message.into(),
@@ -213,10 +236,15 @@ where
 {
     match tokio::time::timeout(
         std::time::Duration::from_secs(30), // 默认30秒超时
-        operation
-    ).await {
+        operation,
+    )
+    .await
+    {
         Ok(result) => result,
-        Err(_) => Err(error_constructors::timeout_error("Operation timed out", 30000)),
+        Err(_) => Err(error_constructors::timeout_error(
+            "Operation timed out",
+            30000,
+        )),
     }
 }
 
@@ -225,9 +253,7 @@ pub fn safe_file_op<F, T>(operation: F, path: &str) -> AppResult<T>
 where
     F: FnOnce() -> io::Result<T>,
 {
-    operation().map_err(|e| {
-        error_constructors::file_error(e.to_string(), Some(path))
-    })
+    operation().map_err(|e| error_constructors::file_error(e.to_string(), Some(path)))
 }
 
 /// 统一的网络操作Result包装器
@@ -239,7 +265,10 @@ where
         Ok(result) => Ok(result),
         Err(e) => {
             let status_code = e.status().map(|s| s.as_u16());
-            Err(error_constructors::network_error(e.to_string(), status_code))
+            Err(error_constructors::network_error(
+                e.to_string(),
+                status_code,
+            ))
         }
     }
 }
@@ -249,9 +278,7 @@ pub fn safe_config_op<F, T>(operation: F, context: &str) -> AppResult<T>
 where
     F: FnOnce() -> Result<T, Box<dyn std::error::Error>>,
 {
-    operation().map_err(|e| {
-        error_constructors::config_error(format!("{}: {}", context, e))
-    })
+    operation().map_err(|e| error_constructors::config_error(format!("{}: {}", context, e)))
 }
 
 /// 便捷宏：简化错误处理

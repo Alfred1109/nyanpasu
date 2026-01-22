@@ -56,7 +56,7 @@ pub fn get_service_path() -> anyhow::Result<PathBuf> {
 
 fn get_service_path_candidates() -> anyhow::Result<Vec<PathBuf>> {
     use crate::utils::dirs::app_data_dir;
-    
+
     let mut candidates = Vec::new();
 
     // 1. PRIORITY: Try app install directory first (bundled with the application)

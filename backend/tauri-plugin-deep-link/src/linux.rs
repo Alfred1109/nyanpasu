@@ -42,7 +42,9 @@ pub fn register<F: FnMut(String) + Send + 'static>(schemes: &[&str], handler: F)
     file.write_all(
         format!(
             include_str!("template.desktop"),
-            name = ID.get().unwrap_or(&"nyanpasu".to_string())
+            name = ID
+                .get()
+                .unwrap_or(&"nyanpasu".to_string())
                 .split('.')
                 .last()
                 .unwrap(),

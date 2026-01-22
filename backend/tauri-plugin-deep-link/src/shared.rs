@@ -1,17 +1,23 @@
-use std::io::{Error, ErrorKind};
 use crate::ID;
+use std::io::{Error, ErrorKind};
 
 /// Common utilities shared across all platform implementations
 
 /// Format socket address with ID - now used in cross-platform implementations
 #[allow(dead_code)]
 pub fn format_socket_addr() -> String {
-    format!("/tmp/{}-deep-link.sock", ID.get().unwrap_or(&"nyanpasu".to_string()))
+    format!(
+        "/tmp/{}-deep-link.sock",
+        ID.get().unwrap_or(&"nyanpasu".to_string())
+    )
 }
 
 /// Convert socket errors to deep-link errors - used in error handling
 pub fn handle_socket_error(error: Error) -> Error {
-    Error::new(ErrorKind::ConnectionRefused, format!("Deep-link socket error: {}", error))
+    Error::new(
+        ErrorKind::ConnectionRefused,
+        format!("Deep-link socket error: {}", error),
+    )
 }
 
 /// Log deep-link URL received - used in all platform implementations
@@ -57,16 +63,16 @@ impl std::error::Error for DeepLinkError {}
 /// Used by all platform implementations for consistent interface
 pub trait DeepLinkHandler {
     type Error: std::error::Error + Send + Sync + 'static;
-    
+
     /// Register a scheme with the system
     fn register_scheme(&mut self, scheme: &str) -> std::result::Result<(), Self::Error>;
-    
+
     /// Unregister a scheme from the system
     fn unregister_scheme(&mut self, scheme: &str) -> std::result::Result<(), Self::Error>;
-    
+
     /// Start listening for deep-link events
     fn start_listener(&mut self) -> std::result::Result<(), Self::Error>;
-    
+
     /// Stop listening for deep-link events
     fn stop_listener(&mut self) -> std::result::Result<(), Self::Error>;
 }

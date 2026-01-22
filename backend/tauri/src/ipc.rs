@@ -131,22 +131,22 @@ pub async fn enhance_profiles() -> Result {
 #[specta::specta]
 pub async fn import_profile(url: String, option: Option<RemoteProfileOptionsBuilder>) -> Result {
     tracing::info!("开始导入配置: {}", url);
-    
+
     let url = url::Url::parse(&url).context("failed to parse the url")?;
     let mut builder = crate::config::profile::item::RemoteProfileBuilder::default();
     builder.url(url);
     if let Some(option) = option {
         builder.option(option.clone());
     }
-    
+
     tracing::info!("开始构建远程配置文件");
     let profile = builder
         .build_no_blocking()
         .await
         .context("failed to build a remote profile")?;
-    
+
     tracing::info!("配置文件构建成功，UID: {}", profile.uid());
-    
+
     // 根据是否为 Some(uid) 来判断是否要激活配置
     let profile_id = {
         if Config::profiles().draft().current.is_empty() {
@@ -155,16 +155,16 @@ pub async fn import_profile(url: String, option: Option<RemoteProfileOptionsBuil
             None
         }
     };
-    
+
     tracing::info!("准备保存配置到列表，profile_id: {:?}", profile_id);
-    
+
     {
         let committer = Config::profiles().auto_commit();
         (committer.draft().append_item(profile.into()))?;
     }
-    
+
     tracing::info!("配置已添加到列表");
-    
+
     // Activate the newly imported profile if no current profile exists
     if let Some(profile_id) = profile_id {
         tracing::info!("设置为当前活跃配置: {}", profile_id);
@@ -172,10 +172,10 @@ pub async fn import_profile(url: String, option: Option<RemoteProfileOptionsBuil
         builder.current(vec![profile_id]);
         patch_profiles_config(builder).await?;
     }
-    
+
     tracing::info!("发送 profiles 刷新事件");
     handle::Handle::refresh_profiles();
-    
+
     tracing::info!("配置导入完成");
     Ok(())
 }

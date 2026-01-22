@@ -67,7 +67,6 @@ impl Sysopt {
 
     /// reset the sysproxy
     pub fn reset_sysproxy(&self) -> Result<()> {
-
         let mut cur_sysproxy = self.cur_sysproxy.lock();
         let mut old_sysproxy = self.old_sysproxy.lock();
 
