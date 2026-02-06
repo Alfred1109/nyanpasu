@@ -272,7 +272,7 @@ export default defineConfig(({ command, mode }) => {
         output: {
           manualChunks: {
             // 更激进的代码分割提升并行构建
-            vendor: ['react', 'react-dom', 'react-router-dom'],
+            vendor: ['react', 'react-dom'],
             mui: ['@mui/material', '@mui/icons-material', '@mui/lab'],
             utils: ['lodash-es', 'dayjs', 'ahooks'],
             jsonWorker: [`monaco-editor/esm/vs/language/json/json.worker`],

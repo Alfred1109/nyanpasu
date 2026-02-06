@@ -78,7 +78,7 @@ export const DropdownMenuRadioGroup = ({
 }: ComponentProps<typeof DropdownMenuPrimitive.RadioGroup>) => {
   const [valueRaw, setValueRaw] = useControllableState<string>({
     prop: inputValue ?? undefined,
-    defaultProp: defaultValue ? String(defaultValue) : undefined,
+    defaultProp: defaultValue ? String(defaultValue) : '',
     onChange: onValueChange,
   })
 

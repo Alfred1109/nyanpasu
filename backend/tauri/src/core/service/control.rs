@@ -1,4 +1,5 @@
 use crate::utils::dirs::{app_config_dir, app_data_dir, app_install_dir};
+#[cfg(not(windows))]
 use runas::Command as RunasCommand;
 use std::ffi::OsString;
 
