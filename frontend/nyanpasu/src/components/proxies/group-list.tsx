@@ -107,7 +107,7 @@ export const GroupList = ({
               {group.icon && <IconRender icon={group.icon} />}
 
               <ListItemText
-                className="!truncate"
+                className="truncate!"
                 primary={group.name}
                 secondary={group.now}
               />

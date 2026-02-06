@@ -26,11 +26,10 @@ const SchemeProvider = () => {
         if (pathname.startsWith('//')) {
           pathname = pathname.slice(2)
         }
-        console.log('received', url, pathname)
+        console.debug('Scheme request received:', pathname)
         switch (pathname) {
           case 'install-config':
           case 'subscribe-remote-profile':
-            console.log('redirect to profile page')
             navigate({
               to: '/profiles',
               search: {

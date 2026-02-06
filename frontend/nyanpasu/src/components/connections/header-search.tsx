@@ -27,7 +27,7 @@ const HeaderSearch = (props: TextFieldProps) => {
       hiddenLabel
       placeholder={t('Filter conditions')}
       variant="filled"
-      className="!pb-0"
+      className="pb-0!"
       sx={{ input: { py: 1, fontSize: 14 } }}
       slotProps={{
         input: inputProps,

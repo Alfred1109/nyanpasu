@@ -28,7 +28,7 @@ function ProvidersPage() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <Chip
-            className="!h-10 truncate !rounded-full !p-2 !text-lg font-bold"
+            className="h-10! truncate rounded-full! p-2! text-lg! font-bold"
             label={`${t(`Proxies Providers`)} (${Object.entries(proxiesProvider.data ?? {}).length})`}
           />
 
@@ -56,7 +56,7 @@ function ProvidersPage() {
 
         <div className="flex items-center justify-between">
           <Chip
-            className="!h-10 truncate !rounded-full !p-2 !text-lg font-bold"
+            className="h-10! truncate rounded-full! p-2! text-lg! font-bold"
             label={`${t(`Rules Providers`)} (${Object.entries(rulesProvider.data ?? {}).length})`}
           />
 

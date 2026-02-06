@@ -1,10 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
-import getSystem from '@/utils/get-system'
 import { MenuOpen } from '@mui/icons-material'
 import { Backdrop, IconButton } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material/styles'
-import { alpha, cn } from '@nyanpasu/ui'
+import { alpha, cn, getSystem } from '@nyanpasu/ui'
 import AnimatedLogo from '../layout/animated-logo'
 import DrawerContent from './drawer-content'
 
@@ -23,7 +22,7 @@ const AppDrawer = () => {
         data-tauri-drag-region
       >
         <IconButton
-          className="!size-8 !min-w-0"
+          className="size-8! min-w-0!"
           sx={[
             (theme) => ({
               backgroundColor: alpha(theme.vars.palette.primary.main, 0.1),

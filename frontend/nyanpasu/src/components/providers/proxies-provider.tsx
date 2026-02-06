@@ -71,7 +71,7 @@ const ProxiesProvider = ({ provider }: ProxiesProviderProps) => {
           loading={loading}
           size="small"
           variant="contained"
-          className="!size-8 !min-w-0"
+          className="size-8! min-w-0!"
           onClick={handleClick}
         >
           <Refresh />

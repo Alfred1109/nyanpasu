@@ -27,7 +27,7 @@ export const LogFilter = () => {
       value={filterText}
       placeholder={t('Filter conditions')}
       onChange={(e) => setFilterText(e.target.value)}
-      className="!pb-0"
+      className="pb-0!"
       sx={{ input: { py: 1, fontSize: 14 } }}
       slotProps={{
         input: inputProps,

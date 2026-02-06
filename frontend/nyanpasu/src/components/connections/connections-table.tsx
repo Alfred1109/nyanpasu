@@ -168,7 +168,7 @@ const ConnectionsTable = ({ searchTerm }: { searchTerm?: string }) => {
     enableColumnPinning: true,
     muiTableContainerProps: {
       sx: { minHeight: '100%' },
-      className: '!absolute !h-full !w-full',
+      className: 'absolute! h-full! w-full!',
     },
     muiTableBodyRowProps({ row }) {
       return {
@@ -207,7 +207,7 @@ const ConnectionsTable = ({ searchTerm }: { searchTerm?: string }) => {
     </>
   ) : (
     <ContentDisplay
-      className="!absolute !h-full !w-full"
+      className="absolute! h-full! w-full!"
       message={t('No Connections')}
     />
   )

@@ -1,5 +1,4 @@
 import { memo, ReactNode } from 'react'
-// mergeSxProps removed in extreme cleanup
 import {
   ButtonBase,
   ButtonBaseProps,
@@ -7,7 +6,6 @@ import {
   Typography,
 } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material/styles'
-// alpha removed in extreme cleanup
 
 export interface PaperButtonProps extends ButtonBaseProps {
   label?: string

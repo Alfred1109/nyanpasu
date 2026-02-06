@@ -31,7 +31,7 @@ const RouteListItem = ({
   const listItemButton = (
     <ListItemButton
       className={cn(
-        onlyIcon ? '!mx-auto !size-16 !rounded-3xl' : '!rounded-full !pr-14',
+        onlyIcon ? 'mx-auto! size-16! rounded-3xl!' : 'rounded-full! pr-14!',
       )}
       sx={[
         (theme) => ({
@@ -58,7 +58,7 @@ const RouteListItem = ({
           sx: (theme) => ({
             fill: match ? theme.vars.palette.primary.main : undefined,
           }),
-          className: onlyIcon ? '!size-8' : undefined,
+          className: onlyIcon ? 'size-8!' : undefined,
         })}
       </ListItemIcon>
       {!onlyIcon && (

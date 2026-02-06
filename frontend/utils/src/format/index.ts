@@ -1,18 +1,25 @@
-// Format utilities consolidated from various sources
-
 /**
  * Error formatting utility
- * From frontend/nyanpasu/src/utils/index.ts
  */
 export function formatError(err: unknown): string {
   return `Error: ${err instanceof Error ? err.message : String(err)}`
 }
 
+interface EnvInfosInput {
+  os: string
+  arch: string
+  core: { [key: string]: string }
+  device: {
+    cpu: Array<string>
+    memory: string
+  }
+  build_info: { [key: string]: string }
+}
+
 /**
  * Environment info formatting utility
- * From frontend/nyanpasu/src/utils/index.ts
  */
-export function formatEnvInfos(envs: any) {
+export function formatEnvInfos(envs: EnvInfosInput) {
   let result = '----------- System -----------\n'
   result += `OS: ${envs.os}\n`
   result += `Arch: ${envs.arch}\n`
@@ -34,15 +41,4 @@ export function formatEnvInfos(envs: any) {
     result += `${key}: ${envs.build_info[k]}\n`
   }
   return result
-}
-
-/**
- * File size formatting utility
- * From scripts/utils/index.ts
- */
-export function formatFileSize(bytes: number): string {
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-  if (bytes === 0) return '0 Bytes'
-  const i = Math.floor(Math.log(bytes) / Math.log(1024))
-  return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i]
 }

@@ -1,4 +1,3 @@
-import getSystem from '@/utils/get-system'
 import { IS_IN_TAURI } from '@/utils/tauri'
 import { Box } from '@mui/material'
 import Paper from '@mui/material/Paper'
@@ -8,7 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useAtomValue } from 'jotai'
 import { ReactNode } from 'react'
 import { atomIsDrawerOnlyIcon } from '@/store'
-import { alpha, cn } from '@nyanpasu/ui'
+import { alpha, cn, getSystem } from '@nyanpasu/ui'
 import { useQuery } from '@tanstack/react-query'
 import { LayoutControl } from '../layout/layout-control'
 import styles from './app-container.module.scss'
@@ -72,7 +71,7 @@ const AppContainer = ({
             theme.vars?.palette.background.paper ?? theme.palette.background.paper,
         })}
       >
-        {/* Window control buttons for all platforms in extreme cleanup version */}
+        {/* Window control buttons */}
         <LayoutControl className="z-top! fixed top-2 right-4" />
         <AnimatePresence>
           {OS === 'macos' && !isMaximized && (

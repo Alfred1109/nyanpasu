@@ -19,7 +19,7 @@ export interface MenuItemProps {
     options={options}
     selected={selected}
     onSelected={(value) => {
-      console.log(value);
+      console.debug(value);
     }}
     selectSx={{ width: 100 }}
   />

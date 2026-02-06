@@ -42,7 +42,7 @@ function CopyToClipboardButton({ onClick }: CopyToClipboardButtonProps) {
     >
       <IconButton
         size="small"
-        className="!absolute top-1 right-1"
+        className="absolute! top-1 right-1"
         onClick={onClick}
       >
         <ContentPasteIcon fontSize="small" color="primary" />
@@ -105,7 +105,7 @@ export default function ServerManualPromptDialog({
       navigator.clipboard
         .write([item])
         .then(() => {
-          console.log('copied')
+          console.debug('Copied to clipboard')
           notification({
             title: `Clash Nyanpasu - ${t('Service Manual Tips')}`,
             body: t('Copied to clipboard'),

@@ -87,7 +87,7 @@ export const SideLog = ({ className }: SideLogProps) => {
           })
         ) : (
           <div className="flex h-full min-h-48 w-full flex-col items-center justify-center">
-            <RamenDining className="!size-10" />
+            <RamenDining className="size-10!" />
             <p>{t('No Logs')}</p>
           </div>
         )}

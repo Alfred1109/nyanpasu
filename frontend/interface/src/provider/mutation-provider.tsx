@@ -13,7 +13,7 @@ import {
   NYANPASU_BACKEND_EVENT_NAME,
   NYANPASU_SETTING_QUERY_KEY,
   NYANPASU_SYSTEM_PROXY_QUERY_KEY,
-  RROFILES_QUERY_KEY,
+  PROFILES_QUERY_KEY,
 } from '../ipc/consts'
 import { isInTauri } from '@nyanpasu/utils'
 
@@ -23,14 +23,14 @@ const NYANPASU_CONFIG_MUTATION_KEYS = [
   NYANPASU_SETTING_QUERY_KEY,
   NYANPASU_SYSTEM_PROXY_QUERY_KEY,
   CLASH_PROXIES_QUERY_KEY, // proxies hook refetch
-  RROFILES_QUERY_KEY, // profiles hook refetch
+  PROFILES_QUERY_KEY, // profiles hook refetch
 ] as const
 
 const CLASH_CONFIG_MUTATION_KEYS = [
   CLASH_VERSION_QUERY_KEY,
   CLASH_INFO_QUERY_KEY,
   CLASH_CONFIG_QUERY_KEY,
-  RROFILES_QUERY_KEY,
+  PROFILES_QUERY_KEY,
   CLASH_RULES_QUERY_KEY, // clash rules hook refetch
   CLASH_RULES_PROVIDER_QUERY_KEY, // clash rules providers hook refetch
   CLASH_PROXIES_QUERY_KEY, // proxies hook refetch
@@ -44,7 +44,7 @@ const PROFILES_MUTATION_KEYS = [
   CLASH_RULES_PROVIDER_QUERY_KEY, // clash rules providers hook refetch
   CLASH_PROXIES_QUERY_KEY, // proxies hook refetch
   CLASH_PROXIES_PROVIDER_QUERY_KEY, // proxies providers hook refetch
-  RROFILES_QUERY_KEY, // profiles hook refetch
+  PROFILES_QUERY_KEY, // profiles hook refetch
 ] as const
 
 const PROXIES_MUTATION_KEYS = [
@@ -73,7 +73,7 @@ export const MutationProvider = ({ children }: PropsWithChildren) => {
     }
 
     listen<EventPayload>(NYANPASU_BACKEND_EVENT_NAME, ({ payload }) => {
-      console.log('MutationProvider', payload)
+      console.debug('MutationProvider received event:', payload)
 
       switch (payload) {
         case 'nyanpasu_config':

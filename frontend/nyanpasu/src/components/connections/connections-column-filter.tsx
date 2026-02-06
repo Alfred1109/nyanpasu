@@ -246,10 +246,8 @@ export default function ConnectionColumnFilterDialog(
                   filteredCols.find((o) => o[0] === column.id)?.[1] ?? true
                 }
                 onChange={(e) => {
-                  console.log(e.target.checked)
                   const newCols = [...filteredCols]
                   newCols[index] = [newCols[index][0], e.target.checked]
-                  console.log(newCols)
                   setFilteredCols(newCols)
                 }}
                 value={latestFilteredCols[index]}

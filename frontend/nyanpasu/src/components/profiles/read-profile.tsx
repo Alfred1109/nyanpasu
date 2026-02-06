@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import getSystem from '@/utils/get-system'
+import { getSystem } from '@nyanpasu/ui'
 import { Button } from '@mui/material'
 import { open } from '@tauri-apps/plugin-dialog'
 import { readTextFile } from '@tauri-apps/plugin-fs'

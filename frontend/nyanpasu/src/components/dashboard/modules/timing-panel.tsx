@@ -1,6 +1,5 @@
 import { useAtomValue } from 'jotai'
 import { useTranslation } from 'react-i18next'
-// Theme hook removed in extreme cleanup
 import { atomIsDrawer } from '@/store'
 import { Box, Paper } from '@mui/material'
 import Grid from '@mui/material/Grid'
@@ -9,7 +8,6 @@ import { useSetting } from '@nyanpasu/interface'
 function LatencyTag({ name, value }: { name: string; value: number }) {
   const { t } = useTranslation()
 
-  // Simplified styling in extreme cleanup - removed color theming
   const sx = { color: value > 1000 ? 'red' : 'green' }
 
   return (
@@ -39,7 +37,7 @@ const TimingPanel = ({ data }: { data: { [key: string]: number } }) => {
         xl: 3,
       }}
     >
-      <Paper className="!h-full !rounded-3xl p-4">
+      <Paper className="h-full! rounded-3xl! p-4">
         <div className="flex h-full flex-col justify-between">
           {Object.entries(data).map(([name, value]) => (
             <LatencyTag key={name} name={name} value={value} />

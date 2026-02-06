@@ -1,5 +1,4 @@
 import { memo } from 'react'
-// mergeSxProps removed in extreme cleanup
 import { Chip, ChipProps } from '@mui/material'
 
 const FeatureChip = memo(function FeatureChip(props: ChipProps) {

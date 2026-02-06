@@ -38,7 +38,7 @@ loader.config({ monaco })
 loader
   .init()
   .then(() => {
-    console.log('Monaco is ready')
+    console.debug('Monaco is ready')
   })
   .catch((error) => {
     console.error('Monaco initialization failed', error)

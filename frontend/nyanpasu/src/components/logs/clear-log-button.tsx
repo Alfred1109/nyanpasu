@@ -17,7 +17,7 @@ const ClearLogButton = () => {
   return (
     <Tooltip title={t('Clear')}>
       <FloatingButton onClick={handleClean}>
-        <Close className="absolute !size-8" />
+        <Close className="absolute size-8!" />
       </FloatingButton>
     </Tooltip>
   )

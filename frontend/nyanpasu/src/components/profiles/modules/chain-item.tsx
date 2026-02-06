@@ -84,7 +84,7 @@ const ChainItem = memo(function ChainItem({
         }}
       >
         <ListItemButton
-          className="!mt-2 !mb-2 !flex !justify-between gap-2"
+          className="mt-2! mb-2! flex! justify-between! gap-2"
           sx={[
             {
               borderRadius: 4,
@@ -124,7 +124,7 @@ const ChainItem = memo(function ChainItem({
           <Button
             size="small"
             color="primary"
-            className="!size-8 !min-w-0"
+            className="size-8! min-w-0!"
             loading={isPending}
             onClick={(e) => {
               cleanDeepClickEvent(e)

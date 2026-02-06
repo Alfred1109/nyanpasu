@@ -27,7 +27,7 @@ const Dataline: FC<DatalineProps> = ({
   const { t } = useTranslation()
 
   return (
-    <Paper className={cn('relative !rounded-3xl', className)}>
+    <Paper className={cn('relative rounded-3xl!', className)}>
       <Sparkline
         data={data}
         className="absolute rounded-3xl"

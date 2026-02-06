@@ -53,7 +53,6 @@ export const createMDYTheme = (color: string, fontFamily?: string) => {
       palette: generatePalette('dark'),
     },
   }
-  console.log(colorSchemes)
   const theme = createTheme({
     cssVariables: {
       colorSchemeSelector: 'class',

@@ -1,9 +1,7 @@
 import { useControllableValue } from 'ahooks'
 import { memo, ReactNode } from 'react'
-// mergeSxProps removed in extreme cleanup
 import { CircularProgress, Switch, Box, Typography } from '@mui/material'
 import type { SxProps, Theme } from '@mui/material/styles'
-// alpha removed in extreme cleanup
 import { PaperButton, PaperButtonProps } from './nyanpasu-path'
 
 interface PaperSwitchButtonProps extends PaperButtonProps {

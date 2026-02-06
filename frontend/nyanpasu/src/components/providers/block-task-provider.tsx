@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { useLockFn } from '@/hooks/use-lock-fn'
+import { useLockFn } from 'ahooks'
 
 type BlockTaskStatus = 'idle' | 'pending' | 'success' | 'error'
 

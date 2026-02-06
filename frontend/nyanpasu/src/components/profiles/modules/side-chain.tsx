@@ -84,7 +84,7 @@ export const SideChain = ({ onChainEdit }: SideChainProps) => {
   )
 
   return (
-    <div className="h-full overflow-auto !pr-2 !pl-2">
+    <div className="h-full overflow-auto pr-2! pl-2!">
       <Reorder.Group
         axis="y"
         values={reorderValues}
@@ -124,7 +124,7 @@ export const SideChain = ({ onChainEdit }: SideChainProps) => {
       </Reorder.Group>
 
       <ListItemButton
-        className="!mt-2 !mb-2 flex justify-center gap-2"
+        className="mt-2! mb-2! flex justify-center gap-2"
         sx={(theme) => ({
           backgroundColor: alpha(theme.vars.palette.secondary.main, 0.1),
           borderRadius: 4,

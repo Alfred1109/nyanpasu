@@ -12,7 +12,7 @@ const NewProfileButton = ({ className }: { className?: string }) => {
   return (
     <>
       <FloatingButton className={cn(className)} onClick={() => setOpen(true)}>
-        <Add className="absolute !size-8" />
+        <Add className="absolute size-8!" />
       </FloatingButton>
 
       <ProfileDialog open={open} onClose={() => setOpen(false)} />

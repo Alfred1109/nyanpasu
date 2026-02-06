@@ -115,7 +115,7 @@ const ServiceShortcuts = () => {
         xl: 3,
       }}
     >
-      <Paper className="flex !h-full flex-col justify-between gap-2 !rounded-3xl p-3">
+      <Paper className="flex h-full! flex-col justify-between gap-2 rounded-3xl! p-3">
         {serviceStatus ? (
           <>
             <div className="text-center font-bold">

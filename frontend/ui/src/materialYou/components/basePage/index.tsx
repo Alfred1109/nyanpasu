@@ -36,7 +36,7 @@ export const BasePage: FC<BasePageProps> = ({
         >
           <ScrollArea.Viewport
             className={cn(
-              'relative h-full w-full [&>div]:!block',
+              'relative h-full w-full [&>div]:block!',
               full ?? 'p-6',
             )}
             ref={viewportRef}
@@ -53,7 +53,7 @@ export const BasePage: FC<BasePageProps> = ({
             className="flex touch-none py-6 pr-1.5 select-none"
             orientation="vertical"
           >
-            <ScrollArea.Thumb className="ScrollArea-Thumb relative flex !w-1.5 flex-1 rounded-full" />
+            <ScrollArea.Thumb className="ScrollArea-Thumb relative flex w-1.5! flex-1 rounded-full" />
           </ScrollArea.Scrollbar>
 
           {/* <ScrollArea.Scrollbar

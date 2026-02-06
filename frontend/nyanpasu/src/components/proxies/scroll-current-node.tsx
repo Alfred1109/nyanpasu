@@ -10,7 +10,7 @@ const ScrollCurrentNode = ({ onClick }: { onClick?: () => void }) => {
     <Tooltip title={t('Locate')}>
       <Button
         size="small"
-        className="!size-8 !min-w-0"
+        className="size-8! min-w-0!"
         sx={(theme) => ({
           backgroundColor: alpha(theme.vars.palette.primary.main, 0.1),
         })}

@@ -29,7 +29,7 @@ const SortSelector = memo(function SortSelector() {
     <>
       <Button
         size="small"
-        className="!px-2"
+        className="px-2!"
         sx={(theme) => ({
           textTransform: 'none',
           backgroundColor: alpha(theme.vars.palette.primary.main, 0.1),

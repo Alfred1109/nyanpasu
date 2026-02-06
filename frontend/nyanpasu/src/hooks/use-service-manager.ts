@@ -141,9 +141,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     queryKey: ['system-service'],
     enabled: isInTauri || isBrowser,
     queryFn: async () => {
-      console.log('🔍 Service Manager - isInTauri:', isInTauri)
       if (!isInTauri) {
-        console.log('❌ Not in Tauri, using local API fallback')
         try {
           const res = await fetch('/__local_api/service/status', {
             cache: 'no-store',
@@ -257,14 +255,14 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     async (maxSeconds: number = 40): Promise<boolean> => {
       for (let i = 0; i < maxSeconds; i++) {
         if (cancelRequested) {
-          console.log('Installation wait cancelled by user')
+          console.debug('Installation wait cancelled by user')
           return false
         }
 
         await new Promise((resolve) => setTimeout(resolve, 1000))
         const result = await query.refetch()
         const currentStatus = result.data?.status
-        console.log(`⏱️ Installation check ${i + 1}/${maxSeconds}s: status = ${currentStatus}`)
+        console.debug(`Installation check ${i + 1}/${maxSeconds}s: status = ${currentStatus}`)
 
         // 根据真实状态更新UI阶段
         if (currentStatus === 'not_installed') {
@@ -276,19 +274,19 @@ export const useServiceManager = (): UseServiceManagerReturn => {
           }
         } else if (currentStatus === 'stopped') {
           // 服务已安装但未运行
-          console.log(`✅ Service installation verified after ${i + 1}s - status: ${currentStatus}`)
+          console.debug(`Service installation verified after ${i + 1}s`)
           setInstallStage(InstallStage.VERIFYING)
           return true
         } else if (currentStatus === 'running') {
           // 服务已安装并运行
-          console.log(`✅ Service installation and startup verified after ${i + 1}s - status: ${currentStatus}`)
+          console.debug(`Service installation and startup verified after ${i + 1}s`)
           return true
         }
 
         // 每 5 秒输出一次等待日志
         if ((i + 1) % 5 === 0) {
-          console.log(
-            `Still waiting for service installation... (${i + 1}/${maxSeconds}s), current status: ${currentStatus}`,
+          console.debug(
+            `Waiting for service installation... (${i + 1}/${maxSeconds}s), status: ${currentStatus}`,
           )
         }
       }
@@ -305,7 +303,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     async (options: ServiceInstallOptions = {}) => {
       const { autoStart, onConfigureProxy, onConfigureTun, operation } = options
       const op: ServiceOperation = operation ?? (autoStart ? 'start' : 'install')
-      console.log('🚀 Starting service installation with 6-stage progress')
+      console.debug('Starting service installation')
       setCurrentOperation(op)
       setIsInstalling(true)
       setInstallStage(InstallStage.PREPARING)
@@ -315,25 +313,22 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       try {
         // Stage 1: Preparing
         setInstallStage(InstallStage.PREPARING)
-        console.log('🔧 Preparing service installation...')
         if (cancelRequested) {
-          console.log('Installation cancelled at PREPARING stage')
+          console.debug('Installation cancelled at PREPARING stage')
           return false
         }
 
         // Stage 2: Installing (app is already running elevated)
         setInstallStage(InstallStage.INSTALLING)
         setCanCancel(true)
-        console.log('🔧 Calling service install command...')
         try {
           await upsert.mutateAsync('install')
-          console.log('✅ Service install command completed')
         } catch (error) {
-          console.error('❌ Service install command failed:', error)
+          console.error('Service install command failed:', error)
           throw error
         }
         if (cancelRequested) {
-          console.log('Installation cancelled at INSTALLING stage')
+          console.debug('Installation cancelled at INSTALLING stage')
           return false
         }
         setCanCancel(false)
@@ -353,7 +348,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
           await upsert.mutateAsync('start')
           await restartSidecar()
           if (cancelRequested) {
-            console.log('Installation cancelled at STARTING stage')
+            console.debug('Installation cancelled at STARTING stage')
             return false
           }
 
@@ -370,7 +365,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
         }
 
         await query.refetch()
-        console.log('Service installation completed successfully')
+        console.debug('Service installation completed successfully')
         return true
       } catch (error) {
         console.error('Service installation failed:', error)
@@ -398,7 +393,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       await upsert.mutateAsync('uninstall')
       await restartSidecar()
       await query.refetch()
-      console.log('Service uninstalled successfully')
+      console.debug('Service uninstalled successfully')
       return true
     } catch (error) {
       console.error('Service uninstallation failed:', error)
@@ -422,7 +417,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       await upsert.mutateAsync('start')
       await restartSidecar()
       await query.refetch()
-      console.log('Service started successfully')
+      console.debug('Service started successfully')
       return true
     } catch (error) {
       console.error('Service start failed:', error)
@@ -446,7 +441,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       await upsert.mutateAsync('stop')
       await restartSidecar()
       await query.refetch()
-      console.log('Service stopped successfully')
+      console.debug('Service stopped successfully')
       return true
     } catch (error) {
       console.error('Service stop failed:', error)
@@ -462,7 +457,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
    * 取消安装
    */
   const cancelInstallation = useCallback(() => {
-    console.log('Cancelling installation...')
+    console.debug('Cancelling installation')
     setCancelRequested(true)
     setCanCancel(false)
   }, [])

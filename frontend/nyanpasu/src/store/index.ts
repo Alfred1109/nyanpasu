@@ -4,45 +4,19 @@ import { SortType } from '@/components/proxies/utils'
 import { FileRouteTypes } from '@/route-tree.gen'
 import { createNyanpasuJSONStorage } from '@/services/storage'
 
-const atomWithLocalStorage = <T>(key: string, initialValue: T) => {
-  const getInitialValue = (): T => {
-    const item = localStorage.getItem(key)
-
-    return item ? JSON.parse(item) : initialValue
-  }
-
-  const baseAtom = atom<T>(getInitialValue())
-
-  const derivedAtom = atom(
-    (get) => get(baseAtom),
-    (get, set, update: T | ((prev: T) => T)) => {
-      const nextValue =
-        typeof update === 'function'
-          ? (update as (prev: T) => T)(get(baseAtom))
-          : update
-
-      set(baseAtom, nextValue)
-
-      localStorage.setItem(key, JSON.stringify(nextValue))
-    },
-  )
-
-  return derivedAtom
-}
-
 export const memorizedRoutePathAtom = atomWithStorage<
   FileRouteTypes['fullPaths'] | null
 >('memorizedRoutePathAtom', null, undefined, {
   getOnInit: true,
 })
 
-export const proxyGroupAtom = atomWithLocalStorage<{
+export const proxyGroupAtom = atomWithStorage<{
   selector: number | null
 }>('proxyGroupAtom', {
   selector: 0,
 })
 
-export const proxyGroupSortAtom = atomWithLocalStorage<SortType>(
+export const proxyGroupSortAtom = atomWithStorage<SortType>(
   'proxyGroupSortAtom',
   SortType.Default,
 )
@@ -54,21 +28,6 @@ export const atomIsDrawerOnlyIcon = atomWithStorage<boolean>(
   true,
 )
 
-// save the state of each profile item loading
-const atomLoadingCache = atom<Record<string, boolean>>({})
-
-// save update state
-const atomUpdateState = atom<boolean>(false)
-
-interface IConnectionSetting {
-  layout: 'table' | 'list'
-}
-
-const atomConnectionSetting = atom<IConnectionSetting>({
-  layout: 'table',
-})
-
-// TODO: generate default columns based on COLUMNS
 export const connectionTableColumnsAtom = atomWithStorage<
   Array<[string, boolean]>
 >(
@@ -90,5 +49,3 @@ export const connectionTableColumnsAtom = atomWithStorage<
   ].map((key) => [key, true]),
   createNyanpasuJSONStorage<Array<[string, boolean]>>(),
 )
-
-// export const themeSchemeAtom = atom<MDYTheme["schemes"] | null>(null);

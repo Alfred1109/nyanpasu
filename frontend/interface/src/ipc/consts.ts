@@ -26,7 +26,7 @@ export const CLASH_VERSION_QUERY_KEY = 'clash-version'
 /**
  * Nyanpasu profile query key, used to fetch profiles from query
  */
-export const RROFILES_QUERY_KEY = 'profiles'
+export const PROFILES_QUERY_KEY = 'profiles'
 
 /**
  * Clash log query key, used by clash ws provider to mutate logs via clash logs ws api
@@ -36,7 +36,7 @@ export const CLASH_LOGS_QUERY_KEY = 'clash-logs'
 /**
  * Clash traffic query key, used by clash ws provider to mutate memory via clash traffic ws api
  */
-export const CLASH_TRAAFFIC_QUERY_KEY = 'clash-traffic'
+export const CLASH_TRAFFIC_QUERY_KEY = 'clash-traffic'
 
 /**
  * Clash memory query key, used by clash ws provider to mutate memory via clash memory ws api

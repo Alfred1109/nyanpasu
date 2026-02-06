@@ -35,8 +35,6 @@ export const beforeEditorMount = (monaco: Monaco) => {
       allowNonTsExtensions: true,
       allowJs: true,
     })
-    console.log(clashMetaSchema)
-    console.log(nyanpasuMergeSchema)
     configureMonacoYaml(monaco, {
       validate: true,
       enableSchemaRequest: true,

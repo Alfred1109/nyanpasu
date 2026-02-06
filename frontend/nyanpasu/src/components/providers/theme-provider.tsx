@@ -1,7 +1,6 @@
 import {
   createContext,
   PropsWithChildren,
-  useContext,
   useEffect,
   useMemo,
 } from 'react'
@@ -48,7 +47,7 @@ function MUIColorSchemeSync() {
     // Always use system theme
 
     const apply = (mode: 'light' | 'dark') => {
-      console.log('🎨 Applying theme mode:', mode)
+      console.debug('Applying theme mode:', mode)
       changeHtmlThemeMode(mode)
       setMode(mode)
       
@@ -63,19 +62,15 @@ function MUIColorSchemeSync() {
     }
 
     const applyFromMediaQuery = () => {
-      console.log('🌐 Using browser media query theme detection')
       const mql = window.matchMedia?.('(prefers-color-scheme: dark)')
       if (!mql) {
-        console.log('❌ Media query not supported, defaulting to light')
         apply('light')
         return () => {}
       }
 
-      console.log('🔍 Media query matches dark:', mql.matches)
       apply(mql.matches ? 'dark' : 'light')
 
       const onChange = (e: MediaQueryListEvent) => {
-        console.log('🔄 Media query changed:', e.matches ? 'dark' : 'light')
         apply(e.matches ? 'dark' : 'light')
       }
 
@@ -102,7 +97,7 @@ function MUIColorSchemeSync() {
             return
           }
         } catch (error) {
-          console.error('❌ Failed to get system theme mode:', error)
+          console.error('Failed to get system theme mode:', error)
         }
         applyFromMediaQuery()
       }
@@ -120,7 +115,7 @@ function MUIColorSchemeSync() {
     }
 
     const unlisten = appWindow.onThemeChanged((e) => {
-      console.log('🪟 Tauri theme changed:', e.payload)
+      console.debug('Tauri theme changed:', e.payload)
       if (e.payload === 'dark' || e.payload === 'light') {
         changeHtmlThemeMode(e.payload)
         setMode(e.payload)
@@ -150,18 +145,6 @@ const ThemeContext = createContext<{
   themeColor: string
   setThemeColor: (color: string) => Promise<void>
 } | null>(null)
-
-function useExperimentalThemeContext() {
-  const context = useContext(ThemeContext)
-
-  if (!context) {
-    throw new Error(
-      'useExperimentalThemeContext must be used within a ExperimentalThemeProvider',
-    )
-  }
-
-  return context
-}
 
 export function ExperimentalThemeProvider({ children }: PropsWithChildren) {
   const themePalette = useMemo(

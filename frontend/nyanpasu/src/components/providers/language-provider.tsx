@@ -1,5 +1,5 @@
 import { createContext, PropsWithChildren, useContext } from 'react'
-import { useLockFn } from '@/hooks/use-lock-fn'
+import { useLockFn } from 'ahooks'
 import { useSetting } from '@nyanpasu/interface'
 import { useTranslation } from 'react-i18next'
 

@@ -78,7 +78,7 @@ export const SidePage: FC<Props> = ({
                 <ScrollArea.Viewport
                   className={cn(
                     style['Container-common'],
-                    'relative w-full [&>div]:!block',
+                    'relative w-full [&>div]:block!',
                     sideClassName,
                   )}
                   style={sideBarStyle}
@@ -90,7 +90,7 @@ export const SidePage: FC<Props> = ({
                 <ScrollArea.Scrollbar
                   className={cn(
                     'flex touch-none py-6 pr-1.5 select-none',
-                    sideBar && '!top-14',
+                    sideBar && 'top-14!',
                   )}
                   orientation="vertical"
                   style={sideBarStyle}
@@ -98,7 +98,7 @@ export const SidePage: FC<Props> = ({
                   <ScrollArea.Thumb
                     className={cn(
                       style['ScrollArea-Thumb'],
-                      'relative flex !w-1.5 flex-1 rounded-full',
+                      'relative flex w-1.5! flex-1 rounded-full',
                     )}
                   />
                 </ScrollArea.Scrollbar>
@@ -113,7 +113,7 @@ export const SidePage: FC<Props> = ({
               {portalRightRoot}
 
               <ScrollArea.Viewport
-                className={cn('relative h-full w-full [&>div]:!block')}
+                className={cn('relative h-full w-full [&>div]:block!')}
                 ref={rightViewportRef}
               >
                 {children}
@@ -123,7 +123,7 @@ export const SidePage: FC<Props> = ({
                 className="flex touch-none py-6 pr-1.5 select-none"
                 orientation="vertical"
               >
-                <ScrollArea.Thumb className="!bg-scroller relative flex !w-1.5 flex-1 rounded-full" />
+                <ScrollArea.Thumb className="bg-scroller! relative flex w-1.5! flex-1 rounded-full" />
               </ScrollArea.Scrollbar>
 
               <ScrollArea.Corner className="ScrollAreaCorner" />

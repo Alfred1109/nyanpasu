@@ -39,7 +39,7 @@ function SideBar() {
       autoComplete="off"
       spellCheck="false"
       placeholder={t('Filter conditions')}
-      className="!pb-0"
+      className="pb-0!"
       sx={{ input: { py: 1.2, fontSize: 14 } }}
       value={proxiesFilter || ''}
       onChange={(e) =>
@@ -122,10 +122,10 @@ function ProxyPage() {
             <ToggleButton
               key={key}
               className={cn(
-                'flex justify-center gap-0.5 !px-3',
-                index === 0 && '!rounded-l-full',
+                'flex justify-center gap-0.5 px-3!',
+                index === 0 && 'rounded-l-full!',
                 index === Object.entries(proxyMode).length - 1 &&
-                  '!rounded-r-full',
+                  'rounded-r-full!',
               )}
               value={key}
               selected={enabled}
@@ -163,7 +163,7 @@ function ProxyPage() {
             className={cn(
               'absolute z-10 flex w-full items-center justify-between px-4 py-2 backdrop-blur',
               'bg-gray-200/30 dark:bg-gray-900/30',
-              '!rounded-t-2xl',
+              'rounded-t-2xl!',
             )}
           >
             <div className="flex items-center gap-4">

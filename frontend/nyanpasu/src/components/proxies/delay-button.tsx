@@ -39,7 +39,7 @@ export const DelayButton = memo(function DelayButton({
   return (
     <Tooltip title={t('Latency check')}>
       <Button
-        className="!fixed right-8 bottom-8 z-10 size-16 !rounded-2xl backdrop-blur"
+        className="fixed! right-8 bottom-8 z-10 size-16 rounded-2xl! backdrop-blur"
         sx={(theme) => ({
           boxShadow: 8,
           backgroundColor: alpha(
@@ -59,8 +59,8 @@ export const DelayButton = memo(function DelayButton({
       >
         <Bolt
           className={cn(
-            '!size-8',
-            '!transition-opacity',
+            'size-8!',
+            'transition-opacity!',
             mounted ? 'opacity-0' : 'opacity-100',
           )}
         />
@@ -79,9 +79,9 @@ export const DelayButton = memo(function DelayButton({
         <Done
           color="success"
           className={cn(
-            '!size-8',
+            'size-8!',
             'absolute',
-            '!transition-opacity',
+            'transition-opacity!',
             isSuccess ? 'opacity-100' : 'opacity-0',
           )}
         />

@@ -21,7 +21,7 @@ export const Switch = ({
       icon={
         loading ? (
           <CircularProgress
-            className="!size-4 text-current"
+            className="size-4! text-current"
             indeterminate
           />
         ) : undefined
@@ -29,7 +29,7 @@ export const Switch = ({
       checkedIcon={
         loading ? (
           <CircularProgress
-            className="!size-4 text-current"
+            className="size-4! text-current"
             indeterminate
           />
         ) : undefined

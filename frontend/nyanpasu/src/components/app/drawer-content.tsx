@@ -1,7 +1,6 @@
-import getSystem from '@/utils/get-system'
 import { getRoutesWithIcon } from '@/utils/routes-utils'
 import { Box } from '@mui/material'
-import { cn } from '@nyanpasu/ui'
+import { cn, getSystem } from '@nyanpasu/ui'
 import AnimatedLogo from '../layout/animated-logo'
 import RouteListItem from './modules/route-list-item'
 

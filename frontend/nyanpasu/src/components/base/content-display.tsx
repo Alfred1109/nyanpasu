@@ -19,7 +19,7 @@ const ContentDisplay = ({
     <div className="flex flex-col items-center gap-4">
       {children || (
         <>
-          <Public className="!size-16" />
+          <Public className="size-16!" />
 
           <b>{message}</b>
         </>

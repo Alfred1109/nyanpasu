@@ -15,7 +15,7 @@ export const FloatingButton = ({
   return (
     <Button
       className={cn(
-        `right-8 bottom-8 z-10 size-16 !rounded-2xl backdrop-blur`,
+        `right-8 bottom-8 z-10 size-16 rounded-2xl! backdrop-blur`,
         className,
       )}
       sx={(theme) => ({

@@ -13,8 +13,6 @@ export default function SettingSystemService() {
   
   const serviceManager = useServiceManager()
   
-  console.log('SettingSystemService render - using full service manager with 6-stage progress')
-
   const handleInstallService = async () => {
     if (!isInTauri) {
       setMessage('该功能仅在桌面端可用，请使用 tauri dev 或安装版 exe 测试。')

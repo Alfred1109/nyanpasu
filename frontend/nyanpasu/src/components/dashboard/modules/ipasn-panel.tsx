@@ -61,7 +61,7 @@ const IPASNPanel = ({ refreshCount }: { refreshCount: number }) => {
         xl: 3,
       }}
     >
-      <Paper className="relative flex !h-full gap-4 !rounded-3xl px-4 py-3 select-text">
+      <Paper className="relative flex h-full! gap-4 rounded-3xl! px-4 py-3 select-text">
         {data ? (
           <>
             {data.country_code && (
@@ -74,7 +74,7 @@ const IPASNPanel = ({ refreshCount }: { refreshCount: number }) => {
 
                 <Tooltip title={t('Click to Refresh Now')}>
                   <Button
-                    className="!size-8 !min-w-0"
+                    className="size-8! min-w-0!"
                     onClick={handleRefreshIP}
                     loading={isFetching}
                   >
@@ -121,7 +121,7 @@ const IPASNPanel = ({ refreshCount }: { refreshCount: number }) => {
                 </div>
 
                 <IconButton
-                  className="!size-8"
+                  className="size-8!"
                   color="primary"
                   onClick={() => setShowIPAddress(!showIPAddress)}
                 >

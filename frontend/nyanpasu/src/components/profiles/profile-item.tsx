@@ -235,15 +235,15 @@ const ProfileItem = memo(function ProfileItem({
           <div className="flex items-center justify-between gap-2">
             <Tooltip title={(item as RemoteProfile).url}>
               <Chip
-                className="!pr-2 !pl-2 font-bold"
-                avatar={<IconComponent className="!size-5" color="primary" />}
+                className="pr-2! pl-2! font-bold"
+                avatar={<IconComponent className="size-5!" color="primary" />}
                 label={isRemote ? t('Remote') : t('Local')}
               />
             </Tooltip>
 
             {selected && (
               <FiberManualRecord
-                className="top-0 mr-auto !size-3 animate-bounce"
+                className="top-0 mr-auto size-3! animate-bounce"
                 sx={(theme) => ({
                   fill: theme.vars.palette.success.main,
                 })}
@@ -299,7 +299,7 @@ const ProfileItem = memo(function ProfileItem({
               invisible={!selected || !maxLogLevelTriggered?.current}
             >
               <Button
-                className="!mr-auto"
+                className="mr-auto!"
                 size="small"
                 variant={chainsSelected ? 'contained' : 'outlined'}
                 startIcon={<Terminal />}
@@ -316,7 +316,7 @@ const ProfileItem = memo(function ProfileItem({
               <Button
                 size="small"
                 variant="outlined"
-                className="!size-8 !min-w-0"
+                className="size-8! min-w-0!"
                 onClick={(e) => {
                   cleanDeepClickEvent(e)
                   menuMapping.Update()
@@ -331,7 +331,7 @@ const ProfileItem = memo(function ProfileItem({
               <Button
                 size="small"
                 variant="contained"
-                className="!size-8 !min-w-0"
+                className="size-8! min-w-0!"
                 onClick={(e) => {
                   cleanDeepClickEvent(e)
                   setAnchorEl(e.currentTarget)

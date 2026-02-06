@@ -22,12 +22,12 @@
     "tailwind-merge": "^2.0.0"
   },
   "peerDependencies": {
-    "react": "^18.0.0",
+    "react": "^19.0.0",
     "@tauri-apps/api": "^2.8.0"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.12",
-    "@types/react": "^18.0.0",
+    "@types/react": "^19.0.0",
     "typescript": "^5.0.0"
   }
 }

@@ -66,7 +66,7 @@ export default function RulesProvider({ provider }: RulesProviderProps) {
           loading={loading}
           size="small"
           variant="contained"
-          className="!size-8 !min-w-0"
+          className="size-8! min-w-0!"
           onClick={handleClick}
         >
           <Refresh />

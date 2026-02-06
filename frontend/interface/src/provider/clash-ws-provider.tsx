@@ -14,7 +14,7 @@ import {
   CLASH_CONNECTIONS_QUERY_KEY,
   CLASH_LOGS_QUERY_KEY,
   CLASH_MEMORY_QUERY_KEY,
-  CLASH_TRAAFFIC_QUERY_KEY,
+  CLASH_TRAFFIC_QUERY_KEY,
   MAX_CONNECTIONS_HISTORY,
   MAX_LOGS_HISTORY,
   MAX_MEMORY_HISTORY,
@@ -229,7 +229,7 @@ export const ClashWSProvider = ({ children }: PropsWithChildren) => {
 
     // Update React Query cache with buffer data
     queryClient.setQueryData(
-      [CLASH_TRAAFFIC_QUERY_KEY],
+      [CLASH_TRAFFIC_QUERY_KEY],
       trafficBuffer.current.toArray(),
     )
   }, [trafficWS.latestMessage, recordTraffic])

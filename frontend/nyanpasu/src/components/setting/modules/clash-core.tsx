@@ -193,7 +193,7 @@ export const ClashCoreItem = ({
   return (
     <ListItem sx={{ pl: 0, pr: 0 }}>
       <ListItemButton
-        className="!relative !p-0"
+        className="relative! p-0!"
         sx={(theme) => ({
           borderRadius: '16px',
           backgroundColor: alpha(theme.vars.palette.background.paper, 0.3),
@@ -239,7 +239,7 @@ export const ClashCoreItem = ({
             <Tooltip title={t('Update Core')}>
               <Button
                 variant="text"
-                className="!size-8 !min-w-0"
+                className="size-8! min-w-0!"
                 loading={downloadState}
                 onClick={(e) => {
                   cleanDeepClickEvent(e)

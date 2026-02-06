@@ -1,6 +1,6 @@
 import { Stack, Typography, Box } from '@mui/material'
 import SettingSystemService from './setting-system-service'
-import SettingSystemProxy from './setting-system-proxy'
+import SettingTunMode from './setting-tun-mode'
 
 const SettingPage = () => {
   return (
@@ -18,8 +18,8 @@ const SettingPage = () => {
         {/* 系统服务管理 - 放在前面，因为TUN模式依赖于服务 */}
         <SettingSystemService />
         
-        {/* TUN模式管理 - 现在使用增强版实现，智能显示服务依赖状态 */}
-        <SettingSystemProxy />
+        {/* TUN模式管理 */}
+        <SettingTunMode />
       </Stack>
     </Box>
   )

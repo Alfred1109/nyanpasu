@@ -82,11 +82,11 @@ const ProxyShortcuts = () => {
         xl: 3,
       }}
     >
-      <Paper className="flex !h-full flex-col justify-between gap-2 !rounded-3xl p-3">
+      <Paper className="flex h-full! flex-col justify-between gap-2 rounded-3xl! p-3">
         <TitleComp />
 
         <div className="flex gap-3">
-          <div className="!w-full">
+          <div className="w-full!">
             <PaperSwitchButton
               checked={checked}
               onClick={handleTunMode}

@@ -1,6 +1,5 @@
 import { useMount } from 'ahooks'
 import dayjs from 'dayjs'
-// ThemeModeProvider removed in extreme cleanup
 import { useNyanpasuStorageSubscribers } from '@/hooks/use-store'
 import { CssBaseline } from '@mui/material'
 import { StyledEngineProvider, useColorScheme } from '@mui/material/styles'

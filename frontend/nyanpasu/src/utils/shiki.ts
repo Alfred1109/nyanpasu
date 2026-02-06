@@ -7,7 +7,7 @@ import getWasm from 'shiki/wasm'
 
 let shiki: Highlighter | null = null
 
-async function getShikiSingleton() {
+export async function getShikiSingleton() {
   if (!shiki) {
     shiki = (await getSingletonHighlighterCore({
       engine: createOnigurumaEngine(getWasm),
