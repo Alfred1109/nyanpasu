@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { Button, Typography, Box, Alert } from '@mui/material'
 import { IS_IN_TAURI } from '@/utils/tauri'
+import { useSetting } from '@nyanpasu/interface'
 import { BaseCard } from '@nyanpasu/ui'
 import { useServiceManager } from '@/hooks/use-service-manager'
 import ServiceInstallDialog from './modules/service-install-dialog'
@@ -12,6 +13,8 @@ export default function SettingSystemService() {
   const isInTauri = IS_IN_TAURI
   
   const serviceManager = useServiceManager()
+  const serviceMode = useSetting('enable_service_mode')
+  const isServiceModeEnabled = Boolean(serviceMode.value)
   
   const handleInstallService = async () => {
     if (!isInTauri) {
@@ -20,15 +23,18 @@ export default function SettingSystemService() {
     }
     setMessage('')
     try {
+      const wasInstalled = serviceManager.isServiceInstalled
       const success = await serviceManager.installService({ autoStart: false })
       if (success) {
-        setMessage('服务安装成功！')
+        setMessage(wasInstalled ? '服务模式已启用！' : '服务安装并启用成功！')
       } else {
-        setMessage('服务安装被取消或超时')
+        setMessage(wasInstalled ? '启用服务模式被取消或超时' : '服务安装被取消或超时')
       }
     } catch (error) {
       console.error('Service install error:', error)
-      setMessage(`服务安装失败: ${error}`)
+      setMessage(
+        `${serviceManager.isServiceInstalled ? '启用服务模式' : '服务安装'}失败: ${error}`,
+      )
     }
   }
 
@@ -117,12 +123,23 @@ export default function SettingSystemService() {
             </Alert>
           )}
 
+          {serviceManager.serviceStatusError && (
+            <Alert severity="warning" sx={{ mt: 1 }}>
+              {serviceManager.serviceStatusError}
+            </Alert>
+          )}
+
           {/* Service status display */}
           {serviceManager.serviceStatus && (
-            <Typography variant="body2" color="text.secondary">
-              服务状态: {serviceManager.serviceStatus === 'running' ? '运行中' : 
-                        serviceManager.serviceStatus === 'stopped' ? '已停止' : '未安装'}
-            </Typography>
+            <Box>
+              <Typography variant="body2" color="text.secondary">
+                服务状态: {serviceManager.serviceStatus === 'running' ? '运行中' : 
+                          serviceManager.serviceStatus === 'stopped' ? '已停止' : '未安装'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                服务模式: {isServiceModeEnabled ? '已启用' : '未启用'}
+              </Typography>
+            </Box>
           )}
           
           <Box display="flex" gap={1} flexWrap="wrap">
@@ -130,9 +147,17 @@ export default function SettingSystemService() {
               variant="contained"
               size="small"
               onClick={handleInstallService}
-              disabled={!isInTauri || serviceManager.isInstalling || serviceManager.isServiceInstalled}
+              disabled={
+                !isInTauri ||
+                serviceManager.isInstalling ||
+                (serviceManager.isServiceInstalled && isServiceModeEnabled)
+              }
             >
-              {serviceManager.isInstalling ? '安装中...' : '安装服务'}
+              {serviceManager.isInstalling
+                ? '处理中...'
+                : serviceManager.isServiceInstalled
+                  ? '启用服务模式'
+                  : '安装服务'}
             </Button>
             
             <Button

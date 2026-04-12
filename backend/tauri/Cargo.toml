@@ -24,7 +24,7 @@ semver = "1.0"
 
 [dependencies]
 # Local Dependencies
-nyanpasu-ipc = { git = "https://github.com/Alfred1109/nyanpasu-service.git", rev = "8f2eada8c8625a6453bdb7a6e617455cf04d857d", features = [
+nyanpasu-ipc = { git = "https://github.com/LibNyanpasu/nyanpasu-service.git", rev = "e1ab5acc4e5a3fec1b878edeb8516890fd900d28", features = [
   "client",
   "specta",
 ] } # IPC bridge between the UI process and service process

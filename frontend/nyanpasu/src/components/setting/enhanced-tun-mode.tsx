@@ -38,6 +38,8 @@ type ServiceStatusInfo = {
 const getServiceStatusInfo = (
   serviceStatus?: string,
   isServiceInstalled?: boolean,
+  isServiceModeEnabled?: boolean,
+  serviceStatusError?: string,
   isInTauri?: boolean,
   t?: (key: string) => string
 ): ServiceStatusInfo => {
@@ -51,6 +53,16 @@ const getServiceStatusInfo = (
     }
   }
 
+  if (serviceStatusError) {
+    return {
+      status: 'stopped',
+      canUseTun: false,
+      message: serviceStatusError,
+      severity: 'warning',
+      actionHint: '请先恢复服务访问权限，再启用 TUN 模式'
+    }
+  }
+
   if (!isServiceInstalled || serviceStatus === 'not_installed') {
     return {
       status: 'not_installed',
@@ -58,6 +70,16 @@ const getServiceStatusInfo = (
       message: '需要先安装系统服务才能使用TUN模式',
       severity: 'warning',
       actionHint: '点击上方"安装服务"按钮'
+    }
+  }
+
+  if (!isServiceModeEnabled) {
+    return {
+      status: 'stopped',
+      canUseTun: false,
+      message: '系统服务已安装，但当前未启用服务模式',
+      severity: 'warning',
+      actionHint: '请先到上方“系统服务”卡片中启用服务模式'
     }
   }
 
@@ -113,6 +135,7 @@ const EnhancedTunModeButton = () => {
   const isInTauri = IS_IN_TAURI
   const serviceManager = useServiceManager()
   const tunMode = useSetting('enable_tun_mode')
+  const serviceMode = useSetting('enable_service_mode')
   
   const [isToggling, setIsToggling] = useState(false)
   const [lastToggleError, setLastToggleError] = useState<string | null>(null)
@@ -122,6 +145,8 @@ const EnhancedTunModeButton = () => {
   const statusInfo = getServiceStatusInfo(
     serviceManager.serviceStatus,
     serviceManager.isServiceInstalled,
+    Boolean(serviceMode.value),
+    serviceManager.serviceStatusError,
     isInTauri,
     t
   )
@@ -179,7 +204,7 @@ const EnhancedTunModeButton = () => {
     if (serviceManager.serviceStatus) {
       setLastToggleError(null)
     }
-  }, [serviceManager.serviceStatus])
+  }, [serviceManager.serviceStatus, serviceManager.serviceStatusError, serviceMode.value])
 
   // When underlying setting changes (query refresh), clear optimistic override
   useEffect(() => {

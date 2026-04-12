@@ -60,6 +60,10 @@ interface ServiceManagerState {
    * 最近一次操作的错误信息（用于前端展示）
    */
   lastError?: string
+  /**
+   * 服务状态查询错误（例如 IPC 权限不足）
+   */
+  serviceStatusError?: string
 }
 
 interface ServiceManagerActions {
@@ -126,6 +130,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
 
   // Operation tracking state
   const [currentOperation, setCurrentOperation] = useState<'install' | 'uninstall' | 'start' | 'stop' | 'restart' | null>(null)
+  const [serviceStatusError, setServiceStatusError] = useState<string | undefined>(undefined)
 
   const unwrap = <T, E>(
     res: { status: 'ok'; data: T } | { status: 'error'; error: E },
@@ -134,6 +139,15 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       throw res.error
     }
     return res.data
+  }
+
+  const isPermissionDeniedError = (error: unknown) => {
+    const message = String(error).toLowerCase()
+    return (
+      message.includes('permission denied') ||
+      message.includes('os error 13') ||
+      message.includes('access to the service ipc socket')
+    )
   }
 
   // Direct service status query implementation
@@ -148,6 +162,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
           })
           if (!res.ok) {
             console.warn(`Local API failed with status: ${res.status}`)
+            setServiceStatusError(undefined)
             return {
               name: '',
               version: '',
@@ -160,6 +175,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
             version?: string
           }
           const status = data.status ?? 'not_installed'
+          setServiceStatusError(undefined)
           return {
             name: '',
             version: data.version ?? '',
@@ -171,6 +187,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
             'Failed to query local API, treating as not_installed:',
             error,
           )
+          setServiceStatusError(undefined)
           return {
             name: '',
             version: '',
@@ -184,6 +201,16 @@ export const useServiceManager = (): UseServiceManagerReturn => {
         const result = await commands.serviceStatus()
         if (result.status === 'error') {
           console.warn('Service status command returned error:', result.error)
+          if (isPermissionDeniedError(result.error)) {
+            setServiceStatusError('无法访问系统服务。请重新登录系统，或确认当前用户已获得 nyanpasu 服务组权限。')
+            return {
+              name: '',
+              version: '',
+              status: 'stopped' as const,
+              server: null,
+            }
+          }
+          setServiceStatusError(undefined)
           return {
             name: '',
             version: '',
@@ -191,11 +218,22 @@ export const useServiceManager = (): UseServiceManagerReturn => {
             server: null,
           }
         }
+        setServiceStatusError(undefined)
         return result.data
       } catch (error) {
         console.warn('Service status command failed:', error)
-        const message = String(error).toLowerCase()
+        if (isPermissionDeniedError(error)) {
+          setServiceStatusError('无法访问系统服务。请重新登录系统，或确认当前用户已获得 nyanpasu 服务组权限。')
+          return {
+            name: '',
+            version: '',
+            status: 'stopped' as const,
+            server: null,
+          }
+        }
 
+        const message = String(error).toLowerCase()
+        setServiceStatusError(undefined)
         console.debug('Service appears not installed:', message)
         return {
           name: '',
@@ -221,7 +259,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
           break
 
         case 'uninstall':
-          unwrap(await commands.serviceUninstall())
+          unwrap(await commands.serviceRemove())
           break
 
         case 'start':
@@ -472,6 +510,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     isServiceInstalled:
       !!query.data?.status && query.data.status !== 'not_installed',
     lastError,
+    serviceStatusError,
 
     // Methods
     installService,

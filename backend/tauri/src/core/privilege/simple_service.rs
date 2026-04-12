@@ -5,7 +5,7 @@ use tauri::command;
 use tracing::{error, info, warn};
 
 use super::service_utils;
-use crate::core::service::control;
+use crate::{config::Config, core::service::control};
 use nyanpasu_ipc::types::ServiceStatus;
 
 #[command]
@@ -25,13 +25,36 @@ pub async fn service_install() -> Result<(), String> {
 pub async fn service_uninstall() -> Result<(), String> {
     control::uninstall_service()
         .await
+        .map_err(|e| e.to_string())?;
+
+    service_utils::update_service_mode_config(false)
+        .await
         .map_err(|e| e.to_string())
 }
 
 #[command]
 #[specta::specta]
 pub async fn service_start() -> Result<(), String> {
-    control::start_service().await.map_err(|e| e.to_string())
+    let was_enabled = Config::verge()
+        .latest()
+        .enable_service_mode
+        .unwrap_or(false);
+
+    if !was_enabled {
+        service_utils::update_service_mode_config(true)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    match control::start_service().await {
+        Ok(()) => Ok(()),
+        Err(e) => {
+            if !was_enabled {
+                let _ = service_utils::update_service_mode_config(false).await;
+            }
+            Err(e.to_string())
+        }
+    }
 }
 
 #[command]
@@ -94,8 +117,18 @@ pub async fn service_setup() -> Result<String, String> {
 
     // 检查当前状态
     let current_status = service_status_summary().await?;
-    if current_status.installed && service_utils::is_service_running().await.unwrap_or(false) {
-        return Ok("服务已安装并运行中".to_string());
+    if current_status.installed {
+        service_utils::update_service_mode_config(true)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        if service_utils::is_service_running().await.unwrap_or(false) {
+            return Ok("服务已安装并运行，已启用服务模式".to_string());
+        }
+
+        info!("服务已安装但未运行，尝试启动服务模式...");
+        control::start_service().await.map_err(|e| e.to_string())?;
+        return Ok("✅ 服务模式已启用，服务已启动。".to_string());
     }
 
     info!("准备安装服务，即将请求UAC权限...");
@@ -106,9 +139,9 @@ pub async fn service_setup() -> Result<String, String> {
             info!("服务安装命令执行完成，开始验证安装状态...");
 
             // 启用服务模式配置
-            if let Err(e) = service_utils::update_service_mode_config(true).await {
-                warn!("更新服务模式配置失败: {}", e);
-            }
+            service_utils::update_service_mode_config(true)
+                .await
+                .map_err(|e| e.to_string())?;
 
             // 等待并验证服务安装状态 - 增加等待时间
             info!("等待服务安装完成...");
@@ -179,9 +212,9 @@ pub async fn service_remove() -> Result<String, String> {
             info!("服务卸载成功");
 
             // 禁用服务模式配置
-            if let Err(e) = service_utils::update_service_mode_config(false).await {
-                warn!("更新服务模式配置失败: {}", e);
-            }
+            service_utils::update_service_mode_config(false)
+                .await
+                .map_err(|e| e.to_string())?;
 
             Ok("✅ 服务卸载成功。系统代理和TUN模式将需要UAC权限确认。".to_string())
         }

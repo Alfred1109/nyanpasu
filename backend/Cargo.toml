@@ -5,12 +5,6 @@ members = ["tauri", "boa_utils", "nyanpasu-macro", "nyanpasu-egui"]
 [patch.crates-io]
 tray-icon = { git = "https://github.com/tauri-apps/tray-icon.git", rev = "34a3442" }
 
-[patch."https://github.com/LibNyanpasu/nyanpasu-utils.git"]
-nyanpasu-utils = { git = "https://github.com/Alfred1109/nyanpasu-utils.git", rev = "4165ebfecccc5606f4a1abc0bbe847cd018123dd" }
-
-[patch."https://github.com/libnyanpasu/nyanpasu-utils.git"]
-nyanpasu-utils = { git = "https://github.com/Alfred1109/nyanpasu-utils.git", rev = "4165ebfecccc5606f4a1abc0bbe847cd018123dd" }
-
 [workspace.package]
 repository = "https://github.com/Alfred1109/clashnyanpasu.git"
 edition = "2024"
@@ -30,7 +24,7 @@ reqwest = { version = "0.12", default-features = false, features = [
   "rustls-tls",
 ] }
 tokio = { version = "1", features = ["full"] }
-nyanpasu-utils = { git = "https://github.com/Alfred1109/nyanpasu-utils.git", rev = "4165ebfecccc5606f4a1abc0bbe847cd018123dd", features = [
+nyanpasu-utils = { git = "https://github.com/LibNyanpasu/nyanpasu-utils.git", rev = "d8147010b531a71a18ba512e6a793b45524a9f0e", features = [
   "specta",
 ] }
 test-log = { version = "0.2.16", features = ["trace"] }
