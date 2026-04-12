@@ -1,21 +1,50 @@
-import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
-import { Button, Typography, Box, Alert } from '@mui/material'
+import { useTranslation } from 'react-i18next'
+import { useServiceManager } from '@/hooks/use-service-manager'
 import { IS_IN_TAURI } from '@/utils/tauri'
+import { Alert, Box, Button, Typography } from '@mui/material'
 import { useSetting } from '@nyanpasu/interface'
 import { BaseCard } from '@nyanpasu/ui'
-import { useServiceManager } from '@/hooks/use-service-manager'
 import ServiceInstallDialog from './modules/service-install-dialog'
 
 export default function SettingSystemService() {
   const { t } = useTranslation()
   const [message, setMessage] = useState('')
   const isInTauri = IS_IN_TAURI
-  
+
   const serviceManager = useServiceManager()
   const serviceMode = useSetting('enable_service_mode')
   const isServiceModeEnabled = Boolean(serviceMode.value)
-  
+  const feedbackSeverity = serviceManager.lastError
+    ? 'error'
+    : message.includes('失败')
+      ? 'error'
+      : message.includes('取消') ||
+          message.includes('超时') ||
+          message.includes('请按需启动服务') ||
+          message.includes('请检查服务状态')
+        ? 'warning'
+        : 'success'
+  const primaryActionLabel = serviceManager.isInstalling
+    ? '处理中...'
+    : !serviceManager.isServiceInstalled
+      ? '安装服务并启用'
+      : isServiceModeEnabled
+        ? '服务模式已启用'
+        : '启用服务模式'
+  const startActionLabel = !serviceManager.isServiceInstalled
+    ? '启动服务'
+    : !isServiceModeEnabled
+      ? '先启用服务模式'
+      : serviceManager.serviceStatus === 'running'
+        ? '服务已运行'
+        : '启动服务'
+  const stopActionLabel =
+    serviceManager.serviceStatus === 'running' ? '停止服务' : '服务已停止'
+  const uninstallActionLabel = serviceManager.isServiceInstalled
+    ? '卸载服务'
+    : '服务未安装'
+
   const handleInstallService = async () => {
     if (!isInTauri) {
       setMessage('该功能仅在桌面端可用，请使用 tauri dev 或安装版 exe 测试。')
@@ -26,9 +55,19 @@ export default function SettingSystemService() {
       const wasInstalled = serviceManager.isServiceInstalled
       const success = await serviceManager.installService({ autoStart: false })
       if (success) {
-        setMessage(wasInstalled ? '服务模式已启用！' : '服务安装并启用成功！')
+        if (wasInstalled) {
+          setMessage(
+            serviceManager.serviceStatus === 'running'
+              ? '服务模式已启用，服务当前正在运行。'
+              : '服务模式已启用，请按需启动服务。',
+          )
+        } else {
+          setMessage('服务安装成功，服务模式已启用。请按需启动服务。')
+        }
       } else {
-        setMessage(wasInstalled ? '启用服务模式被取消或超时' : '服务安装被取消或超时')
+        setMessage(
+          wasInstalled ? '启用服务模式被取消或超时' : '服务安装被取消或超时',
+        )
       }
     } catch (error) {
       console.error('Service install error:', error)
@@ -45,12 +84,8 @@ export default function SettingSystemService() {
     }
     setMessage('')
     try {
-      const success = await serviceManager.startService()
-      if (success) {
-        setMessage('服务启动成功！')
-      } else {
-        setMessage('服务启动被取消或超时')
-      }
+      await serviceManager.startService()
+      setMessage('服务启动成功！')
     } catch (error) {
       console.error('Service start error:', error)
       setMessage(`服务启动失败: ${error}`)
@@ -64,12 +99,8 @@ export default function SettingSystemService() {
     }
     setMessage('')
     try {
-      const success = await serviceManager.uninstallService()
-      if (success) {
-        setMessage('服务卸载成功！')
-      } else {
-        setMessage('服务卸载失败')
-      }
+      await serviceManager.uninstallService()
+      setMessage('服务卸载成功！')
     } catch (error) {
       console.error('Service uninstall error:', error)
       setMessage(`服务卸载失败: ${error}`)
@@ -83,12 +114,8 @@ export default function SettingSystemService() {
     }
     setMessage('')
     try {
-      const success = await serviceManager.stopService()
-      if (success) {
-        setMessage('服务停止成功！')
-      } else {
-        setMessage('服务停止失败')
-      }
+      await serviceManager.stopService()
+      setMessage('服务停止成功！')
     } catch (error) {
       console.error('Service stop error:', error)
       setMessage(`服务停止失败: ${error}`)
@@ -105,19 +132,21 @@ export default function SettingSystemService() {
 
           {!isInTauri && (
             <Alert severity="info" sx={{ mt: 1 }}>
-              该功能仅在桌面端可用（Tauri WebView）。浏览器 Dev 模式无法调用系统服务。
+              该功能仅在桌面端可用（Tauri WebView）。浏览器 Dev
+              模式无法调用系统服务。
             </Alert>
           )}
-          
+
           {(message || serviceManager.lastError) && (
-            <Alert severity={(message && message.includes('失败')) || serviceManager.lastError ? 'error' : 'success'} sx={{ mt: 1 }}>
+            <Alert severity={feedbackSeverity} sx={{ mt: 1 }}>
               {message}
               {serviceManager.lastError && (
                 <>
                   <br />
                   详细: {serviceManager.lastError}
                   <br />
-                  请在任务栏确认是否有 UAC 弹窗；若无弹窗，可查看 %TEMP%/nyanpasu-service-*.log 便于排查。
+                  请在任务栏确认是否有 UAC 弹窗；若无弹窗，可查看
+                  %TEMP%/nyanpasu-service-*.log 便于排查。
                 </>
               )}
             </Alert>
@@ -133,15 +162,19 @@ export default function SettingSystemService() {
           {serviceManager.serviceStatus && (
             <Box>
               <Typography variant="body2" color="text.secondary">
-                服务状态: {serviceManager.serviceStatus === 'running' ? '运行中' : 
-                          serviceManager.serviceStatus === 'stopped' ? '已停止' : '未安装'}
+                服务状态:{' '}
+                {serviceManager.serviceStatus === 'running'
+                  ? '运行中'
+                  : serviceManager.serviceStatus === 'stopped'
+                    ? '已停止'
+                    : '未安装'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 服务模式: {isServiceModeEnabled ? '已启用' : '未启用'}
               </Typography>
             </Box>
           )}
-          
+
           <Box display="flex" gap={1} flexWrap="wrap">
             <Button
               variant="contained"
@@ -153,39 +186,50 @@ export default function SettingSystemService() {
                 (serviceManager.isServiceInstalled && isServiceModeEnabled)
               }
             >
-              {serviceManager.isInstalling
-                ? '处理中...'
-                : serviceManager.isServiceInstalled
-                  ? '启用服务模式'
-                  : '安装服务'}
+              {primaryActionLabel}
             </Button>
-            
+
             <Button
               variant="outlined"
               size="small"
               onClick={handleStartService}
-              disabled={!isInTauri || serviceManager.isInstalling || !serviceManager.isServiceInstalled || serviceManager.serviceStatus === 'running'}
+              disabled={
+                !isInTauri ||
+                serviceManager.isInstalling ||
+                !serviceManager.isServiceInstalled ||
+                !isServiceModeEnabled ||
+                serviceManager.serviceStatus === 'running'
+              }
             >
-              启动服务
+              {startActionLabel}
             </Button>
 
             <Button
               variant="outlined"
               size="small"
               onClick={handleStopService}
-              disabled={!isInTauri || serviceManager.isInstalling || !serviceManager.isServiceInstalled || serviceManager.serviceStatus !== 'running'}
+              disabled={
+                !isInTauri ||
+                serviceManager.isInstalling ||
+                !serviceManager.isServiceInstalled ||
+                serviceManager.serviceStatus !== 'running'
+              }
             >
-              停止服务
+              {stopActionLabel}
             </Button>
 
             <Button
               variant="outlined"
-              size="small" 
+              size="small"
               color="error"
               onClick={handleUninstallService}
-              disabled={!isInTauri || serviceManager.isInstalling || !serviceManager.isServiceInstalled}
+              disabled={
+                !isInTauri ||
+                serviceManager.isInstalling ||
+                !serviceManager.isServiceInstalled
+              }
             >
-              卸载服务
+              {uninstallActionLabel}
             </Button>
           </Box>
         </Box>

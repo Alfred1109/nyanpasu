@@ -236,10 +236,8 @@ pub async fn install_service() -> anyhow::Result<()> {
         // 验证服务确实可以连接后再启动健康检查
         match status().await {
             Ok(info) if matches!(info.status, ServiceStatus::Running | ServiceStatus::Stopped) => {
-                if !super::ipc::HEALTH_CHECK_RUNNING.load(std::sync::atomic::Ordering::Relaxed) {
-                    tracing::info!("Service installed and accessible, starting health check");
-                    super::ipc::spawn_health_check();
-                }
+                tracing::info!("Service installed and accessible, starting health check");
+                super::ipc::ensure_health_check_running();
             }
             Ok(_) => {
                 tracing::debug!(
@@ -466,10 +464,9 @@ pub async fn start_service() -> anyhow::Result<()> {
     if enable_service_mode {
         if let Ok(info) = status().await {
             if matches!(info.status, ServiceStatus::Running) {
-                if !super::ipc::HEALTH_CHECK_RUNNING.load(std::sync::atomic::Ordering::Acquire) {
-                    tracing::info!("Service started successfully, starting health check");
-                    super::ipc::spawn_health_check();
-                }
+                tracing::info!("Service started successfully, updating IPC state");
+                super::ipc::notify_connected();
+                super::ipc::ensure_health_check_running();
             }
         }
     }
@@ -551,6 +548,7 @@ pub async fn stop_service() -> anyhow::Result<()> {
         std::sync::atomic::Ordering::Acquire,
         std::sync::atomic::Ordering::Relaxed,
     );
+    super::ipc::notify_disconnected();
     Ok(())
 }
 
@@ -637,10 +635,9 @@ pub async fn restart_service() -> anyhow::Result<()> {
     if enable_service_mode {
         if let Ok(info) = status().await {
             if matches!(info.status, ServiceStatus::Running) {
-                if !super::ipc::HEALTH_CHECK_RUNNING.load(std::sync::atomic::Ordering::Acquire) {
-                    tracing::info!("Service restarted successfully, starting health check");
-                    super::ipc::spawn_health_check();
-                }
+                tracing::info!("Service restarted successfully, updating IPC state");
+                super::ipc::notify_connected();
+                super::ipc::ensure_health_check_running();
             }
         }
     }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Notice } from '@/components/base'
 import { formatError } from '@/utils'
-import { message } from '@/utils/notification'
 import { ClearRounded, ContentCopyRounded, Download } from '@mui/icons-material'
 import {
   CircularProgress,
@@ -13,6 +13,50 @@ import {
 import { useProfile } from '@nyanpasu/interface'
 import { alpha } from '@nyanpasu/ui'
 import { readText } from '@tauri-apps/plugin-clipboard-manager'
+
+const getQuickImportErrorMessage = (error: unknown) => {
+  const raw = error instanceof Error ? error.message : String(error)
+  const normalized = raw.toLowerCase()
+
+  if (
+    normalized.includes('401 unauthorized') ||
+    normalized.includes('403 forbidden') ||
+    normalized.includes('unauthorized') ||
+    normalized.includes('forbidden')
+  ) {
+    return '订阅链接无效、已过期，或当前 token 未授权访问。'
+  }
+
+  if (normalized.includes('timed out') || normalized.includes('timeout')) {
+    return '下载订阅超时，请检查网络连接后重试。'
+  }
+
+  if (
+    normalized.includes('dns') ||
+    normalized.includes('connection refused') ||
+    normalized.includes('failed to connect') ||
+    normalized.includes('network')
+  ) {
+    return '无法连接到订阅服务器，请检查网络或代理设置。'
+  }
+
+  if (
+    normalized.includes('failed to parse the url') ||
+    normalized.includes('relative url') ||
+    normalized.includes('invalid url')
+  ) {
+    return '订阅链接格式不正确，请检查后重新导入。'
+  }
+
+  if (
+    normalized.includes('failed to build a remote profile') ||
+    normalized.includes('subscribe failed')
+  ) {
+    return `订阅导入失败：${formatError(error)}`
+  }
+
+  return `订阅导入失败：${formatError(error)}`
+}
 
 export const QuickImport = () => {
   const { t } = useTranslation()
@@ -84,11 +128,10 @@ export const QuickImport = () => {
       })
 
       setUrl('')
+      Notice.success('订阅导入成功')
     } catch (error) {
-      message(`${t('Error')}: ${formatError(error)}`, {
-        title: t('Error'),
-        kind: 'error',
-      })
+      console.error('Quick import failed:', error)
+      Notice.error(getQuickImportErrorMessage(error), 4500)
     } finally {
       setLoading(false)
     }

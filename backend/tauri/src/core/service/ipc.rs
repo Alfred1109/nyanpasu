@@ -64,6 +64,14 @@ fn dispatch_connected() {
     }
 }
 
+pub(crate) fn notify_connected() {
+    dispatch_connected();
+}
+
+pub(crate) fn notify_disconnected() {
+    dispatch_disconnected();
+}
+
 // TODO: it might be moved to outer scope?
 #[instrument]
 fn on_ipc_state_changed(state: IpcState) {
@@ -98,6 +106,13 @@ fn on_ipc_state_changed(state: IpcState) {
             tracing::debug!("Service mode not enabled, skipping core restart on IPC state change");
         }
     });
+}
+
+pub(crate) fn ensure_health_check_running() {
+    if HEALTH_CHECK_RUNNING.load(Ordering::Acquire) {
+        return;
+    }
+    spawn_health_check();
 }
 
 pub(super) fn spawn_health_check() {

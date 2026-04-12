@@ -1,8 +1,12 @@
 import { useCallback, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { commands, restartSidecar, type StatusInfo } from '@nyanpasu/interface'
 import type { ServiceOperation } from '@/components/setting/modules/service-install-dialog'
 import { IS_IN_TAURI } from '@/utils/tauri'
+import {
+  commands,
+  type ServiceModeInfo,
+  type StatusInfo,
+} from '@nyanpasu/interface'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 export enum InstallStage {
   PREPARING = 'preparing',
@@ -39,7 +43,13 @@ interface ServiceManagerState {
   /**
    * 当前操作类型
    */
-  currentOperation: 'install' | 'uninstall' | 'start' | 'stop' | 'restart' | null
+  currentOperation:
+    | 'install'
+    | 'uninstall'
+    | 'start'
+    | 'stop'
+    | 'restart'
+    | null
   /**
    * 当前安装阶段
    */
@@ -52,6 +62,10 @@ interface ServiceManagerState {
    * 服务状态
    */
   serviceStatus?: string
+  /**
+   * 服务 IPC 是否已连通
+   */
+  serviceConnected: boolean
   /**
    * 服务是否已安装
    */
@@ -100,6 +114,10 @@ interface UseServiceManagerReturn
    * 服务状态查询对象
    */
   query: ReturnType<typeof useQuery<StatusInfo>>
+  /**
+   * 服务连接状态查询对象
+   */
+  availabilityQuery: ReturnType<typeof useQuery<ServiceModeInfo>>
 }
 
 /**
@@ -129,8 +147,12 @@ export const useServiceManager = (): UseServiceManagerReturn => {
   const isBrowser = typeof window !== 'undefined'
 
   // Operation tracking state
-  const [currentOperation, setCurrentOperation] = useState<'install' | 'uninstall' | 'start' | 'stop' | 'restart' | null>(null)
-  const [serviceStatusError, setServiceStatusError] = useState<string | undefined>(undefined)
+  const [currentOperation, setCurrentOperation] = useState<
+    'install' | 'uninstall' | 'start' | 'stop' | 'restart' | null
+  >(null)
+  const [serviceStatusError, setServiceStatusError] = useState<
+    string | undefined
+  >(undefined)
 
   const unwrap = <T, E>(
     res: { status: 'ok'; data: T } | { status: 'error'; error: E },
@@ -202,7 +224,9 @@ export const useServiceManager = (): UseServiceManagerReturn => {
         if (result.status === 'error') {
           console.warn('Service status command returned error:', result.error)
           if (isPermissionDeniedError(result.error)) {
-            setServiceStatusError('无法访问系统服务。请重新登录系统，或确认当前用户已获得 nyanpasu 服务组权限。')
+            setServiceStatusError(
+              '无法访问系统服务。请重新登录系统，或确认当前用户已获得 nyanpasu 服务组权限。',
+            )
             return {
               name: '',
               version: '',
@@ -223,7 +247,9 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       } catch (error) {
         console.warn('Service status command failed:', error)
         if (isPermissionDeniedError(error)) {
-          setServiceStatusError('无法访问系统服务。请重新登录系统，或确认当前用户已获得 nyanpasu 服务组权限。')
+          setServiceStatusError(
+            '无法访问系统服务。请重新登录系统，或确认当前用户已获得 nyanpasu 服务组权限。',
+          )
           return {
             name: '',
             version: '',
@@ -250,6 +276,18 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     throwOnError: false,
   })
 
+  const availabilityQuery = useQuery<ServiceModeInfo>({
+    queryKey: ['service-mode-availability'],
+    enabled: isInTauri,
+    queryFn: async () => {
+      const result = await commands.checkServiceModeAvailability()
+      return unwrap(result)
+    },
+    refetchInterval: 5000,
+    retry: false,
+    throwOnError: false,
+  })
+
   // Direct service operations mutation implementation
   const upsert = useMutation({
     mutationFn: async (type: 'install' | 'uninstall' | 'start' | 'stop') => {
@@ -273,6 +311,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['system-service'] })
+      queryClient.invalidateQueries({ queryKey: ['service-mode-availability'] })
     },
   })
 
@@ -300,7 +339,9 @@ export const useServiceManager = (): UseServiceManagerReturn => {
         await new Promise((resolve) => setTimeout(resolve, 1000))
         const result = await query.refetch()
         const currentStatus = result.data?.status
-        console.debug(`Installation check ${i + 1}/${maxSeconds}s: status = ${currentStatus}`)
+        console.debug(
+          `Installation check ${i + 1}/${maxSeconds}s: status = ${currentStatus}`,
+        )
 
         // 根据真实状态更新UI阶段
         if (currentStatus === 'not_installed') {
@@ -317,7 +358,9 @@ export const useServiceManager = (): UseServiceManagerReturn => {
           return true
         } else if (currentStatus === 'running') {
           // 服务已安装并运行
-          console.debug(`Service installation and startup verified after ${i + 1}s`)
+          console.debug(
+            `Service installation and startup verified after ${i + 1}s`,
+          )
           return true
         }
 
@@ -340,7 +383,8 @@ export const useServiceManager = (): UseServiceManagerReturn => {
   const installService = useCallback(
     async (options: ServiceInstallOptions = {}) => {
       const { autoStart, onConfigureProxy, onConfigureTun, operation } = options
-      const op: ServiceOperation = operation ?? (autoStart ? 'start' : 'install')
+      const op: ServiceOperation =
+        operation ?? (autoStart ? 'start' : 'install')
       console.debug('Starting service installation')
       setCurrentOperation(op)
       setIsInstalling(true)
@@ -377,14 +421,10 @@ export const useServiceManager = (): UseServiceManagerReturn => {
           throw new Error('service_not_installed')
         }
 
-        // Restart sidecar after installation
-        await restartSidecar()
-
         // Stage 5: Starting (optional)
         if (autoStart) {
           setInstallStage(InstallStage.STARTING)
           await upsert.mutateAsync('start')
-          await restartSidecar()
           if (cancelRequested) {
             console.debug('Installation cancelled at STARTING stage')
             return false
@@ -426,15 +466,17 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     setCurrentOperation('uninstall')
     setIsInstalling(true)
     setInstallStage(InstallStage.INSTALLING) // Reuse installing stage for uninstall
+    setLastError(undefined)
 
     try {
       await upsert.mutateAsync('uninstall')
-      await restartSidecar()
       await query.refetch()
+      setLastError(undefined)
       console.debug('Service uninstalled successfully')
       return true
     } catch (error) {
       console.error('Service uninstallation failed:', error)
+      setLastError(error instanceof Error ? error.message : String(error))
       throw error
     } finally {
       setIsInstalling(false)
@@ -450,15 +492,17 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     setCurrentOperation('start')
     setIsInstalling(true)
     setInstallStage(InstallStage.STARTING)
+    setLastError(undefined)
 
     try {
       await upsert.mutateAsync('start')
-      await restartSidecar()
       await query.refetch()
+      setLastError(undefined)
       console.debug('Service started successfully')
       return true
     } catch (error) {
       console.error('Service start failed:', error)
+      setLastError(error instanceof Error ? error.message : String(error))
       throw error
     } finally {
       setIsInstalling(false)
@@ -474,15 +518,17 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     setCurrentOperation('stop')
     setIsInstalling(true)
     setInstallStage(InstallStage.INSTALLING) // Reuse installing stage for stop
+    setLastError(undefined)
 
     try {
       await upsert.mutateAsync('stop')
-      await restartSidecar()
       await query.refetch()
+      setLastError(undefined)
       console.debug('Service stopped successfully')
       return true
     } catch (error) {
       console.error('Service stop failed:', error)
+      setLastError(error instanceof Error ? error.message : String(error))
       throw error
     } finally {
       setIsInstalling(false)
@@ -507,6 +553,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     installStage,
     canCancel,
     serviceStatus: query.data?.status,
+    serviceConnected: availabilityQuery.data?.connected ?? false,
     isServiceInstalled:
       !!query.data?.status && query.data.status !== 'not_installed',
     lastError,
@@ -521,5 +568,6 @@ export const useServiceManager = (): UseServiceManagerReturn => {
 
     // Query
     query,
+    availabilityQuery,
   }
 }

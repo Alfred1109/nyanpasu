@@ -18,4 +18,3 @@ pub mod open;
 pub mod dock;
 pub mod platform;
 pub mod sudo;
-

@@ -5,7 +5,7 @@ use tauri::command;
 use tracing::{error, info, warn};
 
 use super::service_utils;
-use crate::{config::Config, core::service::control};
+use crate::core::service::control;
 use nyanpasu_ipc::types::ServiceStatus;
 
 #[command]
@@ -35,26 +35,7 @@ pub async fn service_uninstall() -> Result<(), String> {
 #[command]
 #[specta::specta]
 pub async fn service_start() -> Result<(), String> {
-    let was_enabled = Config::verge()
-        .latest()
-        .enable_service_mode
-        .unwrap_or(false);
-
-    if !was_enabled {
-        service_utils::update_service_mode_config(true)
-            .await
-            .map_err(|e| e.to_string())?;
-    }
-
-    match control::start_service().await {
-        Ok(()) => Ok(()),
-        Err(e) => {
-            if !was_enabled {
-                let _ = service_utils::update_service_mode_config(false).await;
-            }
-            Err(e.to_string())
-        }
-    }
+    control::start_service().await.map_err(|e| e.to_string())
 }
 
 #[command]
@@ -123,12 +104,11 @@ pub async fn service_setup() -> Result<String, String> {
             .map_err(|e| e.to_string())?;
 
         if service_utils::is_service_running().await.unwrap_or(false) {
-            return Ok("服务已安装并运行，已启用服务模式".to_string());
+            return Ok("服务模式已启用，服务当前正在运行。".to_string());
         }
 
-        info!("服务已安装但未运行，尝试启动服务模式...");
-        control::start_service().await.map_err(|e| e.to_string())?;
-        return Ok("✅ 服务模式已启用，服务已启动。".to_string());
+        info!("服务已安装，启用服务模式配置，但不自动启动服务");
+        return Ok("✅ 服务模式已启用。请按需点击“启动服务”。".to_string());
     }
 
     info!("准备安装服务，即将请求UAC权限...");
@@ -158,20 +138,9 @@ pub async fn service_setup() -> Result<String, String> {
 
                 if status.installed {
                     info!("服务安装验证成功！");
-
-                    // 尝试启动服务
-                    if !service_utils::is_service_running().await.unwrap_or(false) {
-                        info!("服务已安装但未运行，尝试启动...");
-                        if let Err(e) = control::start_service().await {
-                            warn!("启动服务失败: {}", e);
-                            return Ok("✅ 服务安装成功，但启动失败。请手动启动服务。".to_string());
-                        }
-
-                        // 等待服务启动
-                        tokio::time::sleep(std::time::Duration::from_secs(3)).await;
-                    }
-
-                    return Ok("✅ 服务安装成功！现在可以享受丝滑的TUN模式体验。".to_string());
+                    return Ok(
+                        "✅ 服务安装成功，服务模式已启用。请按需点击“启动服务”。".to_string()
+                    );
                 }
             }
 
@@ -210,6 +179,11 @@ pub async fn service_remove() -> Result<String, String> {
     match control::uninstall_service().await {
         Ok(()) => {
             info!("服务卸载成功");
+
+            // 清理 TUN 配置，避免前端继续显示为开启状态
+            service_utils::update_tun_config(false)
+                .await
+                .map_err(|e| e.to_string())?;
 
             // 禁用服务模式配置
             service_utils::update_service_mode_config(false)

@@ -1,3 +1,4 @@
+import { isInTauri } from '@nyanpasu/utils'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { unwrapResult } from '../utils'
 import {
@@ -8,8 +9,6 @@ import {
   type RemoteProfileOptionsBuilder,
 } from './bindings'
 import { PROFILES_QUERY_KEY } from './consts'
-
-import { isInTauri } from '@nyanpasu/utils'
 
 type URLImportParams = Parameters<typeof commands.importProfile>
 
@@ -158,9 +157,10 @@ export const useProfile = (options?: { without_helper_fn?: boolean }) => {
         return unwrapResult(await commands.createProfile(item, fileData))
       }
     },
-    onSuccess: () => {
-      // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: [PROFILES_QUERY_KEY] })
+    onSuccess: async () => {
+      // Invalidate and immediately refetch so the new profile card appears reliably.
+      await queryClient.invalidateQueries({ queryKey: [PROFILES_QUERY_KEY] })
+      await queryClient.refetchQueries({ queryKey: [PROFILES_QUERY_KEY] })
     },
   })
 

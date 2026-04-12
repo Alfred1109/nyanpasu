@@ -12,7 +12,15 @@ pub async fn update_service_mode_config(enable: bool) -> Result<()> {
         enable_service_mode: Some(enable),
         ..Default::default()
     };
-    crate::feat::patch_verge(patch).await
+    crate::feat::patch_verge(patch).await?;
+    if enable {
+        crate::core::service::ipc::ensure_health_check_running();
+        if is_service_running().await.unwrap_or(false) {
+            crate::core::service::ipc::notify_connected();
+        }
+    }
+    crate::core::handle::Handle::refresh_verge();
+    Ok(())
 }
 
 /// 更新TUN模式配置
