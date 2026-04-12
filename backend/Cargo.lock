@@ -1157,7 +1157,7 @@ dependencies = [
  "indoc",
  "log",
  "mime",
- "nyanpasu-utils 0.1.0 (git+https://github.com/LibNyanpasu/nyanpasu-utils.git?rev=d8147010b531a71a18ba512e6a793b45524a9f0e)",
+ "nyanpasu-utils",
  "phf 0.13.1",
  "postcard",
  "reqwest 0.12.28",
@@ -1608,6 +1608,7 @@ dependencies = [
  "image",
  "indexmap 2.14.0",
  "itertools 0.14.0",
+ "json-patch 4.1.0",
  "log",
  "mime",
  "mlua",
@@ -1619,7 +1620,7 @@ dependencies = [
  "nyanpasu-egui",
  "nyanpasu-ipc",
  "nyanpasu-macro",
- "nyanpasu-utils 0.1.0 (git+https://github.com/LibNyanpasu/nyanpasu-utils.git?rev=d8147010b531a71a18ba512e6a793b45524a9f0e)",
+ "nyanpasu-utils",
  "objc2 0.6.4",
  "objc2-app-kit 0.3.2",
  "objc2-foundation 0.3.2",
@@ -2423,7 +2424,7 @@ dependencies = [
 [[package]]
 name = "dirs-utils"
 version = "0.1.0"
-source = "git+https://github.com/LibNyanpasu/nyanpasu-utils.git?rev=d8147010b531a71a18ba512e6a793b45524a9f0e#d8147010b531a71a18ba512e6a793b45524a9f0e"
+source = "git+https://github.com/LibNyanpasu/nyanpasu-utils.git#d8147010b531a71a18ba512e6a793b45524a9f0e"
 dependencies = [
  "dirs 6.0.0",
  "thiserror 2.0.18",
@@ -4943,7 +4944,19 @@ version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "863726d7afb6bc2590eeff7135d923545e5e964f004c2ccf8716c25e70a86f08"
 dependencies = [
- "jsonptr",
+ "jsonptr 0.6.3",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "json-patch"
+version = "4.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f300e415e2134745ef75f04562dd0145405c2f7fd92065db029ac4b16b57fe90"
+dependencies = [
+ "jsonptr 0.7.1",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -4954,6 +4967,16 @@ name = "jsonptr"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5dea2b27dd239b2556ed7a25ba842fe47fd602e7fc7433c2a8d6106d4d9edd70"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "jsonptr"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5a3cc660ba5d72bce0b3bb295bf20847ccbb40fd423f3f05b61273672e561fe"
 dependencies = [
  "serde",
  "serde_json",
@@ -5596,7 +5619,7 @@ dependencies = [
 [[package]]
 name = "network-utils"
 version = "0.1.0"
-source = "git+https://github.com/LibNyanpasu/nyanpasu-utils.git?rev=d8147010b531a71a18ba512e6a793b45524a9f0e#d8147010b531a71a18ba512e6a793b45524a9f0e"
+source = "git+https://github.com/LibNyanpasu/nyanpasu-utils.git#d8147010b531a71a18ba512e6a793b45524a9f0e"
 dependencies = [
  "log",
  "tempfile",
@@ -5950,7 +5973,7 @@ dependencies = [
  "hyper-util",
  "indexmap 2.14.0",
  "interprocess",
- "nyanpasu-utils 0.1.0 (git+https://github.com/LibNyanpasu/nyanpasu-utils.git)",
+ "nyanpasu-utils",
  "pin-project-lite",
  "serde",
  "serde_json",
@@ -5976,7 +5999,7 @@ dependencies = [
 [[package]]
 name = "nyanpasu-utils"
 version = "0.1.0"
-source = "git+https://github.com/LibNyanpasu/nyanpasu-utils.git?rev=d8147010b531a71a18ba512e6a793b45524a9f0e#d8147010b531a71a18ba512e6a793b45524a9f0e"
+source = "git+https://github.com/LibNyanpasu/nyanpasu-utils.git#d8147010b531a71a18ba512e6a793b45524a9f0e"
 dependencies = [
  "camino",
  "constcat",
@@ -5986,31 +6009,7 @@ dependencies = [
  "kill_tree",
  "memchr",
  "network-utils",
- "os-utils 0.1.0 (git+https://github.com/LibNyanpasu/nyanpasu-utils.git?rev=d8147010b531a71a18ba512e6a793b45524a9f0e)",
- "os_pipe",
- "parking_lot",
- "serde",
- "shared_child",
- "specta",
- "sysinfo 0.38.4",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "tracing-attributes",
-]
-
-[[package]]
-name = "nyanpasu-utils"
-version = "0.1.0"
-source = "git+https://github.com/LibNyanpasu/nyanpasu-utils.git#d8147010b531a71a18ba512e6a793b45524a9f0e"
-dependencies = [
- "camino",
- "constcat",
- "derive_builder",
- "encoding_rs",
- "kill_tree",
- "memchr",
- "os-utils 0.1.0 (git+https://github.com/LibNyanpasu/nyanpasu-utils.git)",
+ "os-utils",
  "os_pipe",
  "parking_lot",
  "serde",
@@ -6578,16 +6577,6 @@ checksum = "9aa2b01e1d916879f73a53d01d1d6cee68adbb31d6d9177a8cfce093cced1d50"
 dependencies = [
  "futures-core",
  "pin-project-lite",
-]
-
-[[package]]
-name = "os-utils"
-version = "0.1.0"
-source = "git+https://github.com/LibNyanpasu/nyanpasu-utils.git?rev=d8147010b531a71a18ba512e6a793b45524a9f0e#d8147010b531a71a18ba512e6a793b45524a9f0e"
-dependencies = [
- "nix 0.31.2",
- "shared_child",
- "windows 0.61.3",
 ]
 
 [[package]]
@@ -9602,7 +9591,7 @@ dependencies = [
  "dirs 6.0.0",
  "glob",
  "heck 0.5.0",
- "json-patch",
+ "json-patch 3.0.1",
  "schemars 0.8.22",
  "semver 1.0.28",
  "serde",
@@ -9622,7 +9611,7 @@ dependencies = [
  "base64 0.22.1",
  "brotli",
  "ico",
- "json-patch",
+ "json-patch 3.0.1",
  "plist",
  "png 0.17.16",
  "proc-macro2",
@@ -9975,7 +9964,7 @@ dependencies = [
  "html5ever 0.29.1",
  "http",
  "infer",
- "json-patch",
+ "json-patch 3.0.1",
  "kuchikiki",
  "log",
  "memchr",
