@@ -8,6 +8,8 @@ import {
 } from '@nyanpasu/interface'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+const NYANPASU_SETTING_QUERY_KEY = 'settings'
+
 export enum InstallStage {
   PREPARING = 'preparing',
   INSTALLING = 'installing',
@@ -108,7 +110,7 @@ interface ServiceManagerActions {
   cancelInstallation: () => void
 }
 
-interface UseServiceManagerReturn
+export interface UseServiceManagerReturn
   extends ServiceManagerState, ServiceManagerActions {
   /**
    * 服务状态查询对象
@@ -145,6 +147,20 @@ export const useServiceManager = (): UseServiceManagerReturn => {
   const queryClient = useQueryClient()
   const isInTauri = IS_IN_TAURI
   const isBrowser = typeof window !== 'undefined'
+
+  const syncServiceRelatedQueries = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['system-service'] }),
+      queryClient.invalidateQueries({
+        queryKey: ['service-mode-availability'],
+      }),
+      // Service setup/remove mutates verge config from the backend side, so
+      // refresh settings explicitly instead of relying only on mutation events.
+      queryClient.invalidateQueries({
+        queryKey: [NYANPASU_SETTING_QUERY_KEY],
+      }),
+    ])
+  }, [queryClient])
 
   // Operation tracking state
   const [currentOperation, setCurrentOperation] = useState<
@@ -309,16 +325,13 @@ export const useServiceManager = (): UseServiceManagerReturn => {
           break
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['system-service'] })
-      queryClient.invalidateQueries({ queryKey: ['service-mode-availability'] })
+    onSuccess: async () => {
+      await syncServiceRelatedQueries()
     },
   })
 
   const [isInstalling, setIsInstalling] = useState(false)
   const [installStage, setInstallStage] = useState<InstallStage | null>(null)
-  const [canCancel, setCanCancel] = useState(false)
-  const [cancelRequested, setCancelRequested] = useState(false)
   const [lastError, setLastError] = useState<string | undefined>(undefined)
 
   /**
@@ -331,11 +344,6 @@ export const useServiceManager = (): UseServiceManagerReturn => {
   const waitForInstallation = useCallback(
     async (maxSeconds: number = 40): Promise<boolean> => {
       for (let i = 0; i < maxSeconds; i++) {
-        if (cancelRequested) {
-          console.debug('Installation wait cancelled by user')
-          return false
-        }
-
         await new Promise((resolve) => setTimeout(resolve, 1000))
         const result = await query.refetch()
         const currentStatus = result.data?.status
@@ -374,7 +382,48 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       console.error('Service installation timeout')
       return false
     },
-    [query, cancelRequested],
+    [query],
+  )
+
+  /**
+   * 等待服务 IPC 连接就绪。
+   * 服务启动成功后，后端的 IPC 可用状态可能会有一个很短的传播延迟，
+   * 这里主动短轮询，避免前端继续显示“TUN不可用”。
+   */
+  const waitForServiceConnection = useCallback(
+    async (
+      maxMs: number = 5000,
+      intervalMs: number = 250,
+    ): Promise<boolean> => {
+      const attempts = Math.max(1, Math.ceil(maxMs / intervalMs))
+
+      for (let i = 0; i < attempts; i++) {
+        const [availabilityResult, serviceStatusResult] = await Promise.all([
+          availabilityQuery.refetch(),
+          query.refetch(),
+        ])
+
+        if (
+          availabilityResult.data?.connected &&
+          serviceStatusResult.data?.status === 'running'
+        ) {
+          console.debug(
+            `Service IPC became ready after ${i * intervalMs}ms (${i + 1}/${attempts})`,
+          )
+          return true
+        }
+
+        if (i < attempts - 1) {
+          await new Promise((resolve) => setTimeout(resolve, intervalMs))
+        }
+      }
+
+      console.warn(
+        `Service reported started but IPC was not ready within ${maxMs}ms`,
+      )
+      return false
+    },
+    [availabilityQuery, query],
   )
 
   /**
@@ -389,31 +438,20 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       setCurrentOperation(op)
       setIsInstalling(true)
       setInstallStage(InstallStage.PREPARING)
-      setCanCancel(true)
       setLastError(undefined)
 
       try {
         // Stage 1: Preparing
         setInstallStage(InstallStage.PREPARING)
-        if (cancelRequested) {
-          console.debug('Installation cancelled at PREPARING stage')
-          return false
-        }
 
         // Stage 2: Installing (app is already running elevated)
         setInstallStage(InstallStage.INSTALLING)
-        setCanCancel(true)
         try {
           await upsert.mutateAsync('install')
         } catch (error) {
           console.error('Service install command failed:', error)
           throw error
         }
-        if (cancelRequested) {
-          console.debug('Installation cancelled at INSTALLING stage')
-          return false
-        }
-        setCanCancel(false)
 
         // Stage 4: Verifying - waitForInstallation 会根据真实状态更新阶段
         const installed = await waitForInstallation(40)
@@ -425,9 +463,11 @@ export const useServiceManager = (): UseServiceManagerReturn => {
         if (autoStart) {
           setInstallStage(InstallStage.STARTING)
           await upsert.mutateAsync('start')
-          if (cancelRequested) {
-            console.debug('Installation cancelled at STARTING stage')
-            return false
+          const serviceConnected = await waitForServiceConnection()
+          if (!serviceConnected) {
+            throw new Error(
+              '服务已启动，但 IPC 连接未在预期时间内就绪，请稍后重试或检查服务日志。',
+            )
           }
 
           // Stage 6: Configuring (optional)
@@ -442,6 +482,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
           }
         }
 
+        await syncServiceRelatedQueries()
         await query.refetch()
         console.debug('Service installation completed successfully')
         return true
@@ -452,11 +493,15 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       } finally {
         setIsInstalling(false)
         setInstallStage(null)
-        setCanCancel(false)
-        setCancelRequested(false)
       }
     },
-    [upsert, query, waitForInstallation, cancelRequested],
+    [
+      upsert,
+      query,
+      waitForInstallation,
+      waitForServiceConnection,
+      syncServiceRelatedQueries,
+    ],
   )
 
   /**
@@ -470,6 +515,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
 
     try {
       await upsert.mutateAsync('uninstall')
+      await syncServiceRelatedQueries()
       await query.refetch()
       setLastError(undefined)
       console.debug('Service uninstalled successfully')
@@ -483,7 +529,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       setInstallStage(null)
       setCurrentOperation(null)
     }
-  }, [upsert, query])
+  }, [upsert, query, syncServiceRelatedQueries])
 
   /**
    * 启动服务（不做安装）
@@ -496,6 +542,13 @@ export const useServiceManager = (): UseServiceManagerReturn => {
 
     try {
       await upsert.mutateAsync('start')
+      const serviceConnected = await waitForServiceConnection()
+      if (!serviceConnected) {
+        throw new Error(
+          '服务已启动，但 IPC 连接未在预期时间内就绪，请稍后重试或检查服务日志。',
+        )
+      }
+      await syncServiceRelatedQueries()
       await query.refetch()
       setLastError(undefined)
       console.debug('Service started successfully')
@@ -509,7 +562,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       setInstallStage(null)
       setCurrentOperation(null)
     }
-  }, [upsert, query])
+  }, [upsert, query, waitForServiceConnection, syncServiceRelatedQueries])
 
   /**
    * 停止服务
@@ -522,6 +575,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
 
     try {
       await upsert.mutateAsync('stop')
+      await syncServiceRelatedQueries()
       await query.refetch()
       setLastError(undefined)
       console.debug('Service stopped successfully')
@@ -535,15 +589,13 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       setInstallStage(null)
       setCurrentOperation(null)
     }
-  }, [upsert, query])
+  }, [upsert, query, syncServiceRelatedQueries])
 
   /**
    * 取消安装
    */
   const cancelInstallation = useCallback(() => {
-    console.debug('Cancelling installation')
-    setCancelRequested(true)
-    setCanCancel(false)
+    console.warn('Current service operations are not cancelable once started')
   }, [])
 
   return {
@@ -551,7 +603,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     isInstalling,
     currentOperation,
     installStage,
-    canCancel,
+    canCancel: false,
     serviceStatus: query.data?.status,
     serviceConnected: availabilityQuery.data?.connected ?? false,
     isServiceInstalled:

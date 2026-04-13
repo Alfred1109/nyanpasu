@@ -1,7 +1,7 @@
 import { useLockFn } from 'ahooks'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useServiceManager } from '@/hooks/use-service-manager'
+import type { UseServiceManagerReturn } from '@/hooks/use-service-manager'
 import { IS_IN_TAURI } from '@/utils/tauri'
 import {
   CheckCircle as CheckIcon,
@@ -135,10 +135,13 @@ const getStatusIcon = (severity: ServiceStatusInfo['severity']) => {
 /**
  * 增强的TUN模式按钮组件
  */
-const EnhancedTunModeButton = () => {
+const EnhancedTunModeButton = ({
+  serviceManager,
+}: {
+  serviceManager: UseServiceManagerReturn
+}) => {
   const { t } = useTranslation()
   const isInTauri = IS_IN_TAURI
-  const serviceManager = useServiceManager()
   const tunMode = useSetting('enable_tun_mode')
   const serviceMode = useSetting('enable_service_mode')
 
@@ -392,10 +395,14 @@ const EnhancedTunModeButton = () => {
 /**
  * 增强版TUN模式设置卡片
  */
-export default function EnhancedTunModeCard() {
+export default function EnhancedTunModeCard({
+  serviceManager,
+}: {
+  serviceManager: UseServiceManagerReturn
+}) {
   return (
     <BaseCard label="TUN模式管理">
-      <EnhancedTunModeButton />
+      <EnhancedTunModeButton serviceManager={serviceManager} />
     </BaseCard>
   )
 }

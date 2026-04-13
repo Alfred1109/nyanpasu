@@ -1,18 +1,23 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useServiceManager } from '@/hooks/use-service-manager'
+import type { UseServiceManagerReturn } from '@/hooks/use-service-manager'
 import { IS_IN_TAURI } from '@/utils/tauri'
 import { Alert, Box, Button, Typography } from '@mui/material'
 import { useSetting } from '@nyanpasu/interface'
 import { BaseCard } from '@nyanpasu/ui'
 import ServiceInstallDialog from './modules/service-install-dialog'
 
-export default function SettingSystemService() {
+interface SettingSystemServiceProps {
+  serviceManager: UseServiceManagerReturn
+}
+
+export default function SettingSystemService({
+  serviceManager,
+}: SettingSystemServiceProps) {
   const { t } = useTranslation()
   const [message, setMessage] = useState('')
   const isInTauri = IS_IN_TAURI
 
-  const serviceManager = useServiceManager()
   const serviceMode = useSetting('enable_service_mode')
   const isServiceModeEnabled = Boolean(serviceMode.value)
   const feedbackSeverity = serviceManager.lastError
@@ -66,7 +71,9 @@ export default function SettingSystemService() {
         }
       } else {
         setMessage(
-          wasInstalled ? '启用服务模式被取消或超时' : '服务安装被取消或超时',
+          wasInstalled
+            ? '服务模式启用未完成，请检查服务状态。'
+            : '服务安装未完成，请检查服务状态。',
         )
       }
     } catch (error) {
@@ -240,8 +247,6 @@ export default function SettingSystemService() {
         open={serviceManager.isInstalling}
         operation={serviceManager.currentOperation || 'install'}
         installStage={serviceManager.installStage}
-        canCancel={serviceManager.canCancel}
-        handleCancel={serviceManager.cancelInstallation}
       />
     </>
   )

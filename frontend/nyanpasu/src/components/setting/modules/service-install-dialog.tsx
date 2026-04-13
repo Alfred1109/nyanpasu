@@ -1,18 +1,19 @@
 import { useTranslation } from 'react-i18next'
 import { InstallStage } from '@/hooks/use-service-manager'
 import {
-  Close as CloseIcon,
-} from '@mui/icons-material'
-import {
   Box,
   CircularProgress,
   Dialog,
-  IconButton,
   LinearProgress,
   Typography,
 } from '@mui/material'
 
-export type ServiceOperation = 'install' | 'uninstall' | 'start' | 'stop' | 'restart'
+export type ServiceOperation =
+  | 'install'
+  | 'uninstall'
+  | 'start'
+  | 'stop'
+  | 'restart'
 
 interface ServiceInstallDialogProps {
   /**
@@ -27,14 +28,6 @@ interface ServiceInstallDialogProps {
    * 当前安装阶段
    */
   installStage: InstallStage | null
-  /**
-   * 当前阶段是否可以取消
-   */
-  canCancel: boolean
-  /**
-   * 取消按钮点击回调
-   */
-  handleCancel: () => void
 }
 
 /**
@@ -129,7 +122,8 @@ const getStageDescription = (
       if (operation === 'restart') return '正在使用管理员权限重启服务...'
       return '正在使用管理员权限安装系统服务...'
     case InstallStage.VERIFYING:
-      if (operation === 'uninstall') return '等待服务卸载完成并验证状态。在 Windows 系统上这可能需要 30-40 秒...'
+      if (operation === 'uninstall')
+        return '等待服务卸载完成并验证状态。在 Windows 系统上这可能需要 30-40 秒...'
       return '等待服务安装完成并验证状态。在 Windows 系统上这可能需要 30-40 秒...'
     case InstallStage.STARTING:
       if (operation === 'uninstall') return '正在清理服务配置和相关文件...'
@@ -154,8 +148,6 @@ const getStageDescription = (
  * <ServiceInstallDialog
  *   open={serviceManager.isInstalling}
  *   installStage={serviceManager.installStage}
- *   canCancel={serviceManager.canCancel}
- *   onCancel={serviceManager.cancelInstallation}
  * />
  * ```
  */
@@ -163,8 +155,6 @@ const ServiceInstallDialog = ({
   open,
   operation = 'install',
   installStage,
-  canCancel,
-  handleCancel,
 }: ServiceInstallDialogProps) => {
   const { t } = useTranslation()
 
@@ -173,41 +163,29 @@ const ServiceInstallDialog = ({
   }
 
   return (
-    <Dialog
-      open={open}
-      maxWidth="sm"
-      fullWidth
-      disableEscapeKeyDown
-      onClose={(_, reason) => {
-        // 只在可以取消时允许点击背景关闭
-        if (canCancel && reason === 'backdropClick') {
-          handleCancel()
-        }
-      }}
-    >
+    <Dialog open={open} maxWidth="sm" fullWidth disableEscapeKeyDown>
       <Box sx={{ p: 3 }}>
         {/* 标题栏 */}
         <Box
           display="flex"
-          justifyContent="space-between"
+          justifyContent="flex-start"
           alignItems="center"
           mb={2}
         >
           <Typography variant="h6" color="text.primary">
             {getOperationTitle(operation, t)}
           </Typography>
-          {canCancel && (
-            <IconButton onClick={handleCancel} size="small" aria-label="cancel">
-              <CloseIcon />
-            </IconButton>
-          )}
         </Box>
 
         {/* 当前阶段描述 */}
         <Box display="flex" alignItems="flex-start" gap={2} mb={2}>
           <CircularProgress size={24} sx={{ mt: 0.5 }} />
           <Box flex={1}>
-            <Typography variant="body1" color="text.primary" sx={{ lineHeight: 1.4 }}>
+            <Typography
+              variant="body1"
+              color="text.primary"
+              sx={{ lineHeight: 1.4 }}
+            >
               {getStageText(installStage, operation, t)}
             </Typography>
           </Box>

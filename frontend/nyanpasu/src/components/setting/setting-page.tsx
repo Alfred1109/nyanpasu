@@ -1,8 +1,11 @@
-import { Stack, Typography, Box } from '@mui/material'
+import { useServiceManager } from '@/hooks/use-service-manager'
+import { Box, Stack, Typography } from '@mui/material'
 import SettingSystemService from './setting-system-service'
 import SettingTunMode from './setting-tun-mode'
 
 const SettingPage = () => {
+  const serviceManager = useServiceManager()
+
   return (
     <Box p={2}>
       <Box mb={3} textAlign="center">
@@ -13,13 +16,13 @@ const SettingPage = () => {
           管理系统服务和TUN模式，享受更好的代理体验
         </Typography>
       </Box>
-      
+
       <Stack spacing={3} maxWidth={700} mx="auto">
         {/* 系统服务管理 - 放在前面，因为TUN模式依赖于服务 */}
-        <SettingSystemService />
-        
+        <SettingSystemService serviceManager={serviceManager} />
+
         {/* TUN模式管理 */}
-        <SettingTunMode />
+        <SettingTunMode serviceManager={serviceManager} />
       </Stack>
     </Box>
   )
