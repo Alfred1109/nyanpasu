@@ -17,13 +17,16 @@ export const Route = createFileRoute('/(legacy)/dashboard')({
 function Dashboard() {
   const { t } = useTranslation()
   const visible = useVisibility()
-  const { setRecordTraffic } = useClashWSContext()
+  const { setRecordTraffic, setRecordMemory, setRecordConnections } =
+    useClashWSContext()
 
   // When the page is not visible, reduce the traffic data update frequency
   // to prevent performance issues when the page is restored
   useEffect(() => {
     setRecordTraffic(visible)
-  }, [setRecordTraffic, visible])
+    setRecordMemory(visible)
+    setRecordConnections(visible)
+  }, [setRecordConnections, setRecordMemory, setRecordTraffic, visible])
 
   return (
     <BasePage title={t('Dashboard')}>

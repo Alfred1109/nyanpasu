@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
 use atomic_enum::atomic_enum;
 
@@ -26,6 +26,7 @@ impl IpcState {
 static IPC_STATE: AtomicIpcState = AtomicIpcState::new(IpcState::Disconnected);
 pub(super) static KILL_FLAG: AtomicBool = AtomicBool::new(false);
 pub(super) static HEALTH_CHECK_RUNNING: AtomicBool = AtomicBool::new(false);
+static DISCONNECT_STREAK: AtomicU8 = AtomicU8::new(0);
 
 pub fn get_ipc_state() -> IpcState {
     IPC_STATE.load(Ordering::Relaxed)
@@ -89,10 +90,14 @@ fn on_ipc_state_changed(state: IpcState) {
         if enabled_service {
             let (_, _, run_type) = crate::core::CoreManager::global().status().await;
             match (state, run_type) {
-                (IpcState::Connected, crate::core::RunType::Normal)
-                | (IpcState::Disconnected, crate::core::RunType::Service) => {
+                (IpcState::Connected, crate::core::RunType::Normal) => {
                     tracing::info!("Restarting core due to IPC state change");
                     log_err!(crate::core::CoreManager::global().run_core().await);
+                }
+                (IpcState::Disconnected, crate::core::RunType::Service) => {
+                    tracing::warn!(
+                        "Service IPC disconnected while core is running in service mode; skipping immediate fallback restart to avoid restart flapping"
+                    );
                 }
                 _ => {
                     tracing::debug!(
@@ -159,15 +164,27 @@ async fn health_check() {
     match super::control::status().await {
         Ok(info) => match info.status {
             ServiceStatus::Running => {
+                DISCONNECT_STREAK.store(0, Ordering::Release);
                 dispatch_connected();
             }
             ServiceStatus::Stopped | ServiceStatus::NotInstalled => {
-                dispatch_disconnected();
+                let streak = DISCONNECT_STREAK.fetch_add(1, Ordering::AcqRel) + 1;
+                tracing::warn!(
+                    "Service health check reported {:?} (disconnect streak: {})",
+                    info.status,
+                    streak
+                );
+                if streak >= 2 {
+                    dispatch_disconnected();
+                }
             }
         },
         Err(e) => {
             tracing::error!("IPC health check failed: {}", e);
-            dispatch_disconnected();
+            let streak = DISCONNECT_STREAK.fetch_add(1, Ordering::AcqRel) + 1;
+            if streak >= 2 {
+                dispatch_disconnected();
+            }
         }
     }
 }

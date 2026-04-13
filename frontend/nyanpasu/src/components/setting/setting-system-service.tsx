@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import type { UseServiceManagerReturn } from '@/hooks/use-service-manager'
 import { IS_IN_TAURI } from '@/utils/tauri'
 import { Alert, Box, Button, Typography } from '@mui/material'
-import { useSetting } from '@nyanpasu/interface'
 import { BaseCard } from '@nyanpasu/ui'
 import ServiceInstallDialog from './modules/service-install-dialog'
 
@@ -18,8 +17,7 @@ export default function SettingSystemService({
   const [message, setMessage] = useState('')
   const isInTauri = IS_IN_TAURI
 
-  const serviceMode = useSetting('enable_service_mode')
-  const isServiceModeEnabled = Boolean(serviceMode.value)
+  const isServiceModeEnabled = serviceManager.serviceModeEnabled
   const feedbackSeverity = serviceManager.lastError
     ? 'error'
     : message.includes('失败')

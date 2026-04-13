@@ -1,4 +1,4 @@
-import { useInterval } from 'ahooks'
+import { useInterval, useMount } from 'ahooks'
 import { useRef, useState } from 'react'
 import { IS_IN_TAURI } from '@/utils/tauri'
 import { timing } from '@nyanpasu/interface'
@@ -26,11 +26,9 @@ const HealthPanel = () => {
 
   const [refreshCount, setRefreshCount] = useState(0)
 
-  useInterval(async () => {
+  const refreshHealth = async () => {
     try {
       setHealth(healthCache.current)
-
-      setRefreshCount(refreshCount + REFRESH_SECONDS)
 
       if (!isInTauri) {
         healthCache.current = {
@@ -39,6 +37,7 @@ const HealthPanel = () => {
           BingCN: 0,
           Baidu: 0,
         }
+        setHealth(healthCache.current)
         return
       }
 
@@ -48,7 +47,18 @@ const HealthPanel = () => {
         BingCN: await timing.BingCN(),
         Baidu: await timing.Baidu(),
       }
+
+      setHealth(healthCache.current)
     } catch {}
+  }
+
+  useMount(() => {
+    void refreshHealth()
+  })
+
+  useInterval(async () => {
+    setRefreshCount(refreshCount + REFRESH_SECONDS)
+    await refreshHealth()
   }, 1000 * REFRESH_SECONDS)
 
   return (

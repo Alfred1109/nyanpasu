@@ -13,6 +13,7 @@ export interface DatalineProps {
   total?: number
   type?: 'speed' | 'raw'
   visible?: boolean
+  unavailable?: boolean
 }
 
 const Dataline: FC<DatalineProps> = ({
@@ -23,8 +24,10 @@ const Dataline: FC<DatalineProps> = ({
   type,
   className,
   visible = true,
+  unavailable = false,
 }) => {
   const { t } = useTranslation()
+  const latestValue = data.at(-1) ?? 0
 
   return (
     <Paper className={cn('relative rounded-3xl!', className)}>
@@ -43,8 +46,12 @@ const Dataline: FC<DatalineProps> = ({
         </div>
 
         <div className="text-2xl font-bold text-shadow-md">
-          {type === 'raw' ? data.at(-1) : parseTraffic(data.at(-1)).join(' ')}
-          {type === 'speed' && '/s'}
+          {unavailable
+            ? '不可用'
+            : type === 'raw'
+              ? latestValue
+              : parseTraffic(latestValue).join(' ')}
+          {!unavailable && type === 'speed' && '/s'}
         </div>
 
         <div className="h-5">

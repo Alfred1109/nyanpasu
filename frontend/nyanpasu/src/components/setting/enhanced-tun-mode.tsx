@@ -143,7 +143,6 @@ const EnhancedTunModeButton = ({
   const { t } = useTranslation()
   const isInTauri = IS_IN_TAURI
   const tunMode = useSetting('enable_tun_mode')
-  const serviceMode = useSetting('enable_service_mode')
 
   const [isToggling, setIsToggling] = useState(false)
   const [lastToggleError, setLastToggleError] = useState<string | null>(null)
@@ -156,7 +155,7 @@ const EnhancedTunModeButton = ({
     serviceManager.serviceStatus,
     serviceManager.serviceConnected,
     serviceManager.isServiceInstalled,
-    Boolean(serviceMode.value),
+    serviceManager.serviceModeEnabled,
     serviceManager.serviceStatusError,
     isInTauri,
     t,
@@ -233,7 +232,7 @@ const EnhancedTunModeButton = ({
   }, [
     serviceManager.serviceStatus,
     serviceManager.serviceStatusError,
-    serviceMode.value,
+    serviceManager.serviceModeEnabled,
   ])
 
   // When underlying setting changes (query refresh), clear optimistic override

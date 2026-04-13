@@ -3,6 +3,7 @@ import type { ServiceOperation } from '@/components/setting/modules/service-inst
 import { IS_IN_TAURI } from '@/utils/tauri'
 import {
   commands,
+  type IVerge,
   type ServiceModeInfo,
   type StatusInfo,
 } from '@nyanpasu/interface'
@@ -65,6 +66,10 @@ interface ServiceManagerState {
    */
   serviceStatus?: string
   /**
+   * 服务模式配置是否启用
+   */
+  serviceModeEnabled: boolean
+  /**
    * 服务 IPC 是否已连通
    */
   serviceConnected: boolean
@@ -120,6 +125,10 @@ export interface UseServiceManagerReturn
    * 服务连接状态查询对象
    */
   availabilityQuery: ReturnType<typeof useQuery<ServiceModeInfo>>
+  /**
+   * 设置查询对象
+   */
+  settingsQuery: ReturnType<typeof useQuery<IVerge>>
 }
 
 /**
@@ -154,9 +163,9 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       queryClient.invalidateQueries({
         queryKey: ['service-mode-availability'],
       }),
-      // Service setup/remove mutates verge config from the backend side, so
-      // refresh settings explicitly instead of relying only on mutation events.
-      queryClient.invalidateQueries({
+      // Eagerly refetch settings so `enable_service_mode` is updated
+      // immediately after backend-side service setup toggles it.
+      queryClient.refetchQueries({
         queryKey: [NYANPASU_SETTING_QUERY_KEY],
       }),
     ])
@@ -300,6 +309,16 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       return unwrap(result)
     },
     refetchInterval: 5000,
+    retry: false,
+    throwOnError: false,
+  })
+
+  const settingsQuery = useQuery<IVerge>({
+    queryKey: [NYANPASU_SETTING_QUERY_KEY],
+    enabled: isInTauri,
+    queryFn: async () => {
+      return unwrap(await commands.getVergeConfig())
+    },
     retry: false,
     throwOnError: false,
   })
@@ -605,6 +624,7 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     installStage,
     canCancel: false,
     serviceStatus: query.data?.status,
+    serviceModeEnabled: Boolean(settingsQuery.data?.enable_service_mode),
     serviceConnected: availabilityQuery.data?.connected ?? false,
     isServiceInstalled:
       !!query.data?.status && query.data.status !== 'not_installed',
@@ -621,5 +641,6 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     // Query
     query,
     availabilityQuery,
+    settingsQuery,
   }
 }

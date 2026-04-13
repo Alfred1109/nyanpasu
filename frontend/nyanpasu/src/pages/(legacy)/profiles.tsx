@@ -224,7 +224,27 @@ function ProfilePage() {
           <div className="flex flex-col gap-4 p-6">
             <QuickImport />
 
-            {profiles && (
+            {query.isLoading && (
+              <div className="flex items-center justify-center py-12">
+                <CircularProgress size={28} />
+              </div>
+            )}
+
+            {query.isError && (
+              <div className="rounded-2xl border border-red-500/30 px-4 py-3 text-sm text-red-300">
+                {t('Profiles')} {t('Error')}: {formatError(query.error)}
+              </div>
+            )}
+
+            {!query.isLoading &&
+              !query.isError &&
+              (profiles.clash?.length ?? 0) === 0 && (
+                <div className="rounded-2xl border border-white/10 px-4 py-6 text-center text-sm text-white/60">
+                  暂无已导入的配置，先在上方粘贴订阅链接导入一个试试。
+                </div>
+              )}
+
+            {profiles && (profiles.clash?.length ?? 0) > 0 && (
               <Grid container spacing={2}>
                 {profiles.clash?.map((item) => (
                   <Grid

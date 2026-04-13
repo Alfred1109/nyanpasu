@@ -226,6 +226,9 @@ pub async fn patch_verge(patch: IVerge) -> Result<()> {
         }
     }
 
+    // Capture the persisted state before we write to the draft copy. `latest()`
+    // reflects the draft value, which would hide whether TUN actually changed.
+    let previous_tun_mode = Config::verge().data().enable_tun_mode.unwrap_or(false);
     Config::verge().draft().patch_config(patch.clone());
     let tun_mode = patch.enable_tun_mode;
     let auto_launch = patch.enable_auto_launch;
@@ -263,10 +266,13 @@ pub async fn patch_verge(patch: IVerge) -> Result<()> {
                 }
             }
             let (state, _, _) = CoreManager::global().status().await;
-            let current_tun = Config::verge().latest().enable_tun_mode.unwrap_or(false);
             let desired_tun = tun_mode.unwrap_or(false);
-            if flag || matches!(state.as_ref(), CoreState::Stopped(_)) || current_tun != desired_tun
-            {
+            if should_restart_core_for_tun_change(
+                flag,
+                matches!(state.as_ref(), CoreState::Stopped(_)),
+                previous_tun_mode,
+                desired_tun,
+            ) {
                 log::debug!(target: "app", "core is stopped, restart core");
                 Config::generate().await?;
                 CoreManager::global().run_core().await?;
@@ -341,6 +347,15 @@ pub async fn patch_verge(patch: IVerge) -> Result<()> {
             Err(err)
         }
     }
+}
+
+fn should_restart_core_for_tun_change(
+    needs_permission_grant: bool,
+    is_core_stopped: bool,
+    previous_tun_mode: bool,
+    desired_tun_mode: bool,
+) -> bool {
+    needs_permission_grant || is_core_stopped || previous_tun_mode != desired_tun_mode
 }
 
 /// 更新某个profile
@@ -468,4 +483,39 @@ pub fn update_proxies_buff(rx: Option<tokio::sync::oneshot::Receiver<()>>) {
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::should_restart_core_for_tun_change;
+
+    #[test]
+    fn tun_change_requires_restart_even_if_core_is_running() {
+        assert!(should_restart_core_for_tun_change(
+            false, false, false, true
+        ));
+        assert!(should_restart_core_for_tun_change(
+            false, false, true, false
+        ));
+    }
+
+    #[test]
+    fn unchanged_tun_mode_can_use_hot_update_when_core_is_running() {
+        assert!(!should_restart_core_for_tun_change(
+            false, false, false, false
+        ));
+        assert!(!should_restart_core_for_tun_change(
+            false, false, true, true
+        ));
+    }
+
+    #[test]
+    fn stopped_core_or_permission_change_still_forces_restart() {
+        assert!(should_restart_core_for_tun_change(
+            true, false, false, false
+        ));
+        assert!(should_restart_core_for_tun_change(
+            false, true, false, false
+        ));
+    }
 }

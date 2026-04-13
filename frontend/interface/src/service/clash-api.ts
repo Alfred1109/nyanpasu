@@ -1,9 +1,8 @@
 import { ofetch } from 'ofetch'
 import { useMemo } from 'react'
+import { isInTauri } from '@nyanpasu/utils'
 import type { ProxyGroupItem, SubscriptionInfo } from '../ipc/bindings'
 import { useClashInfo } from '../ipc/use-clash-info'
-
-import { isInTauri } from '@nyanpasu/utils'
 
 const prepareServer = (server?: string) => {
   if (server?.startsWith(':')) {
@@ -69,6 +68,47 @@ export type ClashRule = {
   proxy: string
 }
 
+type ClashConnectionMetadata = {
+  network: string
+  type: string
+  host: string
+  sourceIP: string
+  sourcePort: string
+  destinationPort: string
+  destinationIP?: string
+  destinationIPASN?: string
+  process?: string
+  processPath?: string
+  dnsMode?: string
+  dscp?: number
+  inboundIP?: string
+  inboundName?: string
+  inboundPort?: string
+  inboundUser?: string
+  remoteDestination?: string
+  sniffHost?: string
+  specialProxy?: string
+  specialRules?: string
+}
+
+type ClashConnectionItem = {
+  id: string
+  metadata: ClashConnectionMetadata
+  upload: number
+  download: number
+  start: string
+  chains: string[]
+  rule: string
+  rulePayload: string
+}
+
+type ClashConnectionsSnapshot = {
+  downloadTotal: number
+  uploadTotal: number
+  memory?: number
+  connections?: ClashConnectionItem[]
+}
+
 export const useClashAPI = () => {
   if (!isInTauri) {
     return {
@@ -76,6 +116,7 @@ export const useClashAPI = () => {
       patchConfigs: async () => ({}) as ClashConfig,
       putConfigs: async () => ({}) as ClashConfig,
       deleteConnections: async () => undefined,
+      connections: async () => ({}) as ClashConnectionsSnapshot,
       version: async () => ({ version: 'N/A' }) as ClashVersion,
       proxiesDelay: async () => ({ delay: 0 }),
       groupDelay: async () => ({}) as Record<string, number>,
@@ -141,6 +182,10 @@ export const useClashAPI = () => {
     return await request(url, {
       method: 'DELETE',
     })
+  }
+
+  const connections = async () => {
+    return await request<ClashConnectionsSnapshot>('/connections')
   }
 
   const version = async () => {
@@ -237,6 +282,7 @@ export const useClashAPI = () => {
     patchConfigs,
     putConfigs,
     deleteConnections,
+    connections,
     version,
     proxiesDelay,
     groupDelay,

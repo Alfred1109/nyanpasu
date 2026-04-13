@@ -1,6 +1,7 @@
+import { isInTauri } from '@nyanpasu/utils'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useClashAPI } from '../service/clash-api'
-import { CLASH_CONNECTIONS_QUERY_KEY } from './consts'
+import { CLASH_CONNECTIONS_QUERY_KEY, MAX_CONNECTIONS_HISTORY } from './consts'
 
 export type ClashConnection = {
   downloadTotal: number
@@ -48,18 +49,42 @@ export const useClashConnections = () => {
 
   const clashApi = useClashAPI()
 
+  const appendSnapshot = (
+    history: ClashConnection[],
+    snapshot: ClashConnection,
+  ): ClashConnection[] => {
+    const last = history.at(-1)
+
+    const unchanged =
+      last &&
+      last.downloadTotal === snapshot.downloadTotal &&
+      last.uploadTotal === snapshot.uploadTotal &&
+      (last.memory ?? 0) === (snapshot.memory ?? 0) &&
+      (last.connections?.length ?? 0) === (snapshot.connections?.length ?? 0)
+
+    if (unchanged) {
+      return history
+    }
+
+    return [...history, snapshot].slice(-MAX_CONNECTIONS_HISTORY)
+  }
+
   const query = useQuery<ClashConnection[]>({
     queryKey: [CLASH_CONNECTIONS_QUERY_KEY],
-    queryFn: () => {
-      return (
+    enabled: isInTauri,
+    refetchInterval: 2000,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const current =
         queryClient.getQueryData<ClashConnection[]>([
           CLASH_CONNECTIONS_QUERY_KEY,
         ]) || []
-      )
+
+      const snapshot = await clashApi.connections()
+
+      return appendSnapshot(current, snapshot)
     },
-    // Ensure the query is enabled and properly initialized
-    enabled: true,
-    staleTime: 0, // Data is always fresh as it comes from WebSocket
+    staleTime: 0,
   })
 
   const deleteConnections = useMutation({

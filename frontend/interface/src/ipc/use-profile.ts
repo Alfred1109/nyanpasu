@@ -5,6 +5,7 @@ import {
   commands,
   Profile,
   type ProfileBuilder,
+  type Profiles,
   type ProfilesBuilder,
   type RemoteProfileOptionsBuilder,
 } from './bindings'
@@ -87,10 +88,35 @@ export const useProfile = (options?: { without_helper_fn?: boolean }) => {
     return {
       ...item,
       view: async () => unwrapResult(await commands.viewProfile(item.uid)),
-      update: async (option: RemoteProfileOptionsBuilder) =>
-        await update.mutateAsync({ uid: item.uid, option }),
-      drop: async () => await drop.mutateAsync(item.uid),
+      update: async (option: RemoteProfileOptionsBuilder) => {
+        await unwrapResult(await commands.updateProfile(item.uid, option))
+        await queryClient.invalidateQueries({ queryKey: [PROFILES_QUERY_KEY] })
+        await queryClient.refetchQueries({ queryKey: [PROFILES_QUERY_KEY] })
+        return undefined
+      },
+      drop: async () => {
+        await unwrapResult(await commands.deleteProfile(item.uid))
+        await queryClient.invalidateQueries({ queryKey: [PROFILES_QUERY_KEY] })
+        await queryClient.refetchQueries({ queryKey: [PROFILES_QUERY_KEY] })
+        return undefined
+      },
     }
+  }
+
+  const decorateProfiles = (result: Profiles | undefined) => {
+    if (options?.without_helper_fn) {
+      return result
+    }
+
+    return {
+      ...result,
+      items: result?.items?.map((item) => addHelperFn(item)) ?? [],
+    }
+  }
+
+  const fetchProfiles = async () => {
+    const result = unwrapResult(await commands.getProfiles())
+    return decorateProfiles(result)
   }
 
   /**
@@ -109,21 +135,7 @@ export const useProfile = (options?: { without_helper_fn?: boolean }) => {
   const query = useQuery({
     queryKey: [PROFILES_QUERY_KEY],
     enabled: isInTauri,
-    queryFn: async () => {
-      const result = unwrapResult(await commands.getProfiles())
-
-      // Skip helper functions if without_helper_fn is set
-      if (options?.without_helper_fn) {
-        return result
-      }
-
-      return {
-        ...result,
-        items: result?.items?.map((item) => {
-          return addHelperFn(item)
-        }),
-      }
-    },
+    queryFn: fetchProfiles,
   })
 
   /**
@@ -151,14 +163,19 @@ export const useProfile = (options?: { without_helper_fn?: boolean }) => {
     mutationFn: async ({ type, data }: CreateParams) => {
       if (type === 'url') {
         const { url, option } = data
-        return unwrapResult(await commands.importProfile(url, option))
+        unwrapResult(await commands.importProfile(url, option))
       } else {
         const { item, fileData } = data
-        return unwrapResult(await commands.createProfile(item, fileData))
+        unwrapResult(await commands.createProfile(item, fileData))
       }
+
+      // Import/create succeeded, fetch the latest profiles snapshot and push it
+      // into the shared cache immediately so the new card appears without
+      // waiting for mutation events or background refetch timing.
+      return await fetchProfiles()
     },
-    onSuccess: async () => {
-      // Invalidate and immediately refetch so the new profile card appears reliably.
+    onSuccess: async (profiles) => {
+      queryClient.setQueryData([PROFILES_QUERY_KEY], profiles)
       await queryClient.invalidateQueries({ queryKey: [PROFILES_QUERY_KEY] })
       await queryClient.refetchQueries({ queryKey: [PROFILES_QUERY_KEY] })
     },

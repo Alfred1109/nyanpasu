@@ -138,7 +138,24 @@ pub fn resolve_setup(app: &mut App) {
     let mut mapping = Mapping::new();
     mapping.insert("mixed-port".into(), port.into());
     Config::clash().data().patch_config(mapping);
-    let _ = Config::clash().latest().prepare_external_controller_port();
+
+    let enable_service_mode = Config::verge()
+        .latest()
+        .enable_service_mode
+        .unwrap_or(false);
+    if enable_service_mode {
+        let mut mapping = Mapping::new();
+        mapping.insert(
+            "external-controller".into(),
+            crate::config::IClashTemp::template()
+                .get_client_info()
+                .server
+                .into(),
+        );
+        Config::clash().data().patch_config(mapping);
+    } else {
+        let _ = Config::clash().latest().prepare_external_controller_port();
+    }
     let _ = Config::clash().data().save_config();
 
     // 启动核心

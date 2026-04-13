@@ -102,7 +102,9 @@ pub fn get_system_theme_mode() -> Result<Option<String>> {
 #[tauri::command]
 #[specta::specta]
 pub fn get_profiles() -> Result<Profiles> {
-    Ok(Config::profiles().data().clone())
+    // Read from disk each time so the UI always reflects the latest imported
+    // profiles, even if the in-memory managed state falls behind.
+    Ok(Profiles::new())
 }
 
 #[cfg(target_os = "windows")]

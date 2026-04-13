@@ -1,7 +1,7 @@
 use super::api;
 use crate::{
     config::{Config, ConfigType, nyanpasu::ClashCore},
-    core::logger::Logger,
+    core::{handle::Handle, logger::Logger},
     log_err,
     utils::dirs,
 };
@@ -35,6 +35,52 @@ use std::{
 };
 use tokio::time::sleep;
 use tracing_attributes::instrument;
+
+async fn wait_for_clash_api_ready(max_attempts: usize, delay: Duration) -> Result<()> {
+    let client_info = { Config::clash().latest().get_client_info() };
+    let url = format!("http://{}/version", client_info.server);
+    let client = reqwest::ClientBuilder::new().no_proxy().build()?;
+
+    for attempt in 0..max_attempts {
+        let mut request = client.get(&url);
+        if let Some(secret) = &client_info.secret {
+            request = request.bearer_auth(secret);
+        }
+
+        match request.send().await {
+            Ok(response) if response.status().is_success() => {
+                tracing::info!(
+                    "clash api became ready after {} checks at {}",
+                    attempt + 1,
+                    client_info.server
+                );
+                return Ok(());
+            }
+            Ok(response) => {
+                tracing::debug!(
+                    "clash api readiness check {} returned {}",
+                    attempt + 1,
+                    response.status()
+                );
+            }
+            Err(error) => {
+                tracing::debug!(
+                    "clash api readiness check {} failed for {}: {}",
+                    attempt + 1,
+                    client_info.server,
+                    error
+                );
+            }
+        }
+
+        tokio::time::sleep(delay).await;
+    }
+
+    anyhow::bail!(
+        "clash api did not become ready in time at {}",
+        client_info.server
+    )
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Type)]
 #[serde(rename_all = "snake_case")]
@@ -274,10 +320,49 @@ impl Instance {
                     config_file: Cow::Borrowed(config_path),
                     core_type: Cow::Borrowed(core_type),
                 };
-                nyanpasu_ipc::client::shortcuts::Client::service_default()
+                let start_result = nyanpasu_ipc::client::shortcuts::Client::service_default()
                     .start_core(&payload)
-                    .await?;
-                Ok(())
+                    .await;
+
+                match start_result {
+                    Ok(()) => {}
+                    Err(err)
+                        if err
+                            .to_string()
+                            .to_lowercase()
+                            .contains("core is already running") =>
+                    {
+                        tracing::info!(
+                            "service core is already running; reusing the existing instance"
+                        );
+                    }
+                    Err(err) => return Err(err.into()),
+                }
+
+                // Wait for the service-side core to actually report `Running`.
+                // Otherwise the UI may switch to service mode while the Clash API
+                // is still unavailable, causing dashboard/proxies pages to show
+                // empty data until another recovery path kicks in.
+                for attempt in 0..20 {
+                    let status = nyanpasu_ipc::client::shortcuts::Client::service_default()
+                        .status()
+                        .await;
+
+                    if matches!(
+                        status.as_ref().map(|info| &info.core_infos.state),
+                        Ok(nyanpasu_ipc::api::status::CoreState::Running)
+                    ) {
+                        tracing::info!(
+                            "service core reported running after {} checks",
+                            attempt + 1
+                        );
+                        return Ok(());
+                    }
+
+                    tokio::time::sleep(Duration::from_millis(250)).await;
+                }
+
+                anyhow::bail!("service core did not reach running state in time");
             }
         }
     }
@@ -461,6 +546,8 @@ impl CoreManager {
 
     /// 启动核心
     pub async fn run_core(&self) -> Result<()> {
+        let run_type = RunType::default();
+
         {
             let instance = {
                 let instance = self.instance.lock();
@@ -478,14 +565,31 @@ impl CoreManager {
         Config::clash().reload();
         log::debug!(target: "app", "reloaded clash config from file");
 
+        if matches!(run_type, RunType::Service) {
+            let mut mapping = serde_yaml::Mapping::new();
+            mapping.insert(
+                "external-controller".into(),
+                crate::config::IClashTemp::template()
+                    .get_client_info()
+                    .server
+                    .into(),
+            );
+            Config::clash().draft().patch_config(mapping);
+        }
+
         // Regenerate runtime config with the reloaded settings
         Config::generate().await?;
 
         // 检查端口是否可用
-        Config::clash()
-            .latest()
-            .prepare_external_controller_port()?;
-        let run_type = RunType::default();
+        if !matches!(run_type, RunType::Service) {
+            Config::clash()
+                .latest()
+                .prepare_external_controller_port()?;
+        } else {
+            tracing::info!(
+                "service mode active; keep the existing external-controller managed by the service"
+            );
+        }
         let instance = Arc::new(Instance::try_new(run_type)?);
 
         #[cfg(target_os = "macos")]
@@ -501,7 +605,10 @@ impl CoreManager {
             let mut this = self.instance.lock();
             *this = Some(instance.clone());
         }
-        instance.start().await
+        instance.start().await?;
+        wait_for_clash_api_ready(20, Duration::from_millis(250)).await?;
+        Handle::refresh_clash();
+        Ok(())
     }
 
     /// 重启内核
