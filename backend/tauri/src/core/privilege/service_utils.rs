@@ -79,7 +79,13 @@ pub async fn ensure_service_running() -> Result<()> {
 pub async fn get_service_status_message() -> String {
     match control::status().await {
         Ok(status_info) => match status_info.status {
-            ServiceStatus::Running => "服务运行中，系统代理和TUN模式可正常使用".to_string(),
+            ServiceStatus::Running => {
+                if status_info.server.is_some() {
+                    "服务运行中，系统代理和TUN模式可正常使用".to_string()
+                } else {
+                    "服务进程已启动，但 IPC 连接尚未就绪".to_string()
+                }
+            }
             ServiceStatus::Stopped => "服务已安装但未运行".to_string(),
             ServiceStatus::NotInstalled => {
                 "服务未安装，需要安装后才能使用系统代理和TUN模式".to_string()

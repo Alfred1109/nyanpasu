@@ -652,13 +652,11 @@ Section Install
     File /a "/oname={{this}}" "{{@key}}"
   {{/each}}
 
-  ; Register nyanpasu service after install (runs with admin rights)
-  nsExec::ExecToLog '"$INSTDIR\\nyanpasu-service.exe" install --user "%USERNAME%" --nyanpasu-data-dir "$APPDATA\\Clash Nyanpasu" --nyanpasu-config-dir "$APPDATA\\Clash Nyanpasu" --nyanpasu-app-dir "$INSTDIR"'
-  Pop $0
-  DetailPrint "install service with exit code $0"
-  ${If} $0 != 0
-    Abort "Failed to install service (exit code $0)."
-  ${EndIf}
+  ; Do not auto-register the Windows service during installer execution.
+  ; In per-machine installs NSIS shell variables may resolve to common-app-data
+  ; paths, which can register the service with directories that don't match
+  ; the actual per-user app config/data layout. The desktop app installs or
+  ; repairs the service on demand with the current user's resolved paths.
 
   ; Create uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"

@@ -41,6 +41,199 @@ fn run_service_command(
     Ok((output.status, out))
 }
 
+#[cfg(windows)]
+fn is_service_already_running(status: &std::process::ExitStatus, output: &str) -> bool {
+    let output = output.to_ascii_lowercase();
+    status.code() == Some(103)
+        || output.contains("service already running")
+        || output.contains("already running, nothing to do")
+}
+
+#[cfg(windows)]
+const WINDOWS_SERVICE_LABEL: &str = "moe.elaina.nyanpasu-service";
+
+#[cfg(windows)]
+#[derive(Debug)]
+struct WindowsServiceContext {
+    data_dir: std::path::PathBuf,
+    config_dir: std::path::PathBuf,
+    app_dir: std::path::PathBuf,
+}
+
+#[cfg(windows)]
+fn normalize_windows_path_like(value: &str) -> String {
+    value
+        .replace('/', "\\")
+        .replace("\\\\", "\\")
+        .trim()
+        .to_ascii_lowercase()
+}
+
+#[cfg(windows)]
+fn run_windows_sc_command(args: &[&str]) -> anyhow::Result<String> {
+    let output = std::process::Command::new("sc.exe").args(args).output()?;
+    let mut text = String::new();
+    text.push_str(&String::from_utf8_lossy(&output.stdout));
+    if !output.stderr.is_empty() {
+        if !text.ends_with('\n') && !text.is_empty() {
+            text.push('\n');
+        }
+        text.push_str(&String::from_utf8_lossy(&output.stderr));
+    }
+
+    let lowered = text.to_ascii_lowercase();
+    if !output.status.success() && !lowered.contains("does not exist as an installed service") {
+        anyhow::bail!(
+            "sc.exe {} failed with exit code {:?}: {}",
+            args.join(" "),
+            output.status.code(),
+            text.trim()
+        );
+    }
+
+    Ok(text)
+}
+
+#[cfg(windows)]
+fn windows_service_scm_status() -> anyhow::Result<Option<ServiceStatus>> {
+    let output = run_windows_sc_command(&["query", WINDOWS_SERVICE_LABEL])?;
+    let lowered = output.to_ascii_lowercase();
+
+    if lowered.contains("does not exist as an installed service") {
+        return Ok(None);
+    }
+
+    for line in lowered.lines() {
+        let line = line.trim();
+        if line.starts_with("state") {
+            if line.contains("running") {
+                return Ok(Some(ServiceStatus::Running));
+            }
+            if line.contains("stopped") || line.contains("stop pending") {
+                return Ok(Some(ServiceStatus::Stopped));
+            }
+        }
+    }
+
+    anyhow::bail!(
+        "unable to parse Windows service state from: {}",
+        output.trim()
+    )
+}
+
+#[cfg(windows)]
+fn windows_service_binary_path_name() -> anyhow::Result<Option<String>> {
+    let output = run_windows_sc_command(&["qc", WINDOWS_SERVICE_LABEL])?;
+    let lowered = output.to_ascii_lowercase();
+
+    if lowered.contains("does not exist as an installed service") {
+        return Ok(None);
+    }
+
+    for line in output.lines() {
+        if let Some((key, value)) = line.split_once(':')
+            && key.trim().eq_ignore_ascii_case("BINARY_PATH_NAME")
+        {
+            return Ok(Some(value.trim().to_string()));
+        }
+    }
+
+    Ok(None)
+}
+
+#[cfg(windows)]
+fn windows_expected_service_context() -> anyhow::Result<WindowsServiceContext> {
+    Ok(WindowsServiceContext {
+        data_dir: app_data_dir()?,
+        config_dir: app_config_dir()?,
+        app_dir: app_install_dir()?,
+    })
+}
+
+#[cfg(windows)]
+fn windows_service_registration_needs_repair() -> anyhow::Result<bool> {
+    let Some(path_name) = windows_service_binary_path_name()? else {
+        return Ok(false);
+    };
+
+    let expected = windows_expected_service_context()?;
+    let registered = normalize_windows_path_like(&path_name);
+    let expected_data = normalize_windows_path_like(&expected.data_dir.to_string_lossy());
+    let expected_config = normalize_windows_path_like(&expected.config_dir.to_string_lossy());
+    let expected_app = normalize_windows_path_like(&expected.app_dir.to_string_lossy());
+
+    let args_match = registered.contains(&expected_data)
+        && registered.contains(&expected_config)
+        && registered.contains(&expected_app);
+
+    Ok(!args_match)
+}
+
+#[cfg(windows)]
+fn windows_status_info_from_scm(status: ServiceStatus) -> nyanpasu_ipc::types::StatusInfo<'static> {
+    nyanpasu_ipc::types::StatusInfo {
+        name: std::borrow::Cow::Borrowed(""),
+        version: std::borrow::Cow::Borrowed(""),
+        status,
+        server: None,
+    }
+}
+
+#[cfg(windows)]
+pub async fn repair_windows_service_installation_if_needed() -> anyhow::Result<bool> {
+    if !windows_service_registration_needs_repair()? {
+        return Ok(false);
+    }
+
+    tracing::warn!(
+        "Windows service registration drift detected; reinstalling service with the current app paths"
+    );
+
+    let service_path = resolve_service_path();
+    if !service_path.as_path().exists() {
+        anyhow::bail!(
+            "nyanpasu-service executable not found at: {}",
+            service_path.display()
+        );
+    }
+
+    let uninstall_path = service_path.clone();
+    let (uninstall_status, uninstall_output) = tokio::task::spawn_blocking(
+        move || -> anyhow::Result<(std::process::ExitStatus, String)> {
+            run_service_command(uninstall_path.as_path(), &["uninstall".into()])
+        },
+    )
+    .await??;
+
+    if !uninstall_status.success() && uninstall_status.code() != Some(100) {
+        anyhow::bail!(
+            "failed to uninstall drifted Windows service registration, exit code: {}, output: {}",
+            uninstall_status.code().unwrap_or(-1),
+            uninstall_output.trim()
+        );
+    }
+
+    let install_args = get_service_install_args().await?;
+    let install_path = resolve_service_path();
+    let (install_status, install_output) = tokio::task::spawn_blocking(
+        move || -> anyhow::Result<(std::process::ExitStatus, String)> {
+            run_service_command(install_path.as_path(), &install_args)
+        },
+    )
+    .await??;
+
+    if !install_status.success() {
+        anyhow::bail!(
+            "failed to reinstall Windows service, exit code: {}, output: {}",
+            install_status.code().unwrap_or(-1),
+            install_output.trim()
+        );
+    }
+
+    tracing::info!("Windows service registration repaired successfully");
+    Ok(true)
+}
+
 pub async fn get_service_install_args() -> Result<Vec<OsString>, anyhow::Error> {
     let user = {
         #[cfg(windows)]
@@ -87,6 +280,11 @@ pub async fn get_service_install_args() -> Result<Vec<OsString>, anyhow::Error> 
 
 pub async fn install_service() -> anyhow::Result<()> {
     tracing::info!("🚀 Starting service installation process");
+
+    #[cfg(windows)]
+    if repair_windows_service_installation_if_needed().await? {
+        return Ok(());
+    }
 
     if let Ok(info) = status().await {
         tracing::info!("📊 Current service status: {:?}", info.status);
@@ -373,9 +571,21 @@ pub async fn uninstall_service() -> anyhow::Result<()> {
 }
 
 pub async fn start_service() -> anyhow::Result<()> {
+    #[cfg(windows)]
+    if repair_windows_service_installation_if_needed().await? {
+        tracing::info!("Windows service registration repaired before start");
+    }
+
     // If service is already running, treat start as success
     if let Ok(status_info) = status().await {
         if matches!(status_info.status, ServiceStatus::Running) {
+            if status_info.server.is_none() {
+                tracing::warn!(
+                    "service manager reports running but IPC is unavailable, attempting a restart to recover the server"
+                );
+                return restart_service().await;
+            }
+
             tracing::info!("service already running, skip start");
             return Ok(());
         }
@@ -435,6 +645,33 @@ pub async fn start_service() -> anyhow::Result<()> {
     })
     .await??;
     if !child.success() {
+        #[cfg(windows)]
+        if is_service_already_running(&child, &output) {
+            tracing::warn!(
+                "service start returned already-running from helper, treating as success: {}",
+                output.trim()
+            );
+
+            for attempt in 0..10 {
+                if let Ok(info) = status().await {
+                    if matches!(info.status, ServiceStatus::Running) {
+                        tracing::info!(
+                            "service status confirmed running after already-running response (attempt {})",
+                            attempt + 1
+                        );
+                        return Ok(());
+                    }
+                }
+
+                tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+            }
+
+            tracing::warn!(
+                "service start reported already-running but status did not confirm running in time; honoring the service response to keep start idempotent"
+            );
+            return Ok(());
+        }
+
         anyhow::bail!(
             "failed to start service, exit code: {}, signal: {:?}, output: {}",
             child.code().unwrap_or(-1),
@@ -647,9 +884,27 @@ pub async fn restart_service() -> anyhow::Result<()> {
 
 #[tracing::instrument]
 pub async fn status<'a>() -> anyhow::Result<nyanpasu_ipc::types::StatusInfo<'a>> {
+    #[cfg(windows)]
+    let scm_status = match windows_service_scm_status() {
+        Ok(status) => status,
+        Err(e) => {
+            tracing::debug!("failed to query Windows SCM status: {}", e);
+            None
+        }
+    };
+
     let service_path = resolve_service_path();
     // 如果服务可执行文件不存在，返回 not_installed 状态而不是错误
     if !service_path.as_path().exists() {
+        #[cfg(windows)]
+        if let Some(status) = scm_status {
+            tracing::warn!(
+                "service executable is missing locally but SCM still reports {:?}; using SCM state",
+                status
+            );
+            return Ok(windows_status_info_from_scm(status));
+        }
+
         tracing::debug!(
             "nyanpasu-service executable not found at: {}, returning not_installed status",
             service_path.display()
@@ -670,6 +925,16 @@ pub async fn status<'a>() -> anyhow::Result<nyanpasu_ipc::types::StatusInfo<'a>>
     let output = match cmd.output().await {
         Ok(output) => output,
         Err(e) => {
+            #[cfg(windows)]
+            if let Some(status) = scm_status {
+                tracing::warn!(
+                    "failed to execute service status command but SCM reports {:?}, using SCM state: {}",
+                    status,
+                    e
+                );
+                return Ok(windows_status_info_from_scm(status));
+            }
+
             tracing::warn!(
                 "failed to execute service status command: {}, returning not_installed",
                 e
@@ -701,6 +966,15 @@ pub async fn status<'a>() -> anyhow::Result<nyanpasu_ipc::types::StatusInfo<'a>>
             || stderr_str.contains("找不到")
             || stderr_str.contains("不存在")
         {
+            #[cfg(windows)]
+            if let Some(status) = scm_status {
+                tracing::warn!(
+                    "service helper reported not installed but SCM reports {:?}; using SCM state",
+                    status
+                );
+                return Ok(windows_status_info_from_scm(status));
+            }
+
             tracing::debug!(
                 "service appears not installed based on stderr: {}",
                 stderr_str
@@ -744,14 +1018,38 @@ pub async fn status<'a>() -> anyhow::Result<nyanpasu_ipc::types::StatusInfo<'a>>
     };
 
     tracing::trace!("service status: {}", status_str);
-    match serde_json::from_str(&status_str) {
-        Ok(status) => Ok(status),
+    match serde_json::from_str::<nyanpasu_ipc::types::StatusInfo<'_>>(&status_str) {
+        Ok(mut status) => {
+            #[cfg(windows)]
+            if let Some(ServiceStatus::Running) = scm_status
+                && !matches!(status.status, ServiceStatus::Running)
+            {
+                tracing::warn!(
+                    "service helper downgraded status to {:?} while SCM is Running; preserving SCM state and marking server as unavailable",
+                    status.status
+                );
+                status.status = ServiceStatus::Running;
+                status.server = None;
+            }
+
+            Ok(status)
+        }
         Err(e) => {
             tracing::error!(
                 "failed to parse service status JSON: {}, raw: {}",
                 e,
                 status_str
             );
+
+            #[cfg(windows)]
+            if let Some(status) = scm_status {
+                tracing::warn!(
+                    "failed to parse service status JSON but SCM reports {:?}; using SCM state",
+                    status
+                );
+                return Ok(windows_status_info_from_scm(status));
+            }
+
             // JSON 解析失败也认为服务未正确安装
             Ok(nyanpasu_ipc::types::StatusInfo {
                 name: std::borrow::Cow::Borrowed(""),

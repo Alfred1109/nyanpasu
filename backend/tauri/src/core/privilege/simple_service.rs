@@ -99,12 +99,30 @@ pub async fn service_setup() -> Result<String, String> {
     // 检查当前状态
     let current_status = service_status_summary().await?;
     if current_status.installed {
+        #[cfg(windows)]
+        if control::repair_windows_service_installation_if_needed()
+            .await
+            .map_err(|e| e.to_string())?
+        {
+            info!("检测到 Windows 服务配置漂移，已完成自动修复");
+        }
+
         service_utils::update_service_mode_config(true)
             .await
             .map_err(|e| e.to_string())?;
 
-        if service_utils::is_service_running().await.unwrap_or(false) {
+        let refreshed_status = control::status().await.map_err(|e| e.to_string())?;
+        if matches!(refreshed_status.status, ServiceStatus::Running)
+            && refreshed_status.server.is_some()
+        {
             return Ok("服务模式已启用，服务当前正在运行。".to_string());
+        }
+
+        if matches!(refreshed_status.status, ServiceStatus::Running) {
+            return Ok(
+                "✅ 服务模式已启用。服务已启动，但 IPC 仍在就绪中；如需立即恢复，可点击“启动服务”执行重启。"
+                    .to_string(),
+            );
         }
 
         info!("服务已安装，启用服务模式配置，但不自动启动服务");
