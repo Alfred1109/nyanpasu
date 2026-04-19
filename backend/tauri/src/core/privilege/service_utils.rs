@@ -101,11 +101,19 @@ pub async fn get_service_status_message() -> String {
 /// 服务操作的统一错误处理
 pub fn handle_service_error(operation: &str, error: anyhow::Error) -> String {
     let error_msg = error.to_string();
+    let lowered = error_msg.to_ascii_lowercase();
     error!("{}失败: {}", operation, error_msg);
 
-    if error_msg.contains("permission") || error_msg.contains("access") {
+    if lowered.contains("permission") || lowered.contains("access") {
         format!("{}失败: 权限不足。请确保有管理员权限。", operation)
-    } else if error_msg.contains("not found") || error_msg.contains("not installed") {
+    } else if lowered.contains("not found")
+        || lowered.contains("not installed")
+        || lowered.contains("does not exist")
+        || lowered.contains("openservice")
+            && (lowered.contains("1060")
+                || lowered.contains("不存在")
+                || lowered.contains("找不到"))
+    {
         format!("{}失败: 服务未安装或文件缺失。", operation)
     } else {
         format!("{}失败: {}。请检查系统状态或重试。", operation, error_msg)

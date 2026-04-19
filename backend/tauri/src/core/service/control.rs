@@ -70,6 +70,20 @@ fn normalize_windows_path_like(value: &str) -> String {
 }
 
 #[cfg(windows)]
+fn windows_sc_reports_missing_service(text: &str, exit_code: Option<i32>) -> bool {
+    let lowered = text.to_ascii_lowercase();
+
+    exit_code == Some(1060)
+        || lowered.contains("does not exist as an installed service")
+        || lowered.contains("openservice")
+            && (lowered.contains("1060")
+                || lowered.contains("does not exist")
+                || lowered.contains("not installed")
+                || lowered.contains("不存在")
+                || lowered.contains("找不到"))
+}
+
+#[cfg(windows)]
 fn run_windows_sc_command(args: &[&str]) -> anyhow::Result<String> {
     let output = std::process::Command::new("sc.exe").args(args).output()?;
     let mut text = String::new();
@@ -81,8 +95,9 @@ fn run_windows_sc_command(args: &[&str]) -> anyhow::Result<String> {
         text.push_str(&String::from_utf8_lossy(&output.stderr));
     }
 
-    let lowered = text.to_ascii_lowercase();
-    if !output.status.success() && !lowered.contains("does not exist as an installed service") {
+    let missing_service = windows_sc_reports_missing_service(&text, output.status.code());
+
+    if !output.status.success() && !missing_service {
         anyhow::bail!(
             "sc.exe {} failed with exit code {:?}: {}",
             args.join(" "),
@@ -99,7 +114,7 @@ fn windows_service_scm_status() -> anyhow::Result<Option<ServiceStatus>> {
     let output = run_windows_sc_command(&["query", WINDOWS_SERVICE_LABEL])?;
     let lowered = output.to_ascii_lowercase();
 
-    if lowered.contains("does not exist as an installed service") {
+    if windows_sc_reports_missing_service(&output, None) {
         return Ok(None);
     }
 
@@ -124,9 +139,8 @@ fn windows_service_scm_status() -> anyhow::Result<Option<ServiceStatus>> {
 #[cfg(windows)]
 fn windows_service_binary_path_name() -> anyhow::Result<Option<String>> {
     let output = run_windows_sc_command(&["qc", WINDOWS_SERVICE_LABEL])?;
-    let lowered = output.to_ascii_lowercase();
 
-    if lowered.contains("does not exist as an installed service") {
+    if windows_sc_reports_missing_service(&output, None) {
         return Ok(None);
     }
 
