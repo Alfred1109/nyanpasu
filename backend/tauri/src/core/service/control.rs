@@ -2,6 +2,8 @@ use crate::utils::dirs::{app_config_dir, app_data_dir, app_install_dir};
 #[cfg(not(windows))]
 use runas::Command as RunasCommand;
 use std::ffi::OsString;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 
 use nyanpasu_ipc::types::ServiceStatus;
 
@@ -9,6 +11,9 @@ use super::resolve_service_path;
 
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
+
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 #[cfg(all(unix, not(target_os = "macos")))]
 fn map_privilege_tool_not_found_error(e: std::io::Error) -> anyhow::Error {
@@ -23,13 +28,22 @@ fn map_privilege_tool_not_found_error(e: std::io::Error) -> anyhow::Error {
 }
 
 #[cfg(windows)]
+fn run_hidden_command(
+    program: impl AsRef<std::ffi::OsStr>,
+    args: &[OsString],
+) -> anyhow::Result<std::process::Output> {
+    Ok(std::process::Command::new(program)
+        .args(args)
+        .creation_flags(CREATE_NO_WINDOW)
+        .output()?)
+}
+
+#[cfg(windows)]
 fn run_service_command(
     service_exe: &std::path::Path,
     service_args: &[OsString],
 ) -> anyhow::Result<(std::process::ExitStatus, String)> {
-    let output = std::process::Command::new(service_exe)
-        .args(service_args)
-        .output()?;
+    let output = run_hidden_command(service_exe.as_os_str(), service_args)?;
     let mut out = String::new();
     out.push_str(&String::from_utf8_lossy(&output.stdout));
     if !output.stderr.is_empty() {
@@ -85,7 +99,12 @@ fn windows_sc_reports_missing_service(text: &str, exit_code: Option<i32>) -> boo
 
 #[cfg(windows)]
 fn run_windows_sc_command(args: &[&str]) -> anyhow::Result<String> {
-    let output = std::process::Command::new("sc.exe").args(args).output()?;
+    let args_display = args.join(" ");
+    let args = args
+        .iter()
+        .map(|arg| OsString::from(arg))
+        .collect::<Vec<_>>();
+    let output = run_hidden_command("sc.exe", &args)?;
     let mut text = String::new();
     text.push_str(&String::from_utf8_lossy(&output.stdout));
     if !output.stderr.is_empty() {
@@ -100,7 +119,7 @@ fn run_windows_sc_command(args: &[&str]) -> anyhow::Result<String> {
     if !output.status.success() && !missing_service {
         anyhow::bail!(
             "sc.exe {} failed with exit code {:?}: {}",
-            args.join(" "),
+            args_display,
             output.status.code(),
             text.trim()
         );
