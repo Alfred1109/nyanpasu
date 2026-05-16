@@ -1,5 +1,8 @@
 import { useServiceManager } from '@/hooks/use-service-manager'
 import { Box, Stack, Typography } from '@mui/material'
+import SettingAutoLaunch from './setting-auto-launch'
+import SettingProxyMode from './setting-proxy-mode'
+import SettingSystemProxy from './setting-system-proxy'
 import SettingSystemService from './setting-system-service'
 import SettingTunMode from './setting-tun-mode'
 
@@ -10,18 +13,22 @@ const SettingPage = () => {
     <Box p={2}>
       <Box mb={3} textAlign="center">
         <Typography variant="h5" gutterBottom>
-          🎯 系统服务管理
+          🎯 系统与代理设置
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          管理系统服务和TUN模式，享受更好的代理体验
+          启动行为、代理接管、系统服务与 TUN 配置
         </Typography>
       </Box>
 
       <Stack spacing={3} maxWidth={700} mx="auto">
-        {/* 系统服务管理 - 放在前面，因为TUN模式依赖于服务 */}
+        <SettingAutoLaunch />
+
+        <SettingSystemProxy />
+
+        <SettingProxyMode />
+
         <SettingSystemService serviceManager={serviceManager} />
 
-        {/* TUN模式管理 */}
         <SettingTunMode serviceManager={serviceManager} />
       </Stack>
     </Box>

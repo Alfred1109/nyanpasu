@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UseServiceManagerReturn } from '@/hooks/use-service-manager'
 import { IS_IN_TAURI } from '@/utils/tauri'
-import { Alert, Box, Button, Typography } from '@mui/material'
+import { Alert, Box, Button, Divider, Typography } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import { BaseCard } from '@nyanpasu/ui'
 import ServiceInstallDialog from './modules/service-install-dialog'
 
@@ -47,6 +48,12 @@ export default function SettingSystemService({
   const uninstallActionLabel = serviceManager.isServiceInstalled
     ? '卸载服务'
     : '服务未安装'
+  const serviceStatusLabel =
+    serviceManager.serviceStatus === 'running'
+      ? '运行中'
+      : serviceManager.serviceStatus === 'stopped'
+        ? '已停止'
+        : '未安装'
 
   const handleInstallService = async () => {
     if (!isInTauri) {
@@ -132,7 +139,8 @@ export default function SettingSystemService({
       <BaseCard label={t('System Service')}>
         <Box display="flex" flexDirection="column" gap={2}>
           <Typography variant="body2" color="text.secondary">
-            {t('Install system service for better TUN mode support')}
+            系统服务为 TUN 和更稳定的代理接管提供底层能力，建议在需要 TUN
+            时优先完成这里的配置。
           </Typography>
 
           {!isInTauri && (
@@ -163,79 +171,96 @@ export default function SettingSystemService({
             </Alert>
           )}
 
-          {/* Service status display */}
-          {serviceManager.serviceStatus && (
+          <Box
+            sx={(theme) => ({
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+              backgroundColor: alpha(theme.vars.palette.primary.main, 0.06),
+              px: 2,
+              py: 1.5,
+            })}
+          >
+            <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
+              当前状态
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              服务状态：{serviceStatusLabel}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              服务模式：{isServiceModeEnabled ? '已启用' : '未启用'}
+            </Typography>
+          </Box>
+
+          <Divider />
+
+          <Box display="flex" flexDirection="column" gap={1.5}>
             <Box>
-              <Typography variant="body2" color="text.secondary">
-                服务状态:{' '}
-                {serviceManager.serviceStatus === 'running'
-                  ? '运行中'
-                  : serviceManager.serviceStatus === 'stopped'
-                    ? '已停止'
-                    : '未安装'}
+              <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                操作
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                服务模式: {isServiceModeEnabled ? '已启用' : '未启用'}
+              <Typography variant="caption" color="text.secondary">
+                先安装并启用服务模式，再按需启动或停止服务。
               </Typography>
             </Box>
-          )}
 
-          <Box display="flex" gap={1} flexWrap="wrap">
-            <Button
-              variant="contained"
-              size="small"
-              onClick={handleInstallService}
-              disabled={
-                !isInTauri ||
-                serviceManager.isInstalling ||
-                (serviceManager.isServiceInstalled && isServiceModeEnabled)
-              }
-            >
-              {primaryActionLabel}
-            </Button>
+            <Box display="flex" gap={1} flexWrap="wrap">
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleInstallService}
+                disabled={
+                  !isInTauri ||
+                  serviceManager.isInstalling ||
+                  (serviceManager.isServiceInstalled && isServiceModeEnabled)
+                }
+              >
+                {primaryActionLabel}
+              </Button>
 
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleStartService}
-              disabled={
-                !isInTauri ||
-                serviceManager.isInstalling ||
-                !serviceManager.isServiceInstalled ||
-                !isServiceModeEnabled ||
-                serviceManager.serviceStatus === 'running'
-              }
-            >
-              {startActionLabel}
-            </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleStartService}
+                disabled={
+                  !isInTauri ||
+                  serviceManager.isInstalling ||
+                  !serviceManager.isServiceInstalled ||
+                  !isServiceModeEnabled ||
+                  serviceManager.serviceStatus === 'running'
+                }
+              >
+                {startActionLabel}
+              </Button>
 
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleStopService}
-              disabled={
-                !isInTauri ||
-                serviceManager.isInstalling ||
-                !serviceManager.isServiceInstalled ||
-                serviceManager.serviceStatus !== 'running'
-              }
-            >
-              {stopActionLabel}
-            </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleStopService}
+                disabled={
+                  !isInTauri ||
+                  serviceManager.isInstalling ||
+                  !serviceManager.isServiceInstalled ||
+                  serviceManager.serviceStatus !== 'running'
+                }
+              >
+                {stopActionLabel}
+              </Button>
 
-            <Button
-              variant="outlined"
-              size="small"
-              color="error"
-              onClick={handleUninstallService}
-              disabled={
-                !isInTauri ||
-                serviceManager.isInstalling ||
-                !serviceManager.isServiceInstalled
-              }
-            >
-              {uninstallActionLabel}
-            </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                color="error"
+                onClick={handleUninstallService}
+                disabled={
+                  !isInTauri ||
+                  serviceManager.isInstalling ||
+                  !serviceManager.isServiceInstalled
+                }
+              >
+                {uninstallActionLabel}
+              </Button>
+            </Box>
           </Box>
         </Box>
       </BaseCard>
