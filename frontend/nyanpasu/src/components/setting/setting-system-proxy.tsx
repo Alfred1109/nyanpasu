@@ -61,6 +61,10 @@ export default function SettingSystemProxy() {
   }
 
   const currentProxy = systemProxy.data
+  const systemProxyActive = Boolean(currentProxy?.enable)
+  const hasStoredProxyConfig = Boolean(currentProxy?.server)
+  const isStatusMismatched =
+    currentProxy !== undefined && enabled !== systemProxyActive
 
   return (
     <BaseCard label={t('System Proxy')}>
@@ -117,14 +121,31 @@ export default function SettingSystemProxy() {
           ) : (
             <>
               <Typography variant="body2">
-                状态：{currentProxy?.enable ? '已开启' : '已关闭'}
+                应用开关：{enabled ? '已启用' : '已关闭'}
               </Typography>
+              <Typography variant="body2">
+                系统实际状态：{systemProxyActive ? '已开启' : '已关闭'}
+              </Typography>
+
+              {isStatusMismatched && (
+                <Alert severity="warning" sx={{ mt: 0.5 }}>
+                  应用设置与系统当前状态暂时不一致。通常是系统设置尚未刷新，或系统仍保留了上次代理配置。
+                </Alert>
+              )}
+
               <Typography variant="body2" color="text.secondary">
-                地址：{currentProxy?.server || '未设置'}
+                {systemProxyActive ? '当前地址' : '保留地址'}：
+                {currentProxy?.server || '未设置'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 绕过：{currentProxy?.bypass || '未设置'}
               </Typography>
+
+              {!systemProxyActive && hasStoredProxyConfig && (
+                <Typography variant="caption" color="text.secondary">
+                  系统代理关闭时，操作系统仍可能保留上次写入的地址和绕过列表；这不代表当前仍在接管流量。
+                </Typography>
+              )}
             </>
           )}
         </Box>

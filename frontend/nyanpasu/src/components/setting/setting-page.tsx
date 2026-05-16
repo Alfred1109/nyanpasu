@@ -1,5 +1,5 @@
 import { useServiceManager } from '@/hooks/use-service-manager'
-import { Box, Stack, Typography } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import SettingAutoLaunch from './setting-auto-launch'
 import SettingProxyMode from './setting-proxy-mode'
 import SettingSystemProxy from './setting-system-proxy'
@@ -20,17 +20,33 @@ const SettingPage = () => {
         </Typography>
       </Box>
 
-      <Stack spacing={3} maxWidth={700} mx="auto">
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: 'minmax(0, 1fr)',
+            md: 'repeat(2, minmax(0, 1fr))',
+          },
+          gap: 3,
+          maxWidth: 1120,
+          mx: 'auto',
+          alignItems: 'start',
+        }}
+      >
         <SettingAutoLaunch />
 
         <SettingSystemProxy />
 
         <SettingProxyMode />
 
-        <SettingSystemService serviceManager={serviceManager} />
+        <Box sx={{ gridColumn: { xs: 'auto', md: '1 / -1' } }}>
+          <SettingSystemService serviceManager={serviceManager} />
+        </Box>
 
-        <SettingTunMode serviceManager={serviceManager} />
-      </Stack>
+        <Box sx={{ gridColumn: { xs: 'auto', md: '1 / -1' } }}>
+          <SettingTunMode serviceManager={serviceManager} />
+        </Box>
+      </Box>
     </Box>
   )
 }
