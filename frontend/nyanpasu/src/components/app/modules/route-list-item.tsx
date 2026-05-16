@@ -36,13 +36,13 @@ const RouteListItem = ({
       sx={[
         (theme) => ({
           backgroundColor: match
-            ? alpha(theme.vars.palette.primary.main, 0.3)
-            : alpha(theme.vars.palette.background.paper, 0.15),
+            ? alpha(theme.palette.primary.main, 0.3)
+            : alpha(theme.palette.background.paper, 0.15),
         }),
         (theme) => ({
           '&:hover': {
             backgroundColor: match
-              ? alpha(theme.vars.palette.primary.main, 0.5)
+              ? alpha(theme.palette.primary.main, 0.5)
               : null,
           },
         }),

@@ -38,9 +38,9 @@ const ServiceShortcuts = () => {
         return {
           label: t('running'),
           sx: ((theme) => ({
-            backgroundColor: alpha(theme.vars.palette.success.light, 0.3),
+            backgroundColor: alpha(theme.palette.success.light, 0.3),
             ...theme.applyStyles('dark', {
-              backgroundColor: alpha(theme.vars.palette.success.dark, 0.3),
+              backgroundColor: alpha(theme.palette.success.dark, 0.3),
             }),
           })) as SxProps<Theme>,
         }
@@ -50,9 +50,9 @@ const ServiceShortcuts = () => {
         return {
           label: t('stopped'),
           sx: ((theme) => ({
-            backgroundColor: alpha(theme.vars.palette.error.light, 0.3),
+            backgroundColor: alpha(theme.palette.error.light, 0.3),
             ...theme.applyStyles('dark', {
-              backgroundColor: alpha(theme.vars.palette.error.dark, 0.3),
+              backgroundColor: alpha(theme.palette.error.dark, 0.3),
             }),
           })) as SxProps<Theme>,
         }
@@ -86,9 +86,9 @@ const ServiceShortcuts = () => {
             ? t('stopped_reason', { reason: Stopped })
             : t('stopped'),
         sx: ((theme) => ({
-          backgroundColor: alpha(theme.vars.palette.success.light, 0.3),
+          backgroundColor: alpha(theme.palette.success.light, 0.3),
           ...theme.applyStyles('dark', {
-            backgroundColor: alpha(theme.vars.palette.success.dark, 0.3),
+            backgroundColor: alpha(theme.palette.success.dark, 0.3),
           }),
         })) as SxProps<Theme>,
       }
@@ -98,9 +98,9 @@ const ServiceShortcuts = () => {
         by: t(status[2] === 'normal' ? 'UI' : 'service'),
       }),
       sx: ((theme) => ({
-        backgroundColor: alpha(theme.vars.palette.success.light, 0.3),
+        backgroundColor: alpha(theme.palette.success.light, 0.3),
         ...theme.applyStyles('dark', {
-          backgroundColor: alpha(theme.vars.palette.success.dark, 0.3),
+          backgroundColor: alpha(theme.palette.success.dark, 0.3),
         }),
       })) as SxProps<Theme>,
     }

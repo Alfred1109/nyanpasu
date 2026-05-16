@@ -45,11 +45,11 @@ const NodeCard = memo(function NodeCard({
       sxPaper={
         ((theme) => ({
           backgroundColor: checked
-            ? alpha(theme.vars.palette.primary.main, 0.3)
+            ? alpha(theme.palette.primary.main, 0.3)
             : theme.vars.palette.grey[100],
           ...theme.applyStyles('dark', {
             backgroundColor: checked
-              ? alpha(theme.vars.palette.primary.main, 0.3)
+              ? alpha(theme.palette.primary.main, 0.3)
               : theme.vars.palette.grey[900],
           }),
         })) as SxProps<Theme>

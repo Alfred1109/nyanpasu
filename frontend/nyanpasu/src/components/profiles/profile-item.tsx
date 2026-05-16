@@ -223,7 +223,7 @@ const ProfileItem = memo(function ProfileItem({
           },
           (theme) => ({
             backgroundColor: selected
-              ? alpha(theme.vars.palette.primary.main, 0.2)
+              ? alpha(theme.palette.primary.main, 0.2)
               : null,
           }),
         ]}

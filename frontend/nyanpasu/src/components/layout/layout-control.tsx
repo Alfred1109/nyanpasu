@@ -53,7 +53,7 @@ const CtrlButton = (props: ButtonProps) => {
     <Button
       className="size-8! min-w-0!"
       sx={(theme) => ({
-        backgroundColor: alpha(theme.vars.palette.primary.main, 0.1),
+        backgroundColor: alpha(theme.palette.primary.main, 0.1),
         svg: { transform: 'scale(0.9)' },
       })}
       {...props}

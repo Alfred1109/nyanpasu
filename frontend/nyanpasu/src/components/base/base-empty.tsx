@@ -19,7 +19,7 @@ const BaseEmpty = (props: Props) => {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        color: alpha(theme.vars.palette.text.secondary, 0.75),
+        color: alpha(theme.palette.text.secondary, 0.75),
       })}
     >
       <InboxRounded sx={{ fontSize: '4em' }} />

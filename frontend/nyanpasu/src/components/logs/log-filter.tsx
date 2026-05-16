@@ -11,7 +11,7 @@ export const LogFilter = () => {
   const inputProps: Partial<FilledInputProps> = {
     sx: (theme) => ({
       borderRadius: 7,
-      backgroundColor: alpha(theme.vars.palette.primary.main, 0.1),
+      backgroundColor: alpha(theme.palette.primary.main, 0.1),
 
       fieldset: {
         border: 'none',

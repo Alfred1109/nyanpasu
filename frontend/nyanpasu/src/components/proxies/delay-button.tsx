@@ -43,16 +43,16 @@ export const DelayButton = memo(function DelayButton({
         sx={(theme) => ({
           boxShadow: 8,
           backgroundColor: alpha(
-            theme.vars.palette[isSuccess ? 'success' : 'primary'].main,
+            theme.palette[isSuccess ? 'success' : 'primary'].main,
             isSuccess ? 0.7 : 0.3,
           ),
 
           '&:hover': {
-            backgroundColor: alpha(theme.vars.palette.primary.main, 0.45),
+            backgroundColor: alpha(theme.palette.primary.main, 0.45),
           },
 
           '&.MuiButton-loading': {
-            backgroundColor: alpha(theme.vars.palette.primary.main, 0.15),
+            backgroundColor: alpha(theme.palette.primary.main, 0.15),
           },
         })}
         onClick={handleClick}

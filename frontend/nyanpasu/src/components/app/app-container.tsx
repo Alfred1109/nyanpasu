@@ -84,7 +84,7 @@ const AppContainer = ({
               <Box
                 className="z-top fixed top-1.5 left-3 h-7 w-18 rounded-full"
                 sx={(theme) => ({
-                  backgroundColor: alpha(theme.vars.palette.primary.main, 0.1),
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
                 })}
               />
             </motion.div>

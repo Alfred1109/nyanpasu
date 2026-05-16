@@ -79,12 +79,15 @@ export default function HotkeyInput({
             {
               '--border-color': isDuplicate
                 ? theme.vars.palette.error.main
-                : alpha(theme.vars.palette.text.secondary, 0.15),
+                : alpha(theme.palette.text.secondary, 0.15),
               '--input-focus-border-color': alpha(
-                theme.vars.palette.primary.main,
+                theme.palette.primary.main,
                 0.75,
               ),
-              '--input-hover-border-color': `rgba(${theme.vars.palette.common.background} / 0.23)`,
+              '--input-hover-border-color': alpha(
+                theme.palette.common.background,
+                0.23,
+              ),
             } as CSSProperties
           }
         >

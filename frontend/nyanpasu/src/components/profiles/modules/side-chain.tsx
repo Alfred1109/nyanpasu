@@ -126,7 +126,7 @@ export const SideChain = ({ onChainEdit }: SideChainProps) => {
       <ListItemButton
         className="mt-2! mb-2! flex justify-center gap-2"
         sx={(theme) => ({
-          backgroundColor: alpha(theme.vars.palette.secondary.main, 0.1),
+          backgroundColor: alpha(theme.palette.secondary.main, 0.1),
           borderRadius: 4,
         })}
         onClick={() => onChainEdit()}

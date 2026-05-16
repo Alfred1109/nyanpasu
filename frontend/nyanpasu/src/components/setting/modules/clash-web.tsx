@@ -120,7 +120,7 @@ export const Item = (props: PaperProps) => (
   <Paper
     {...props}
     sx={{
-      backgroundColor: (theme) => alpha(theme.vars.palette.primary.main, 0.1),
+      backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
       padding: 2,
       borderRadius: 2,
       display: 'flex',

@@ -26,7 +26,7 @@ export const LogLevel = () => {
         size="small"
         sx={(theme) => ({
           textTransform: 'none',
-          backgroundColor: alpha(theme.vars.palette.primary.main, 0.1),
+          backgroundColor: alpha(theme.palette.primary.main, 0.1),
         })}
         onClick={(e) => setAnchorEl(e.currentTarget)}
       >

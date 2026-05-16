@@ -91,13 +91,13 @@ const ChainItem = memo(function ChainItem({
             },
             (theme) => ({
               backgroundColor: selected
-                ? alpha(theme.vars.palette.primary.main, 0.3)
-                : alpha(theme.vars.palette.secondary.main, 0.1),
+                ? alpha(theme.palette.primary.main, 0.3)
+                : alpha(theme.palette.secondary.main, 0.1),
             }),
             (theme) => ({
               '&:hover': {
                 backgroundColor: selected
-                  ? alpha(theme.vars.palette.primary.main, 0.5)
+                  ? alpha(theme.palette.primary.main, 0.5)
                   : null,
               },
             }),

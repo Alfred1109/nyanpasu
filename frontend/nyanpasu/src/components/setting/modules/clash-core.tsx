@@ -67,7 +67,7 @@ const CardProgress = ({
         'flex flex-col items-center justify-center gap-2',
       )}
       sx={(theme) => ({
-        backgroundColor: alpha(theme.vars.palette.primary.main, 0.3),
+        backgroundColor: alpha(theme.palette.primary.main, 0.3),
       })}
       animate={show ? 'open' : 'closed'}
       initial={{ opacity: 0 }}
@@ -87,7 +87,7 @@ const CardProgress = ({
       <Box
         className="absolute left-0 h-full rounded-2xl transition-all"
         sx={(theme) => ({
-          backgroundColor: alpha(theme.vars.palette.primary.main, 0.3),
+          backgroundColor: alpha(theme.palette.primary.main, 0.3),
           width: `${calcProgress(data) < 10 ? 10 : calcProgress(data)}%`,
         })}
       />
@@ -196,10 +196,10 @@ export const ClashCoreItem = ({
         className="relative! p-0!"
         sx={(theme) => ({
           borderRadius: '16px',
-          backgroundColor: alpha(theme.vars.palette.background.paper, 0.3),
+          backgroundColor: alpha(theme.palette.background.paper, 0.3),
 
           '&.Mui-selected': {
-            backgroundColor: alpha(theme.vars.palette.primary.main, 0.3),
+            backgroundColor: alpha(theme.palette.primary.main, 0.3),
           },
         })}
         selected={selected}

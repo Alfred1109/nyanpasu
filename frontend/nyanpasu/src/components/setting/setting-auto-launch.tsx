@@ -129,8 +129,8 @@ export default function SettingAutoLaunch() {
             borderColor: enabled ? 'primary.main' : 'divider',
             backgroundColor: alpha(
               enabled
-                ? theme.vars.palette.primary.main
-                : theme.vars.palette.action.hover,
+                ? theme.palette.primary.main
+                : theme.palette.action.hover,
               enabled ? 0.08 : 0.04,
             ),
             borderRadius: 3,

@@ -21,10 +21,10 @@ export const FloatingButton = ({
       sx={(theme) => ({
         position: 'fixed',
         boxShadow: 8,
-        backgroundColor: alpha(theme.vars.palette.primary.main, 0.3),
+        backgroundColor: alpha(theme.palette.primary.main, 0.3),
 
         '&:hover': {
-          backgroundColor: alpha(theme.vars.palette.primary.main, 0.45),
+          backgroundColor: alpha(theme.palette.primary.main, 0.45),
         },
       })}
       {...props}

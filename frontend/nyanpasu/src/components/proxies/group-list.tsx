@@ -98,7 +98,7 @@ export const GroupList = ({
               sx={[
                 (theme) => ({
                   backgroundColor: selected
-                    ? `${alpha(theme.vars.palette.primary.main, 0.3)} !important`
+                    ? `${alpha(theme.palette.primary.main, 0.3)} !important`
                     : null,
                 }),
               ]}

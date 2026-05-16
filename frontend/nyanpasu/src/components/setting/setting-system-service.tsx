@@ -176,7 +176,7 @@ export default function SettingSystemService({
               borderRadius: 3,
               border: '1px solid',
               borderColor: 'divider',
-              backgroundColor: alpha(theme.vars.palette.primary.main, 0.06),
+              backgroundColor: alpha(theme.palette.primary.main, 0.06),
               px: 2,
               py: 1.5,
             })}
