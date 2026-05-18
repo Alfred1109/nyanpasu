@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UseServiceManagerReturn } from '@/hooks/use-service-manager'
 import { IS_IN_TAURI } from '@/utils/tauri'
-import { Alert, Box, Button, Divider, Typography } from '@mui/material'
+import { Alert, Box, Button, Chip, Divider, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { BaseCard } from '@nyanpasu/ui'
 import ServiceInstallDialog from './modules/service-install-dialog'
@@ -54,6 +54,12 @@ export default function SettingSystemService({
       : serviceManager.serviceStatus === 'stopped'
         ? '已停止'
         : '未安装'
+  const serviceStatusTone =
+    serviceManager.serviceStatus === 'running'
+      ? 'success'
+      : serviceManager.serviceStatus === 'stopped'
+        ? 'warning'
+        : 'default'
 
   const handleInstallService = async () => {
     if (!isInTauri) {
@@ -136,7 +142,18 @@ export default function SettingSystemService({
 
   return (
     <>
-      <BaseCard label={t('System Service')}>
+      <BaseCard
+        label={t('System Service')}
+        labelChildren={
+          <Chip
+            size="small"
+            color={serviceStatusTone}
+            variant={serviceStatusTone === 'default' ? 'outlined' : 'filled'}
+            label={serviceStatusLabel}
+            sx={{ fontWeight: 700 }}
+          />
+        }
+      >
         <Box display="flex" flexDirection="column" gap={2}>
           <Typography variant="body2" color="text.secondary">
             系统服务为 TUN 和更稳定的代理接管提供底层能力，建议在需要 TUN
@@ -172,24 +189,52 @@ export default function SettingSystemService({
           )}
 
           <Box
-            sx={(theme) => ({
-              borderRadius: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-              backgroundColor: alpha(theme.palette.primary.main, 0.06),
-              px: 2,
-              py: 1.5,
-            })}
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, minmax(0, 1fr))',
+              },
+              gap: 1.25,
+            }}
           >
-            <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
-              当前状态
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              服务状态：{serviceStatusLabel}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              服务模式：{isServiceModeEnabled ? '已启用' : '未启用'}
-            </Typography>
+            {[
+              {
+                label: '服务进程',
+                value: serviceStatusLabel,
+                tone: serviceStatusTone,
+              },
+              {
+                label: '服务模式',
+                value: isServiceModeEnabled ? '已启用' : '未启用',
+                tone: isServiceModeEnabled ? 'success' : 'default',
+              },
+            ].map((item) => (
+              <Box
+                key={item.label}
+                sx={(theme) => ({
+                  borderRadius: 3,
+                  border: '1px solid',
+                  borderColor: alpha(theme.palette.primary.main, 0.1),
+                  backgroundColor: alpha(theme.palette.primary.main, 0.05),
+                  px: 1.5,
+                  py: 1.25,
+                })}
+              >
+                <Typography variant="caption" color="text.secondary">
+                  {item.label}
+                </Typography>
+                <Box mt={1}>
+                  <Chip
+                    size="small"
+                    color={item.tone as 'default' | 'success' | 'warning'}
+                    variant={item.tone === 'default' ? 'outlined' : 'filled'}
+                    label={item.value}
+                    sx={{ fontWeight: 700 }}
+                  />
+                </Box>
+              </Box>
+            ))}
           </Box>
 
           <Divider />
@@ -204,10 +249,17 @@ export default function SettingSystemService({
               </Typography>
             </Box>
 
-            <Box display="flex" gap={1} flexWrap="wrap">
+            <Box
+              display="grid"
+              gap={1}
+              gridTemplateColumns={{
+                xs: '1fr',
+                sm: 'repeat(2, minmax(0, 1fr))',
+              }}
+            >
               <Button
                 variant="contained"
-                size="small"
+                size="medium"
                 onClick={handleInstallService}
                 disabled={
                   !isInTauri ||
@@ -220,7 +272,7 @@ export default function SettingSystemService({
 
               <Button
                 variant="outlined"
-                size="small"
+                size="medium"
                 onClick={handleStartService}
                 disabled={
                   !isInTauri ||
@@ -235,7 +287,7 @@ export default function SettingSystemService({
 
               <Button
                 variant="outlined"
-                size="small"
+                size="medium"
                 onClick={handleStopService}
                 disabled={
                   !isInTauri ||
@@ -249,7 +301,7 @@ export default function SettingSystemService({
 
               <Button
                 variant="outlined"
-                size="small"
+                size="medium"
                 color="error"
                 onClick={handleUninstallService}
                 disabled={

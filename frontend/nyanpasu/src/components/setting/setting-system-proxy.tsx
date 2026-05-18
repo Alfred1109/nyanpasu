@@ -4,7 +4,8 @@ import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
 import { IS_IN_TAURI } from '@/utils/tauri'
 import { Dns as ProxyIcon } from '@mui/icons-material'
-import { Alert, Box, Divider, Typography } from '@mui/material'
+import { Alert, Box, Chip, Divider, Typography } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import {
   commands,
   unwrapResult,
@@ -65,13 +66,75 @@ export default function SettingSystemProxy() {
   const hasStoredProxyConfig = Boolean(currentProxy?.server)
   const isStatusMismatched =
     currentProxy !== undefined && enabled !== systemProxyActive
+  const headerTone = systemProxyActive
+    ? 'success'
+    : enabled
+      ? 'warning'
+      : 'default'
 
   return (
-    <BaseCard label={t('System Proxy')}>
+    <BaseCard
+      label={t('System Proxy')}
+      labelChildren={
+        <Chip
+          size="small"
+          color={headerTone}
+          variant={headerTone === 'default' ? 'outlined' : 'filled'}
+          label={
+            systemProxy.isLoading
+              ? '读取中'
+              : systemProxyActive
+                ? '已接管'
+                : enabled
+                  ? '等待同步'
+                  : '未接管'
+          }
+          sx={{ fontWeight: 700 }}
+        />
+      }
+    >
       <Box display="flex" flexDirection="column" gap={2}>
         <Typography variant="body2" color="text.secondary">
           控制是否把当前 Clash 代理写入系统网络代理设置。
         </Typography>
+
+        <Box
+          sx={(theme) => ({
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
+            gap: 1,
+            p: 1.25,
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: alpha(theme.palette.primary.main, 0.1),
+            backgroundColor: alpha(theme.palette.primary.main, 0.05),
+          })}
+        >
+          {[
+            { label: '应用开关', value: enabled ? '已启用' : '已关闭' },
+            {
+              label: '系统状态',
+              value: systemProxy.isLoading
+                ? '读取中'
+                : systemProxyActive
+                  ? '已开启'
+                  : '已关闭',
+            },
+            {
+              label: '同步情况',
+              value: isStatusMismatched ? '待同步' : '一致',
+            },
+          ].map((item) => (
+            <Box key={item.label}>
+              <Typography variant="caption" color="text.secondary">
+                {item.label}
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.5 }}>
+                {item.value}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
 
         {!isInTauri && (
           <Alert severity="info">
@@ -105,7 +168,7 @@ export default function SettingSystemProxy() {
 
         <Divider />
 
-        <Box display="flex" flexDirection="column" gap={0.75}>
+        <Box display="flex" flexDirection="column" gap={1}>
           <Typography variant="caption" color="text.secondary">
             {t('Current System Proxy')}
           </Typography>
@@ -120,26 +183,62 @@ export default function SettingSystemProxy() {
             </Typography>
           ) : (
             <>
-              <Typography variant="body2">
-                应用开关：{enabled ? '已启用' : '已关闭'}
-              </Typography>
-              <Typography variant="body2">
-                系统实际状态：{systemProxyActive ? '已开启' : '已关闭'}
-              </Typography>
+              <Box
+                sx={(theme) => ({
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: 'repeat(2, minmax(0, 1fr))',
+                  },
+                  gap: 1,
+                })}
+              >
+                <Box
+                  sx={(theme) => ({
+                    p: 1.25,
+                    borderRadius: 3,
+                    border: '1px solid',
+                    borderColor: alpha(theme.palette.primary.main, 0.1),
+                    backgroundColor: alpha(theme.palette.background.paper, 0.8),
+                  })}
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    {systemProxyActive ? '当前地址' : '保留地址'}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ mt: 0.5, fontWeight: 700, wordBreak: 'break-all' }}
+                  >
+                    {currentProxy?.server || '未设置'}
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={(theme) => ({
+                    p: 1.25,
+                    borderRadius: 3,
+                    border: '1px solid',
+                    borderColor: alpha(theme.palette.primary.main, 0.1),
+                    backgroundColor: alpha(theme.palette.background.paper, 0.8),
+                  })}
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    绕过列表
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ mt: 0.5, fontWeight: 700, wordBreak: 'break-all' }}
+                  >
+                    {currentProxy?.bypass || '未设置'}
+                  </Typography>
+                </Box>
+              </Box>
 
               {isStatusMismatched && (
                 <Alert severity="warning" sx={{ mt: 0.5 }}>
                   应用设置与系统当前状态暂时不一致。通常是系统设置尚未刷新，或系统仍保留了上次代理配置。
                 </Alert>
               )}
-
-              <Typography variant="body2" color="text.secondary">
-                {systemProxyActive ? '当前地址' : '保留地址'}：
-                {currentProxy?.server || '未设置'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                绕过：{currentProxy?.bypass || '未设置'}
-              </Typography>
 
               {!systemProxyActive && hasStoredProxyConfig && (
                 <Typography variant="caption" color="text.secondary">

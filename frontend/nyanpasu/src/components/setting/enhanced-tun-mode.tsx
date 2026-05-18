@@ -10,6 +10,7 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material'
 import { Alert, Box, Chip, Fade, Typography } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import { toggleTunMode, useSetting } from '@nyanpasu/interface'
 import { BaseCard } from '@nyanpasu/ui'
 import { message } from '@tauri-apps/plugin-dialog'
@@ -242,9 +243,61 @@ const EnhancedTunModeButton = ({
 
   const isTunEnabled = optimisticTunEnabled ?? Boolean(tunMode.value)
   const isDisabled = isToggling || serviceManager.isInstalling
+  const serviceModeEnabled = serviceManager.serviceModeEnabled
 
   return (
     <Box>
+      <Box
+        sx={(theme) => ({
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
+          gap: 1,
+          mb: 2,
+        })}
+      >
+        {[
+          {
+            label: 'TUN 状态',
+            value: isTunEnabled ? '已开启' : '已关闭',
+            tone: isTunEnabled ? 'success' : 'default',
+          },
+          {
+            label: '服务模式',
+            value: serviceModeEnabled ? '已启用' : '未启用',
+            tone: serviceModeEnabled ? 'success' : 'warning',
+          },
+          {
+            label: '可用性',
+            value: statusInfo.canUseTun ? '可用' : '不可用',
+            tone: statusInfo.canUseTun ? 'success' : statusInfo.severity,
+          },
+        ].map((item) => (
+          <Box
+            key={item.label}
+            sx={(theme) => ({
+              p: 1.25,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: alpha(theme.palette.primary.main, 0.1),
+              backgroundColor: alpha(theme.palette.primary.main, 0.04),
+            })}
+          >
+            <Typography variant="caption" color="text.secondary">
+              {item.label}
+            </Typography>
+            <Box mt={1}>
+              <Chip
+                size="small"
+                color={item.tone as 'default' | 'success' | 'warning' | 'info'}
+                variant={item.tone === 'default' ? 'outlined' : 'filled'}
+                label={item.value}
+                sx={{ fontWeight: 700 }}
+              />
+            </Box>
+          </Box>
+        ))}
+      </Box>
+
       {/* 主要的TUN模式开关 */}
       <PaperSwitchButton
         label={t('TUN Mode')}
@@ -376,7 +429,16 @@ const EnhancedTunModeButton = ({
       </Fade>
 
       {/* TUN模式技术说明 */}
-      <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+      <Box
+        sx={(theme) => ({
+          mt: 2,
+          p: 2,
+          borderRadius: 3,
+          bgcolor: alpha(theme.palette.info.main, 0.05),
+          border: '1px solid',
+          borderColor: alpha(theme.palette.info.main, 0.12),
+        })}
+      >
         <Typography
           variant="caption"
           color="text.secondary"
@@ -400,7 +462,18 @@ export default function EnhancedTunModeCard({
   serviceManager: UseServiceManagerReturn
 }) {
   return (
-    <BaseCard label="TUN模式管理">
+    <BaseCard
+      label="TUN模式管理"
+      labelChildren={
+        <Chip
+          size="small"
+          color={serviceManager.serviceConnected ? 'success' : 'warning'}
+          variant="filled"
+          label={serviceManager.serviceConnected ? '连接就绪' : '等待服务'}
+          sx={{ fontWeight: 700 }}
+        />
+      }
+    >
       <EnhancedTunModeButton serviceManager={serviceManager} />
     </BaseCard>
   )

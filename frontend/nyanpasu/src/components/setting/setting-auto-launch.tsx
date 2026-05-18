@@ -4,7 +4,7 @@ import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
 import { IS_IN_TAURI } from '@/utils/tauri'
 import { Launch, RocketLaunch } from '@mui/icons-material'
-import { Alert, Box, Divider, Typography } from '@mui/material'
+import { Alert, Box, Chip, Divider, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { commands, unwrapResult, useSetting } from '@nyanpasu/interface'
 import { BaseCard } from '@nyanpasu/ui'
@@ -84,12 +84,51 @@ export default function SettingAutoLaunch() {
   }
 
   return (
-    <BaseCard label={t('Auto Start')}>
+    <BaseCard
+      label={t('Auto Start')}
+      labelChildren={
+        <Chip
+          size="small"
+          color={enabled ? 'primary' : 'default'}
+          variant={enabled ? 'filled' : 'outlined'}
+          label={enabled ? '已启用' : '未启用'}
+          sx={{ fontWeight: 700 }}
+        />
+      }
+    >
       <Box display="flex" flexDirection="column" gap={2}>
         <Typography variant="body2" color="text.secondary">
           控制 Clash Nyanpasu
           的启动行为，包括随系统启动和启动时是否直接显示窗口。
         </Typography>
+
+        <Box
+          sx={(theme) => ({
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
+            gap: 1,
+            p: 1.25,
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: alpha(theme.palette.primary.main, 0.1),
+            backgroundColor: alpha(theme.palette.primary.main, 0.05),
+          })}
+        >
+          {[
+            { label: '开机启动', value: enabled ? '已启用' : '未启用' },
+            { label: '静默启动', value: silentEnabled ? '已启用' : '未启用' },
+            { label: '运行环境', value: isInTauri ? '桌面端' : '浏览器' },
+          ].map((item) => (
+            <Box key={item.label}>
+              <Typography variant="caption" color="text.secondary">
+                {item.label}
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.5 }}>
+                {item.value}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
 
         {!isInTauri && (
           <Alert severity="info">
@@ -128,9 +167,7 @@ export default function SettingAutoLaunch() {
             borderLeft: '2px solid',
             borderColor: enabled ? 'primary.main' : 'divider',
             backgroundColor: alpha(
-              enabled
-                ? theme.palette.primary.main
-                : theme.palette.action.hover,
+              enabled ? theme.palette.primary.main : theme.palette.action.hover,
               enabled ? 0.08 : 0.04,
             ),
             borderRadius: 3,
@@ -176,6 +213,16 @@ export default function SettingAutoLaunch() {
               </Typography>
             </Box>
           </PaperSwitchButton>
+
+          {!enabled && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mt: 1.25 }}
+            >
+              当前即使开启静默启动，也只有在启用开机启动后才会真正参与系统启动流程。
+            </Typography>
+          )}
         </Box>
       </Box>
     </BaseCard>

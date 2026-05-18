@@ -1155,7 +1155,7 @@ desc: string | null;
  */
 updated: number | null })
 export type NetworkStatisticWidgetConfig = { kind: "disabled" } | { kind: "enabled"; value: StatisticWidgetVariant }
-export type PatchRuntimeConfig = { allow_lan?: boolean | null; ipv6?: boolean | null; log_level?: string | null; mode?: string | null }
+export type PatchRuntimeConfig = { allow_lan?: boolean | null; ipv6?: boolean | null; log_level?: string | null; mode?: string | null; geoip_code?: string | null }
 /**
  * 后处理输出
  */

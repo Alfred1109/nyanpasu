@@ -18,6 +18,7 @@ export interface ClashConfig {
   port: number
   mode: string
   ipv6: boolean
+  geoip_code?: string
   'socket-port': number
   'allow-lan': boolean
   'log-level': string
