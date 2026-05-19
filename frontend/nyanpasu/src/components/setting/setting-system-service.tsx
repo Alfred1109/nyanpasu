@@ -148,9 +148,28 @@ export default function SettingSystemService({
           <Chip
             size="small"
             color={serviceStatusTone}
-            variant={serviceStatusTone === 'default' ? 'outlined' : 'filled'}
+            variant="filled"
             label={serviceStatusLabel}
-            sx={{ fontWeight: 700 }}
+            sx={(theme) => ({
+              fontWeight: 800,
+              ...(serviceStatusTone === 'default'
+                ? {
+                    color:
+                      theme.palette.mode === 'dark'
+                        ? alpha(theme.palette.common.white, 0.82)
+                        : alpha(theme.palette.common.black, 0.78),
+                    backgroundColor:
+                      theme.palette.mode === 'dark'
+                        ? alpha(theme.palette.common.white, 0.08)
+                        : alpha(theme.palette.common.black, 0.06),
+                    border: `1px solid ${
+                      theme.palette.mode === 'dark'
+                        ? alpha(theme.palette.common.white, 0.1)
+                        : alpha(theme.palette.common.black, 0.08)
+                    }`,
+                  }
+                : {}),
+            })}
           />
         }
       >
@@ -215,22 +234,55 @@ export default function SettingSystemService({
                 sx={(theme) => ({
                   borderRadius: 3,
                   border: '1px solid',
-                  borderColor: alpha(theme.palette.primary.main, 0.1),
-                  backgroundColor: alpha(theme.palette.primary.main, 0.05),
+                  borderColor:
+                    theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.common.white, 0.1)
+                      : alpha(theme.palette.common.black, 0.08),
+                  background:
+                    theme.palette.mode === 'dark'
+                      ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`
+                      : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+                  boxShadow:
+                    theme.palette.mode === 'dark'
+                      ? `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`
+                      : `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
                   px: 1.5,
                   py: 1.25,
                 })}
               >
-                <Typography variant="caption" color="text.secondary">
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 600 }}
+                >
                   {item.label}
                 </Typography>
                 <Box mt={1}>
                   <Chip
                     size="small"
                     color={item.tone as 'default' | 'success' | 'warning'}
-                    variant={item.tone === 'default' ? 'outlined' : 'filled'}
+                    variant="filled"
                     label={item.value}
-                    sx={{ fontWeight: 700 }}
+                    sx={(theme) => ({
+                      fontWeight: 800,
+                      ...(item.tone === 'default'
+                        ? {
+                            color:
+                              theme.palette.mode === 'dark'
+                                ? alpha(theme.palette.common.white, 0.82)
+                                : alpha(theme.palette.common.black, 0.78),
+                            backgroundColor:
+                              theme.palette.mode === 'dark'
+                                ? alpha(theme.palette.common.white, 0.08)
+                                : alpha(theme.palette.common.black, 0.06),
+                            border: `1px solid ${
+                              theme.palette.mode === 'dark'
+                                ? alpha(theme.palette.common.white, 0.1)
+                                : alpha(theme.palette.common.black, 0.08)
+                            }`,
+                          }
+                        : {}),
+                    })}
                   />
                 </Box>
               </Box>
@@ -260,6 +312,7 @@ export default function SettingSystemService({
               <Button
                 variant="contained"
                 size="medium"
+                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 42 }}
                 onClick={handleInstallService}
                 disabled={
                   !isInTauri ||
@@ -273,6 +326,7 @@ export default function SettingSystemService({
               <Button
                 variant="outlined"
                 size="medium"
+                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 42 }}
                 onClick={handleStartService}
                 disabled={
                   !isInTauri ||
@@ -288,6 +342,7 @@ export default function SettingSystemService({
               <Button
                 variant="outlined"
                 size="medium"
+                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 42 }}
                 onClick={handleStopService}
                 disabled={
                   !isInTauri ||
@@ -303,6 +358,7 @@ export default function SettingSystemService({
                 variant="outlined"
                 size="medium"
                 color="error"
+                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 42 }}
                 onClick={handleUninstallService}
                 disabled={
                   !isInTauri ||

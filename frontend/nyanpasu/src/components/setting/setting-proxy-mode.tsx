@@ -116,9 +116,19 @@ export default function SettingProxyMode() {
             gap: 1,
             p: 1.25,
             borderRadius: 3,
-            backgroundColor: alpha(theme.palette.primary.main, 0.05),
             border: '1px solid',
-            borderColor: alpha(theme.palette.primary.main, 0.1),
+            borderColor:
+              theme.palette.mode === 'dark'
+                ? alpha(theme.palette.common.white, 0.1)
+                : alpha(theme.palette.common.black, 0.08),
+            background:
+              theme.palette.mode === 'dark'
+                ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`
+                : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+            boxShadow:
+              theme.palette.mode === 'dark'
+                ? `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`
+                : `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
           })}
         >
           {[
@@ -134,7 +144,11 @@ export default function SettingProxyMode() {
             { label: '切换方式', value: '即时生效' },
           ].map((item) => (
             <Box key={item.label}>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontWeight: 600 }}
+              >
                 {item.label}
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.5 }}>
@@ -170,9 +184,7 @@ export default function SettingProxyMode() {
                       alignItems="center"
                       justifyContent="space-between"
                       gap={1}
-                      color={
-                        checked ? 'primary.contrastText' : 'text.secondary'
-                      }
+                      color={checked ? 'primary.contrastText' : 'text.primary'}
                     >
                       <Box
                         display="flex"
@@ -206,7 +218,18 @@ export default function SettingProxyMode() {
                         px={1.5}
                         py={1.5}
                         borderRadius={3}
-                        bgcolor="action.hover"
+                        bgcolor={(theme) =>
+                          alpha(
+                            theme.palette.primary.main,
+                            theme.palette.mode === 'dark' ? 0.14 : 0.06,
+                          )
+                        }
+                        border="1px solid"
+                        borderColor={(theme) =>
+                          theme.palette.mode === 'dark'
+                            ? alpha(theme.palette.common.white, 0.1)
+                            : alpha(theme.palette.common.black, 0.08)
+                        }
                       >
                         <Typography
                           variant="body2"

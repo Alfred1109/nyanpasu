@@ -79,7 +79,7 @@ export default function SettingSystemProxy() {
         <Chip
           size="small"
           color={headerTone}
-          variant={headerTone === 'default' ? 'outlined' : 'filled'}
+          variant="filled"
           label={
             systemProxy.isLoading
               ? '读取中'
@@ -89,7 +89,26 @@ export default function SettingSystemProxy() {
                   ? '等待同步'
                   : '未接管'
           }
-          sx={{ fontWeight: 700 }}
+          sx={(theme) => ({
+            fontWeight: 800,
+            ...(headerTone === 'default'
+              ? {
+                  color:
+                    theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.common.white, 0.82)
+                      : alpha(theme.palette.common.black, 0.78),
+                  backgroundColor:
+                    theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.common.white, 0.08)
+                      : alpha(theme.palette.common.black, 0.06),
+                  border: `1px solid ${
+                    theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.common.white, 0.1)
+                      : alpha(theme.palette.common.black, 0.08)
+                  }`,
+                }
+              : {}),
+          })}
         />
       }
     >
@@ -106,8 +125,18 @@ export default function SettingSystemProxy() {
             p: 1.25,
             borderRadius: 3,
             border: '1px solid',
-            borderColor: alpha(theme.palette.primary.main, 0.1),
-            backgroundColor: alpha(theme.palette.primary.main, 0.05),
+            borderColor:
+              theme.palette.mode === 'dark'
+                ? alpha(theme.palette.common.white, 0.1)
+                : alpha(theme.palette.common.black, 0.08),
+            background:
+              theme.palette.mode === 'dark'
+                ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`
+                : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+            boxShadow:
+              theme.palette.mode === 'dark'
+                ? `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`
+                : `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
           })}
         >
           {[
@@ -126,7 +155,11 @@ export default function SettingSystemProxy() {
             },
           ].map((item) => (
             <Box key={item.label}>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontWeight: 600 }}
+              >
                 {item.label}
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.5 }}>
@@ -153,7 +186,7 @@ export default function SettingSystemProxy() {
             display="flex"
             alignItems="center"
             gap={1}
-            color={enabled ? 'primary.contrastText' : 'text.secondary'}
+            color={enabled ? 'primary.contrastText' : 'text.primary'}
           >
             <ProxyIcon fontSize="small" />
             <Typography
@@ -198,11 +231,21 @@ export default function SettingSystemProxy() {
                     p: 1.25,
                     borderRadius: 3,
                     border: '1px solid',
-                    borderColor: alpha(theme.palette.primary.main, 0.1),
-                    backgroundColor: alpha(theme.palette.background.paper, 0.8),
+                    borderColor:
+                      theme.palette.mode === 'dark'
+                        ? alpha(theme.palette.common.white, 0.1)
+                        : alpha(theme.palette.common.black, 0.08),
+                    background:
+                      theme.palette.mode === 'dark'
+                        ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.92)} 0%, ${alpha(theme.palette.primary.main, 0.1)} 100%)`
+                        : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.04)} 100%)`,
                   })}
                 >
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 600 }}
+                  >
                     {systemProxyActive ? '当前地址' : '保留地址'}
                   </Typography>
                   <Typography
@@ -218,11 +261,21 @@ export default function SettingSystemProxy() {
                     p: 1.25,
                     borderRadius: 3,
                     border: '1px solid',
-                    borderColor: alpha(theme.palette.primary.main, 0.1),
-                    backgroundColor: alpha(theme.palette.background.paper, 0.8),
+                    borderColor:
+                      theme.palette.mode === 'dark'
+                        ? alpha(theme.palette.common.white, 0.1)
+                        : alpha(theme.palette.common.black, 0.08),
+                    background:
+                      theme.palette.mode === 'dark'
+                        ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.92)} 0%, ${alpha(theme.palette.primary.main, 0.1)} 100%)`
+                        : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.04)} 100%)`,
                   })}
                 >
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 600 }}
+                  >
                     绕过列表
                   </Typography>
                   <Typography

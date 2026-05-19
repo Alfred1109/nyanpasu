@@ -90,9 +90,28 @@ export default function SettingAutoLaunch() {
         <Chip
           size="small"
           color={enabled ? 'primary' : 'default'}
-          variant={enabled ? 'filled' : 'outlined'}
+          variant="filled"
           label={enabled ? '已启用' : '未启用'}
-          sx={{ fontWeight: 700 }}
+          sx={(theme) => ({
+            fontWeight: 800,
+            ...(enabled
+              ? {}
+              : {
+                  color:
+                    theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.common.white, 0.82)
+                      : alpha(theme.palette.common.black, 0.78),
+                  backgroundColor:
+                    theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.common.white, 0.08)
+                      : alpha(theme.palette.common.black, 0.06),
+                  border: `1px solid ${
+                    theme.palette.mode === 'dark'
+                      ? alpha(theme.palette.common.white, 0.1)
+                      : alpha(theme.palette.common.black, 0.08)
+                  }`,
+                }),
+          })}
         />
       }
     >
@@ -110,8 +129,18 @@ export default function SettingAutoLaunch() {
             p: 1.25,
             borderRadius: 3,
             border: '1px solid',
-            borderColor: alpha(theme.palette.primary.main, 0.1),
-            backgroundColor: alpha(theme.palette.primary.main, 0.05),
+            borderColor:
+              theme.palette.mode === 'dark'
+                ? alpha(theme.palette.common.white, 0.1)
+                : alpha(theme.palette.common.black, 0.08),
+            background:
+              theme.palette.mode === 'dark'
+                ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`
+                : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+            boxShadow:
+              theme.palette.mode === 'dark'
+                ? `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`
+                : `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
           })}
         >
           {[
@@ -120,7 +149,11 @@ export default function SettingAutoLaunch() {
             { label: '运行环境', value: isInTauri ? '桌面端' : '浏览器' },
           ].map((item) => (
             <Box key={item.label}>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontWeight: 600 }}
+              >
                 {item.label}
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.5 }}>
@@ -147,7 +180,7 @@ export default function SettingAutoLaunch() {
             display="flex"
             alignItems="center"
             gap={1}
-            color={enabled ? 'primary.contrastText' : 'text.secondary'}
+            color={enabled ? 'primary.contrastText' : 'text.primary'}
           >
             <RocketLaunch fontSize="small" />
             <Typography
@@ -166,10 +199,11 @@ export default function SettingAutoLaunch() {
             pl: 2,
             borderLeft: '2px solid',
             borderColor: enabled ? 'primary.main' : 'divider',
-            backgroundColor: alpha(
-              enabled ? theme.palette.primary.main : theme.palette.action.hover,
-              enabled ? 0.08 : 0.04,
-            ),
+            background: enabled
+              ? `linear-gradient(180deg, ${alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.18 : 0.1)} 0%, ${alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.1 : 0.05)} 100%)`
+              : theme.palette.mode === 'dark'
+                ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.9)} 0%, ${alpha(theme.palette.common.white, 0.04)} 100%)`
+                : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.92)} 0%, ${alpha(theme.palette.action.hover, 0.5)} 100%)`,
             borderRadius: 3,
             py: 1.5,
             pr: 1.5,
@@ -199,7 +233,7 @@ export default function SettingAutoLaunch() {
               display="flex"
               alignItems="center"
               gap={1}
-              color={silentEnabled ? 'primary.contrastText' : 'text.secondary'}
+              color={silentEnabled ? 'primary.contrastText' : 'text.primary'}
             >
               <Launch fontSize="small" />
               <Typography

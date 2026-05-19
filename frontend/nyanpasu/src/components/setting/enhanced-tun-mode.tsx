@@ -278,20 +278,53 @@ const EnhancedTunModeButton = ({
               p: 1.25,
               borderRadius: 3,
               border: '1px solid',
-              borderColor: alpha(theme.palette.primary.main, 0.1),
-              backgroundColor: alpha(theme.palette.primary.main, 0.04),
+              borderColor:
+                theme.palette.mode === 'dark'
+                  ? alpha(theme.palette.common.white, 0.1)
+                  : alpha(theme.palette.common.black, 0.08),
+              background:
+                theme.palette.mode === 'dark'
+                  ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`
+                  : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+              boxShadow:
+                theme.palette.mode === 'dark'
+                  ? `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`
+                  : `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
             })}
           >
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 600 }}
+            >
               {item.label}
             </Typography>
             <Box mt={1}>
               <Chip
                 size="small"
                 color={item.tone as 'default' | 'success' | 'warning' | 'info'}
-                variant={item.tone === 'default' ? 'outlined' : 'filled'}
+                variant="filled"
                 label={item.value}
-                sx={{ fontWeight: 700 }}
+                sx={(theme) => ({
+                  fontWeight: 800,
+                  ...(item.tone === 'default'
+                    ? {
+                        color:
+                          theme.palette.mode === 'dark'
+                            ? alpha(theme.palette.common.white, 0.82)
+                            : alpha(theme.palette.common.black, 0.78),
+                        backgroundColor:
+                          theme.palette.mode === 'dark'
+                            ? alpha(theme.palette.common.white, 0.08)
+                            : alpha(theme.palette.common.black, 0.06),
+                        border: `1px solid ${
+                          theme.palette.mode === 'dark'
+                            ? alpha(theme.palette.common.white, 0.1)
+                            : alpha(theme.palette.common.black, 0.08)
+                        }`,
+                      }
+                    : {}),
+                })}
               />
             </Box>
           </Box>
@@ -306,22 +339,34 @@ const EnhancedTunModeButton = ({
         onClick={handleTunMode}
         disabled={isDisabled}
         statusText={null}
-        sxPaper={{
-          backgroundColor:
+        sxPaper={(theme) => ({
+          background:
             isTunEnabled && statusInfo.canUseTun
-              ? 'primary.main'
-              : 'background.paper',
-          border:
-            isTunEnabled && statusInfo.canUseTun ? '2px solid' : '1px solid',
+              ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
+              : theme.palette.mode === 'dark'
+                ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.14)} 100%)`
+                : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
           borderColor:
-            isTunEnabled && statusInfo.canUseTun ? 'primary.main' : 'divider',
+            isTunEnabled && statusInfo.canUseTun
+              ? alpha(theme.palette.primary.main, 0.42)
+              : theme.palette.mode === 'dark'
+                ? alpha(theme.palette.common.white, 0.12)
+                : alpha(theme.palette.common.black, 0.08),
+          boxShadow:
+            isTunEnabled && statusInfo.canUseTun
+              ? `0 16px 32px ${alpha(theme.palette.primary.main, 0.22)}`
+              : theme.palette.mode === 'dark'
+                ? `0 12px 28px ${alpha(theme.palette.common.black, 0.22)}`
+                : `0 10px 24px ${alpha(theme.palette.common.black, 0.06)}`,
           '&:hover': {
-            backgroundColor:
+            background:
               isTunEnabled && statusInfo.canUseTun
-                ? 'primary.dark'
-                : 'action.hover',
+                ? `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`
+                : theme.palette.mode === 'dark'
+                  ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.18)} 100%)`
+                  : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 1)} 0%, ${alpha(theme.palette.primary.main, 0.08)} 100%)`,
           },
-        }}
+        })}
         sx={{
           opacity: statusInfo.canUseTun ? 1 : 0.6,
         }}
@@ -352,8 +397,8 @@ const EnhancedTunModeButton = ({
                 label="不可用"
                 size="small"
                 color={statusInfo.severity}
-                variant="outlined"
-                sx={{ fontSize: '0.65rem', height: 20 }}
+                variant="filled"
+                sx={{ fontSize: '0.65rem', height: 20, fontWeight: 700 }}
               />
             )}
           </Box>
@@ -402,10 +447,10 @@ const EnhancedTunModeButton = ({
                 variant="caption"
                 sx={{
                   color: 'text.secondary',
-                  fontStyle: 'italic',
+                  fontWeight: 500,
                 }}
               >
-                💡 {statusInfo.actionHint}
+                提示: {statusInfo.actionHint}
               </Typography>
             )}
 
@@ -421,7 +466,7 @@ const EnhancedTunModeButton = ({
                   fontSize: '0.75rem',
                 }}
               >
-                ❌ 操作失败: {lastToggleError}
+                操作失败: {lastToggleError}
               </Typography>
             )}
           </Box>
@@ -434,9 +479,15 @@ const EnhancedTunModeButton = ({
           mt: 2,
           p: 2,
           borderRadius: 3,
-          bgcolor: alpha(theme.palette.info.main, 0.05),
+          background:
+            theme.palette.mode === 'dark'
+              ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.info.main, 0.14)} 100%)`
+              : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.info.main, 0.06)} 100%)`,
           border: '1px solid',
-          borderColor: alpha(theme.palette.info.main, 0.12),
+          borderColor: alpha(
+            theme.palette.info.main,
+            theme.palette.mode === 'dark' ? 0.22 : 0.14,
+          ),
         })}
       >
         <Typography
