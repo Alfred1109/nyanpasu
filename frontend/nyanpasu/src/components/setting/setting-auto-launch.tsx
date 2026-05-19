@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
 import { IS_IN_TAURI } from '@/utils/tauri'
+import { applyDarkStyles } from '@/utils/theme'
 import { Launch, RocketLaunch } from '@mui/icons-material'
 import { Alert, Box, Chip, Divider, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
@@ -97,19 +98,14 @@ export default function SettingAutoLaunch() {
             ...(enabled
               ? {}
               : {
-                  color:
-                    theme.palette.mode === 'dark'
-                      ? alpha(theme.palette.common.white, 0.82)
-                      : alpha(theme.palette.common.black, 0.78),
-                  backgroundColor:
-                    theme.palette.mode === 'dark'
-                      ? alpha(theme.palette.common.white, 0.08)
-                      : alpha(theme.palette.common.black, 0.06),
-                  border: `1px solid ${
-                    theme.palette.mode === 'dark'
-                      ? alpha(theme.palette.common.white, 0.1)
-                      : alpha(theme.palette.common.black, 0.08)
-                  }`,
+                  color: alpha(theme.palette.common.black, 0.78),
+                  backgroundColor: alpha(theme.palette.common.black, 0.06),
+                  border: `1px solid ${alpha(theme.palette.common.black, 0.08)}`,
+                  ...applyDarkStyles(theme, {
+                    color: alpha(theme.palette.common.white, 0.82),
+                    backgroundColor: alpha(theme.palette.common.white, 0.08),
+                    border: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
+                  }),
                 }),
           })}
         />
@@ -129,18 +125,14 @@ export default function SettingAutoLaunch() {
             p: 1,
             borderRadius: 2.5,
             border: '1px solid',
-            borderColor:
-              theme.palette.mode === 'dark'
-                ? alpha(theme.palette.common.white, 0.1)
-                : alpha(theme.palette.common.black, 0.08),
-            background:
-              theme.palette.mode === 'dark'
-                ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`
-                : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-            boxShadow:
-              theme.palette.mode === 'dark'
-                ? `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`
-                : `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
+            borderColor: alpha(theme.palette.common.black, 0.08),
+            background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+            boxShadow: `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
+            ...applyDarkStyles(theme, {
+              borderColor: alpha(theme.palette.common.white, 0.1),
+              background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`,
+              boxShadow: `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`,
+            }),
           })}
         >
           {[
@@ -200,13 +192,16 @@ export default function SettingAutoLaunch() {
             borderLeft: '2px solid',
             borderColor: enabled ? 'primary.main' : 'divider',
             background: enabled
-              ? `linear-gradient(180deg, ${alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.18 : 0.1)} 0%, ${alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.1 : 0.05)} 100%)`
-              : theme.palette.mode === 'dark'
-                ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.9)} 0%, ${alpha(theme.palette.common.white, 0.04)} 100%)`
-                : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.92)} 0%, ${alpha(theme.palette.action.hover, 0.5)} 100%)`,
+              ? `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`
+              : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.92)} 0%, ${alpha(theme.palette.action.hover, 0.5)} 100%)`,
             borderRadius: 2.5,
             py: 1.25,
             pr: 1.25,
+            ...applyDarkStyles(theme, {
+              background: enabled
+                ? `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.18)} 0%, ${alpha(theme.palette.primary.main, 0.1)} 100%)`
+                : `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.9)} 0%, ${alpha(theme.palette.common.white, 0.04)} 100%)`,
+            }),
           })}
         >
           <Box mb={1}>

@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
+import { applyDarkStyles } from '@/utils/theme'
 import {
   Route as DirectIcon,
   ExpandLess,
@@ -117,18 +118,14 @@ export default function SettingProxyMode() {
             p: 1,
             borderRadius: 2.5,
             border: '1px solid',
-            borderColor:
-              theme.palette.mode === 'dark'
-                ? alpha(theme.palette.common.white, 0.1)
-                : alpha(theme.palette.common.black, 0.08),
-            background:
-              theme.palette.mode === 'dark'
-                ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`
-                : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-            boxShadow:
-              theme.palette.mode === 'dark'
-                ? `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`
-                : `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
+            borderColor: alpha(theme.palette.common.black, 0.08),
+            background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+            boxShadow: `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
+            ...applyDarkStyles(theme, {
+              borderColor: alpha(theme.palette.common.white, 0.1),
+              background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`,
+              boxShadow: `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`,
+            }),
           })}
         >
           {[
@@ -219,17 +216,21 @@ export default function SettingProxyMode() {
                         py={1.25}
                         borderRadius={2.5}
                         bgcolor={(theme) =>
-                          alpha(
-                            theme.palette.primary.main,
-                            theme.palette.mode === 'dark' ? 0.14 : 0.06,
-                          )
+                          alpha(theme.palette.primary.main, 0.06)
                         }
                         border="1px solid"
                         borderColor={(theme) =>
-                          theme.palette.mode === 'dark'
-                            ? alpha(theme.palette.common.white, 0.1)
-                            : alpha(theme.palette.common.black, 0.08)
+                          alpha(theme.palette.common.black, 0.08)
                         }
+                        sx={(theme) => ({
+                          ...applyDarkStyles(theme, {
+                            backgroundColor: alpha(
+                              theme.palette.primary.main,
+                              0.14,
+                            ),
+                            borderColor: alpha(theme.palette.common.white, 0.1),
+                          }),
+                        })}
                       >
                         <Typography
                           variant="body2"

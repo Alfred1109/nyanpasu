@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UseServiceManagerReturn } from '@/hooks/use-service-manager'
 import { IS_IN_TAURI } from '@/utils/tauri'
+import { applyDarkStyles } from '@/utils/theme'
 import {
   CheckCircle as CheckIcon,
   Error as ErrorIcon,
@@ -278,18 +279,14 @@ const EnhancedTunModeButton = ({
               p: 1,
               borderRadius: 2.5,
               border: '1px solid',
-              borderColor:
-                theme.palette.mode === 'dark'
-                  ? alpha(theme.palette.common.white, 0.1)
-                  : alpha(theme.palette.common.black, 0.08),
-              background:
-                theme.palette.mode === 'dark'
-                  ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`
-                  : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-              boxShadow:
-                theme.palette.mode === 'dark'
-                  ? `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`
-                  : `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
+              borderColor: alpha(theme.palette.common.black, 0.08),
+              background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+              boxShadow: `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
+              ...applyDarkStyles(theme, {
+                borderColor: alpha(theme.palette.common.white, 0.1),
+                background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`,
+                boxShadow: `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`,
+              }),
             })}
           >
             <Typography
@@ -309,19 +306,20 @@ const EnhancedTunModeButton = ({
                   fontWeight: 800,
                   ...(item.tone === 'default'
                     ? {
-                        color:
-                          theme.palette.mode === 'dark'
-                            ? alpha(theme.palette.common.white, 0.82)
-                            : alpha(theme.palette.common.black, 0.78),
-                        backgroundColor:
-                          theme.palette.mode === 'dark'
-                            ? alpha(theme.palette.common.white, 0.08)
-                            : alpha(theme.palette.common.black, 0.06),
-                        border: `1px solid ${
-                          theme.palette.mode === 'dark'
-                            ? alpha(theme.palette.common.white, 0.1)
-                            : alpha(theme.palette.common.black, 0.08)
-                        }`,
+                        color: alpha(theme.palette.common.black, 0.78),
+                        backgroundColor: alpha(
+                          theme.palette.common.black,
+                          0.06,
+                        ),
+                        border: `1px solid ${alpha(theme.palette.common.black, 0.08)}`,
+                        ...applyDarkStyles(theme, {
+                          color: alpha(theme.palette.common.white, 0.82),
+                          backgroundColor: alpha(
+                            theme.palette.common.white,
+                            0.08,
+                          ),
+                          border: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
+                        }),
                       }
                     : {}),
                 })}
@@ -343,29 +341,41 @@ const EnhancedTunModeButton = ({
           background:
             isTunEnabled && statusInfo.canUseTun
               ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
-              : theme.palette.mode === 'dark'
-                ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.14)} 100%)`
-                : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+              : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
           borderColor:
             isTunEnabled && statusInfo.canUseTun
               ? alpha(theme.palette.primary.main, 0.42)
-              : theme.palette.mode === 'dark'
-                ? alpha(theme.palette.common.white, 0.12)
-                : alpha(theme.palette.common.black, 0.08),
+              : alpha(theme.palette.common.black, 0.08),
           boxShadow:
             isTunEnabled && statusInfo.canUseTun
               ? `0 16px 32px ${alpha(theme.palette.primary.main, 0.22)}`
-              : theme.palette.mode === 'dark'
-                ? `0 12px 28px ${alpha(theme.palette.common.black, 0.22)}`
-                : `0 10px 24px ${alpha(theme.palette.common.black, 0.06)}`,
+              : `0 10px 24px ${alpha(theme.palette.common.black, 0.06)}`,
           '&:hover': {
             background:
               isTunEnabled && statusInfo.canUseTun
                 ? `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`
-                : theme.palette.mode === 'dark'
-                  ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.18)} 100%)`
-                  : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 1)} 0%, ${alpha(theme.palette.primary.main, 0.08)} 100%)`,
+                : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 1)} 0%, ${alpha(theme.palette.primary.main, 0.08)} 100%)`,
           },
+          ...applyDarkStyles(theme, {
+            background:
+              isTunEnabled && statusInfo.canUseTun
+                ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
+                : `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.14)} 100%)`,
+            borderColor:
+              isTunEnabled && statusInfo.canUseTun
+                ? alpha(theme.palette.primary.main, 0.42)
+                : alpha(theme.palette.common.white, 0.12),
+            boxShadow:
+              isTunEnabled && statusInfo.canUseTun
+                ? `0 16px 32px ${alpha(theme.palette.primary.main, 0.22)}`
+                : `0 12px 28px ${alpha(theme.palette.common.black, 0.22)}`,
+            '&:hover': {
+              background:
+                isTunEnabled && statusInfo.canUseTun
+                  ? `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`
+                  : `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.18)} 100%)`,
+            },
+          }),
         })}
         sx={{
           opacity: statusInfo.canUseTun ? 1 : 0.6,
@@ -479,15 +489,13 @@ const EnhancedTunModeButton = ({
           mt: 1.5,
           p: 1.5,
           borderRadius: 2.5,
-          background:
-            theme.palette.mode === 'dark'
-              ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.info.main, 0.14)} 100%)`
-              : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.info.main, 0.06)} 100%)`,
+          background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.info.main, 0.06)} 100%)`,
           border: '1px solid',
-          borderColor: alpha(
-            theme.palette.info.main,
-            theme.palette.mode === 'dark' ? 0.22 : 0.14,
-          ),
+          borderColor: alpha(theme.palette.info.main, 0.14),
+          ...applyDarkStyles(theme, {
+            background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.info.main, 0.14)} 100%)`,
+            borderColor: alpha(theme.palette.info.main, 0.22),
+          }),
         })}
       >
         <Typography

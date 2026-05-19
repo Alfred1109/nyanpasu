@@ -25,7 +25,7 @@
 .Container-common {
   @apply relative h-full overflow-hidden rounded-3xl;
 
-  background-color: var(--background-color);
+  background-color: var(--mui-palette-background-paper);
 }
 
 .ScrollArea-Thumb {

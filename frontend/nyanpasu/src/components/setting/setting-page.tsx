@@ -1,4 +1,5 @@
 import { useServiceManager } from '@/hooks/use-service-manager'
+import { applyDarkStyles } from '@/utils/theme'
 import { AutoMode, Lan, RocketLaunch, Shield } from '@mui/icons-material'
 import { Box, Chip, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
@@ -84,57 +85,47 @@ const SettingPage = () => {
   return (
     <Box
       sx={(theme) => ({
-        ...(theme.palette.mode === 'dark'
-          ? {
-              '--settings-ink': theme.palette.text.primary,
-              '--settings-muted': alpha(theme.palette.text.secondary, 0.84),
-              '--settings-panel-border': alpha(theme.palette.divider, 0.72),
-              '--settings-panel-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`,
-              '--settings-panel-bg-soft': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.1)} 100%)`,
-              '--settings-panel-shadow': `0 20px 44px ${alpha(theme.palette.common.black, 0.28)}`,
-              '--settings-section-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.68)} 0%, ${alpha(theme.palette.primary.main, 0.06)} 100%)`,
-              '--settings-summary-title': alpha(
-                theme.palette.text.primary,
-                0.78,
-              ),
-              '--settings-summary-default-bg': alpha(
-                theme.palette.text.primary,
-                0.1,
-              ),
-              '--settings-summary-default-border': alpha(
-                theme.palette.text.primary,
-                0.16,
-              ),
-              '--settings-summary-default-color': alpha(
-                theme.palette.text.primary,
-                0.9,
-              ),
-            }
-          : {
-              '--settings-ink': theme.palette.text.primary,
-              '--settings-muted': alpha(theme.palette.text.secondary, 0.78),
-              '--settings-panel-border': alpha(theme.palette.divider, 0.76),
-              '--settings-panel-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.04)} 100%)`,
-              '--settings-panel-bg-soft': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-              '--settings-panel-shadow': `0 18px 40px ${alpha(theme.palette.common.black, 0.08)}`,
-              '--settings-section-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.76)} 0%, ${alpha(theme.palette.primary.main, 0.03)} 100%)`,
-              '--settings-summary-title': alpha(
-                theme.palette.text.primary,
-                0.68,
-              ),
-              '--settings-summary-default-bg': alpha(
-                theme.palette.text.primary,
-                0.06,
-              ),
-              '--settings-summary-default-border': alpha(
-                theme.palette.text.primary,
-                0.1,
-              ),
-              '--settings-summary-default-color': alpha(
-                theme.palette.text.primary,
-                0.76,
-              ),
-            }),
+        '--settings-ink': theme.palette.text.primary,
+        '--settings-muted': alpha(theme.palette.text.secondary, 0.78),
+        '--settings-panel-border': alpha(theme.palette.divider, 0.76),
+        '--settings-panel-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.04)} 100%)`,
+        '--settings-panel-bg-soft': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+        '--settings-panel-shadow': `0 18px 40px ${alpha(theme.palette.common.black, 0.08)}`,
+        '--settings-section-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.76)} 0%, ${alpha(theme.palette.primary.main, 0.03)} 100%)`,
+        '--settings-summary-title': alpha(theme.palette.text.primary, 0.68),
+        '--settings-summary-default-bg': alpha(
+          theme.palette.text.primary,
+          0.06,
+        ),
+        '--settings-summary-default-border': alpha(
+          theme.palette.text.primary,
+          0.1,
+        ),
+        '--settings-summary-default-color': alpha(
+          theme.palette.text.primary,
+          0.76,
+        ),
+        ...applyDarkStyles(theme, {
+          '--settings-muted': alpha(theme.palette.text.secondary, 0.84),
+          '--settings-panel-border': alpha(theme.palette.divider, 0.72),
+          '--settings-panel-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`,
+          '--settings-panel-bg-soft': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.1)} 100%)`,
+          '--settings-panel-shadow': `0 20px 44px ${alpha(theme.palette.common.black, 0.28)}`,
+          '--settings-section-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.68)} 0%, ${alpha(theme.palette.primary.main, 0.06)} 100%)`,
+          '--settings-summary-title': alpha(theme.palette.text.primary, 0.78),
+          '--settings-summary-default-bg': alpha(
+            theme.palette.text.primary,
+            0.1,
+          ),
+          '--settings-summary-default-border': alpha(
+            theme.palette.text.primary,
+            0.16,
+          ),
+          '--settings-summary-default-color': alpha(
+            theme.palette.text.primary,
+            0.9,
+          ),
+        }),
         maxWidth: 1180,
         mx: 'auto',
         px: { xs: 1, sm: 1.5, lg: 2 },
@@ -171,28 +162,18 @@ const SettingPage = () => {
           py: { xs: 2, sm: 2.25, md: 2.5 },
           border: '1px solid',
           borderColor: 'var(--settings-panel-border)',
-          background:
-            theme.palette.mode === 'dark'
-              ? `
-                radial-gradient(circle at top right, ${alpha(theme.palette.primary.main, 0.26)} 0%, transparent 34%),
-                radial-gradient(circle at bottom left, ${alpha(theme.palette.success.main, 0.18)} 0%, transparent 30%),
-                linear-gradient(135deg, ${alpha(theme.palette.background.default, 0.96)} 0%, ${alpha(theme.palette.background.paper, 0.98)} 52%, ${alpha(theme.palette.background.default, 0.94)} 100%)
-              `
-              : `
-                radial-gradient(circle at top right, ${alpha(theme.palette.primary.main, 0.16)} 0%, transparent 32%),
-                radial-gradient(circle at bottom left, ${alpha(theme.palette.success.main, 0.14)} 0%, transparent 28%),
-                linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.background.paper, 0.98)} 50%, ${alpha(theme.palette.success.main, 0.08)} 100%)
-              `,
-          boxShadow:
-            theme.palette.mode === 'dark'
-              ? `0 24px 56px ${alpha(theme.palette.common.black, 0.34)}`
-              : `0 22px 54px ${alpha(theme.palette.common.black, 0.12)}`,
+          background: `
+            radial-gradient(circle at top right, ${alpha(theme.palette.primary.main, 0.16)} 0%, transparent 32%),
+            radial-gradient(circle at bottom left, ${alpha(theme.palette.success.main, 0.14)} 0%, transparent 28%),
+            linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.background.paper, 0.98)} 50%, ${alpha(theme.palette.success.main, 0.08)} 100%)
+          `,
+          boxShadow: `0 22px 54px ${alpha(theme.palette.common.black, 0.12)}`,
           color: 'var(--settings-ink)',
           '&::before': {
             content: '""',
             position: 'absolute',
             inset: 0,
-            background: `linear-gradient(120deg, transparent 20%, ${alpha(theme.palette.common.white, theme.palette.mode === 'dark' ? 0.1 : 0.42)} 46%, transparent 58%)`,
+            background: `linear-gradient(120deg, transparent 20%, ${alpha(theme.palette.common.white, 0.42)} 46%, transparent 58%)`,
             pointerEvents: 'none',
           },
           '&::after': {
@@ -202,12 +183,23 @@ const SettingPage = () => {
             width: 220,
             height: 220,
             borderRadius: '50%',
-            background: alpha(
-              theme.palette.primary.main,
-              theme.palette.mode === 'dark' ? 0.16 : 0.12,
-            ),
+            background: alpha(theme.palette.primary.main, 0.12),
             filter: 'blur(18px)',
           },
+          ...applyDarkStyles(theme, {
+            background: `
+              radial-gradient(circle at top right, ${alpha(theme.palette.primary.main, 0.26)} 0%, transparent 34%),
+              radial-gradient(circle at bottom left, ${alpha(theme.palette.success.main, 0.18)} 0%, transparent 30%),
+              linear-gradient(135deg, ${alpha(theme.palette.background.default, 0.96)} 0%, ${alpha(theme.palette.background.paper, 0.98)} 52%, ${alpha(theme.palette.background.default, 0.94)} 100%)
+            `,
+            boxShadow: `0 24px 56px ${alpha(theme.palette.common.black, 0.34)}`,
+            '&::before': {
+              background: `linear-gradient(120deg, transparent 20%, ${alpha(theme.palette.common.white, 0.1)} 46%, transparent 58%)`,
+            },
+            '&::after': {
+              background: alpha(theme.palette.primary.main, 0.16),
+            },
+          }),
         })}
       >
         <Typography
@@ -216,13 +208,13 @@ const SettingPage = () => {
             display: 'block',
             mb: 0.5,
             letterSpacing: '0.16em',
-            color:
-              theme.palette.mode === 'dark'
-                ? alpha(theme.palette.text.primary, 0.72)
-                : alpha(theme.palette.primary.dark, 0.86),
+            color: alpha(theme.palette.primary.dark, 0.86),
             fontWeight: 700,
             position: 'relative',
             zIndex: 1,
+            ...applyDarkStyles(theme, {
+              color: alpha(theme.palette.text.primary, 0.72),
+            }),
           })}
         >
           System Control Center
@@ -277,19 +269,15 @@ const SettingPage = () => {
                 py: 0.625,
                 borderRadius: 999,
                 border: '1px solid',
-                borderColor: alpha(
-                  theme.palette.primary.main,
-                  theme.palette.mode === 'dark' ? 0.24 : 0.16,
-                ),
-                background:
-                  theme.palette.mode === 'dark'
-                    ? alpha(theme.palette.common.white, 0.06)
-                    : alpha(theme.palette.background.paper, 0.84),
-                boxShadow:
-                  theme.palette.mode === 'dark'
-                    ? `0 10px 24px ${alpha(theme.palette.common.black, 0.22)}`
-                    : `0 10px 24px ${alpha(theme.palette.common.black, 0.08)}`,
+                borderColor: alpha(theme.palette.primary.main, 0.16),
+                background: alpha(theme.palette.background.paper, 0.84),
+                boxShadow: `0 10px 24px ${alpha(theme.palette.common.black, 0.08)}`,
                 backdropFilter: 'blur(12px)',
+                ...applyDarkStyles(theme, {
+                  borderColor: alpha(theme.palette.primary.main, 0.24),
+                  background: alpha(theme.palette.common.white, 0.06),
+                  boxShadow: `0 10px 24px ${alpha(theme.palette.common.black, 0.22)}`,
+                }),
               })}
             >
               <Box
@@ -335,11 +323,11 @@ const SettingPage = () => {
               border: '1px solid',
               borderColor: 'var(--settings-panel-border)',
               background: 'var(--settings-panel-bg-soft)',
-              boxShadow:
-                theme.palette.mode === 'dark'
-                  ? `0 14px 28px ${alpha(theme.palette.common.black, 0.22)}`
-                  : `0 12px 28px ${alpha(theme.palette.common.black, 0.06)}`,
+              boxShadow: `0 12px 28px ${alpha(theme.palette.common.black, 0.06)}`,
               backdropFilter: 'blur(10px)',
+              ...applyDarkStyles(theme, {
+                boxShadow: `0 14px 28px ${alpha(theme.palette.common.black, 0.22)}`,
+              }),
             })}
           >
             <Typography
@@ -361,36 +349,18 @@ const SettingPage = () => {
               sx={(theme) => {
                 const toneMap = {
                   primary: {
-                    backgroundColor: alpha(
-                      theme.palette.primary.main,
-                      theme.palette.mode === 'dark' ? 0.28 : 0.16,
-                    ),
-                    color:
-                      theme.palette.mode === 'dark'
-                        ? theme.palette.primary.light
-                        : theme.palette.primary.dark,
+                    backgroundColor: alpha(theme.palette.primary.main, 0.16),
+                    color: theme.palette.primary.dark,
                     borderColor: alpha(theme.palette.primary.main, 0.18),
                   },
                   success: {
-                    backgroundColor: alpha(
-                      theme.palette.success.main,
-                      theme.palette.mode === 'dark' ? 0.28 : 0.18,
-                    ),
-                    color:
-                      theme.palette.mode === 'dark'
-                        ? theme.palette.success.light
-                        : theme.palette.success.dark,
+                    backgroundColor: alpha(theme.palette.success.main, 0.18),
+                    color: theme.palette.success.dark,
                     borderColor: alpha(theme.palette.success.main, 0.18),
                   },
                   warning: {
-                    backgroundColor: alpha(
-                      theme.palette.warning.main,
-                      theme.palette.mode === 'dark' ? 0.28 : 0.2,
-                    ),
-                    color:
-                      theme.palette.mode === 'dark'
-                        ? theme.palette.warning.light
-                        : theme.palette.text.primary,
+                    backgroundColor: alpha(theme.palette.warning.main, 0.2),
+                    color: theme.palette.text.primary,
                     borderColor: alpha(theme.palette.warning.main, 0.22),
                   },
                   default: {
@@ -399,11 +369,27 @@ const SettingPage = () => {
                     borderColor: 'var(--settings-summary-default-border)',
                   },
                 }
+                const darkToneMap = {
+                  primary: {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.28),
+                    color: theme.palette.primary.light,
+                  },
+                  success: {
+                    backgroundColor: alpha(theme.palette.success.main, 0.28),
+                    color: theme.palette.success.light,
+                  },
+                  warning: {
+                    backgroundColor: alpha(theme.palette.warning.main, 0.28),
+                    color: theme.palette.warning.light,
+                  },
+                  default: {},
+                }
 
                 return {
                   fontWeight: 800,
                   border: '1px solid',
                   ...toneMap[item.tone],
+                  ...applyDarkStyles(theme, darkToneMap[item.tone]),
                 }
               }}
             />
@@ -428,11 +414,11 @@ const SettingPage = () => {
             border: '1px solid',
             borderColor: 'var(--settings-panel-border)',
             background: 'var(--settings-section-bg)',
-            boxShadow:
-              theme.palette.mode === 'dark'
-                ? `0 16px 36px ${alpha(theme.palette.common.black, 0.22)}`
-                : `0 14px 32px ${alpha(theme.palette.common.black, 0.05)}`,
+            boxShadow: `0 14px 32px ${alpha(theme.palette.common.black, 0.05)}`,
             p: { xs: 1.25, sm: 1.5, md: 2 },
+            ...applyDarkStyles(theme, {
+              boxShadow: `0 16px 36px ${alpha(theme.palette.common.black, 0.22)}`,
+            }),
           })}
         >
           <Box sx={{ mb: 2 }}>
@@ -489,11 +475,11 @@ const SettingPage = () => {
             border: '1px solid',
             borderColor: 'var(--settings-panel-border)',
             background: 'var(--settings-section-bg)',
-            boxShadow:
-              theme.palette.mode === 'dark'
-                ? `0 16px 36px ${alpha(theme.palette.common.black, 0.22)}`
-                : `0 14px 32px ${alpha(theme.palette.common.black, 0.05)}`,
+            boxShadow: `0 14px 32px ${alpha(theme.palette.common.black, 0.05)}`,
             p: { xs: 1.25, sm: 1.5, md: 2 },
+            ...applyDarkStyles(theme, {
+              boxShadow: `0 16px 36px ${alpha(theme.palette.common.black, 0.22)}`,
+            }),
           })}
         >
           <Box sx={{ mb: 2 }}>
