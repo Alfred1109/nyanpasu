@@ -86,43 +86,52 @@ const SettingPage = () => {
       sx={(theme) => ({
         ...(theme.palette.mode === 'dark'
           ? {
-              '--settings-ink': '#ebf3ff',
-              '--settings-muted': alpha('#ebf3ff', 0.82),
-              '--settings-panel-border': alpha(
-                theme.palette.common.white,
-                0.12,
-              ),
+              '--settings-ink': theme.palette.text.primary,
+              '--settings-muted': alpha(theme.palette.text.secondary, 0.84),
+              '--settings-panel-border': alpha(theme.palette.divider, 0.72),
               '--settings-panel-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`,
-              '--settings-panel-bg-soft': `linear-gradient(180deg, ${alpha('#243245', 0.96)} 0%, ${alpha('#0d141d', 0.98)} 100%)`,
+              '--settings-panel-bg-soft': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.1)} 100%)`,
               '--settings-panel-shadow': `0 20px 44px ${alpha(theme.palette.common.black, 0.28)}`,
-              '--settings-section-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.6)} 0%, ${alpha(theme.palette.common.black, 0.14)} 100%)`,
-              '--settings-summary-title': alpha('#f4f8ff', 0.9),
-              '--settings-summary-default-bg': alpha('#f4f8ff', 0.12),
-              '--settings-summary-default-border': alpha('#f4f8ff', 0.18),
-              '--settings-summary-default-color': '#f4f8ff',
+              '--settings-section-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.68)} 0%, ${alpha(theme.palette.primary.main, 0.06)} 100%)`,
+              '--settings-summary-title': alpha(
+                theme.palette.text.primary,
+                0.78,
+              ),
+              '--settings-summary-default-bg': alpha(
+                theme.palette.text.primary,
+                0.1,
+              ),
+              '--settings-summary-default-border': alpha(
+                theme.palette.text.primary,
+                0.16,
+              ),
+              '--settings-summary-default-color': alpha(
+                theme.palette.text.primary,
+                0.9,
+              ),
             }
           : {
-              '--settings-ink': '#10203a',
-              '--settings-muted': alpha('#10203a', 0.7),
-              '--settings-panel-border': alpha(
-                theme.palette.common.black,
-                0.08,
-              ),
-              '--settings-panel-bg': `linear-gradient(180deg, ${alpha('#ffffff', 0.96)} 0%, ${alpha('#f8fafc', 0.92)} 100%)`,
-              '--settings-panel-bg-soft': `linear-gradient(180deg, ${alpha('#ffffff', 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+              '--settings-ink': theme.palette.text.primary,
+              '--settings-muted': alpha(theme.palette.text.secondary, 0.78),
+              '--settings-panel-border': alpha(theme.palette.divider, 0.76),
+              '--settings-panel-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.04)} 100%)`,
+              '--settings-panel-bg-soft': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
               '--settings-panel-shadow': `0 18px 40px ${alpha(theme.palette.common.black, 0.08)}`,
-              '--settings-section-bg': `linear-gradient(180deg, ${alpha('#ffffff', 0.72)} 0%, ${alpha(theme.palette.primary.main, 0.03)} 100%)`,
-              '--settings-summary-title': alpha('#10203a', 0.72),
+              '--settings-section-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.76)} 0%, ${alpha(theme.palette.primary.main, 0.03)} 100%)`,
+              '--settings-summary-title': alpha(
+                theme.palette.text.primary,
+                0.68,
+              ),
               '--settings-summary-default-bg': alpha(
-                theme.palette.common.black,
+                theme.palette.text.primary,
                 0.06,
               ),
               '--settings-summary-default-border': alpha(
-                theme.palette.common.black,
-                0.08,
+                theme.palette.text.primary,
+                0.1,
               ),
               '--settings-summary-default-color': alpha(
-                theme.palette.common.black,
+                theme.palette.text.primary,
                 0.76,
               ),
             }),
@@ -148,7 +157,7 @@ const SettingPage = () => {
           color: 'var(--settings-muted)',
         },
         '& .MuiCard-root .MuiDivider-root': {
-          borderColor: alpha(theme.palette.common.black, 0.08),
+          borderColor: 'var(--settings-panel-border)',
         },
       })}
     >
@@ -167,12 +176,12 @@ const SettingPage = () => {
               ? `
                 radial-gradient(circle at top right, ${alpha(theme.palette.primary.main, 0.26)} 0%, transparent 34%),
                 radial-gradient(circle at bottom left, ${alpha(theme.palette.success.main, 0.18)} 0%, transparent 30%),
-                linear-gradient(135deg, ${alpha('#122033', 0.94)} 0%, ${alpha(theme.palette.background.paper, 0.96)} 52%, ${alpha('#10211f', 0.92)} 100%)
+                linear-gradient(135deg, ${alpha(theme.palette.background.default, 0.96)} 0%, ${alpha(theme.palette.background.paper, 0.98)} 52%, ${alpha(theme.palette.background.default, 0.94)} 100%)
               `
               : `
                 radial-gradient(circle at top right, ${alpha(theme.palette.primary.main, 0.16)} 0%, transparent 32%),
                 radial-gradient(circle at bottom left, ${alpha(theme.palette.success.main, 0.14)} 0%, transparent 28%),
-                linear-gradient(135deg, ${alpha('#e8f1ff', 0.95)} 0%, ${alpha('#f8fafc', 0.98)} 50%, ${alpha('#ecfdf5', 0.94)} 100%)
+                linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.background.paper, 0.98)} 50%, ${alpha(theme.palette.success.main, 0.08)} 100%)
               `,
           boxShadow:
             theme.palette.mode === 'dark'
@@ -209,8 +218,8 @@ const SettingPage = () => {
             letterSpacing: '0.16em',
             color:
               theme.palette.mode === 'dark'
-                ? alpha('#d7e6ff', 0.7)
-                : alpha('#17325c', 0.78),
+                ? alpha(theme.palette.text.primary, 0.72)
+                : alpha(theme.palette.primary.dark, 0.86),
             fontWeight: 700,
             position: 'relative',
             zIndex: 1,
@@ -275,7 +284,7 @@ const SettingPage = () => {
                 background:
                   theme.palette.mode === 'dark'
                     ? alpha(theme.palette.common.white, 0.06)
-                    : alpha('#ffffff', 0.84),
+                    : alpha(theme.palette.background.paper, 0.84),
                 boxShadow:
                   theme.palette.mode === 'dark'
                     ? `0 10px 24px ${alpha(theme.palette.common.black, 0.22)}`
@@ -358,7 +367,7 @@ const SettingPage = () => {
                     ),
                     color:
                       theme.palette.mode === 'dark'
-                        ? '#dce9ff'
+                        ? theme.palette.primary.light
                         : theme.palette.primary.dark,
                     borderColor: alpha(theme.palette.primary.main, 0.18),
                   },
@@ -369,7 +378,7 @@ const SettingPage = () => {
                     ),
                     color:
                       theme.palette.mode === 'dark'
-                        ? '#d8ffe4'
+                        ? theme.palette.success.light
                         : theme.palette.success.dark,
                     borderColor: alpha(theme.palette.success.main, 0.18),
                   },
@@ -379,7 +388,9 @@ const SettingPage = () => {
                       theme.palette.mode === 'dark' ? 0.28 : 0.2,
                     ),
                     color:
-                      theme.palette.mode === 'dark' ? '#ffe6b5' : '#7a4b00',
+                      theme.palette.mode === 'dark'
+                        ? theme.palette.warning.light
+                        : theme.palette.text.primary,
                     borderColor: alpha(theme.palette.warning.main, 0.22),
                   },
                   default: {
