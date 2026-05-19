@@ -115,7 +115,7 @@ export default function SettingAutoLaunch() {
         />
       }
     >
-      <Box display="flex" flexDirection="column" gap={2}>
+      <Box display="flex" flexDirection="column" gap={1.5}>
         <Typography variant="body2" color="text.secondary">
           控制 Clash Nyanpasu
           的启动行为，包括随系统启动和启动时是否直接显示窗口。
@@ -125,9 +125,9 @@ export default function SettingAutoLaunch() {
           sx={(theme) => ({
             display: 'grid',
             gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
-            gap: 1,
-            p: 1.25,
-            borderRadius: 3,
+            gap: 0.75,
+            p: 1,
+            borderRadius: 2.5,
             border: '1px solid',
             borderColor:
               theme.palette.mode === 'dark'
@@ -156,7 +156,7 @@ export default function SettingAutoLaunch() {
               >
                 {item.label}
               </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.5 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.25 }}>
                 {item.value}
               </Typography>
             </Box>
@@ -196,7 +196,7 @@ export default function SettingAutoLaunch() {
         <Box
           sx={(theme) => ({
             ml: { xs: 0, sm: 2 },
-            pl: 2,
+            pl: 1.5,
             borderLeft: '2px solid',
             borderColor: enabled ? 'primary.main' : 'divider',
             background: enabled
@@ -204,12 +204,12 @@ export default function SettingAutoLaunch() {
               : theme.palette.mode === 'dark'
                 ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.9)} 0%, ${alpha(theme.palette.common.white, 0.04)} 100%)`
                 : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.92)} 0%, ${alpha(theme.palette.action.hover, 0.5)} 100%)`,
-            borderRadius: 3,
-            py: 1.5,
-            pr: 1.5,
+            borderRadius: 2.5,
+            py: 1.25,
+            pr: 1.25,
           })}
         >
-          <Box mb={1.5}>
+          <Box mb={1}>
             <Typography variant="body2" sx={{ fontWeight: 700 }}>
               {t('Silent Start')}
             </Typography>
@@ -218,7 +218,7 @@ export default function SettingAutoLaunch() {
             </Typography>
           </Box>
 
-          <Divider sx={{ mb: 1.5 }} />
+          <Divider sx={{ mb: 1 }} />
 
           <PaperSwitchButton
             checked={silentEnabled}
@@ -252,7 +252,7 @@ export default function SettingAutoLaunch() {
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{ display: 'block', mt: 1.25 }}
+              sx={{ display: 'block', mt: 1 }}
             >
               当前即使开启静默启动，也只有在启用开机启动后才会真正参与系统启动流程。
             </Typography>

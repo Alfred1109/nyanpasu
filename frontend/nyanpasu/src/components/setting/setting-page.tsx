@@ -126,10 +126,10 @@ const SettingPage = () => {
                 0.76,
               ),
             }),
-        maxWidth: 1240,
+        maxWidth: 1180,
         mx: 'auto',
-        px: { xs: 1.5, sm: 2, lg: 3 },
-        py: { xs: 1.5, sm: 2 },
+        px: { xs: 1, sm: 1.5, lg: 2 },
+        py: { xs: 1, sm: 1.5 },
         color: 'var(--settings-ink)',
         '& .MuiCard-root': {
           color: 'var(--settings-ink)',
@@ -137,6 +137,12 @@ const SettingPage = () => {
           borderColor: 'var(--settings-panel-border)',
           background: 'var(--settings-panel-bg)',
           boxShadow: 'var(--settings-panel-shadow)',
+        },
+        '& .MuiCardContent-root': {
+          padding: theme.spacing(2),
+        },
+        '& .MuiCardContent-root:last-child': {
+          paddingBottom: theme.spacing(2),
         },
         '& .MuiCard-root .MuiTypography-colorTextSecondary': {
           color: 'var(--settings-muted)',
@@ -150,10 +156,10 @@ const SettingPage = () => {
         sx={(theme) => ({
           position: 'relative',
           overflow: 'hidden',
-          mb: 3,
-          borderRadius: 5,
-          px: { xs: 2.5, sm: 3, md: 4 },
-          py: { xs: 2.5, sm: 3, md: 3.5 },
+          mb: 2,
+          borderRadius: 4,
+          px: { xs: 2, sm: 2.5, md: 3 },
+          py: { xs: 2, sm: 2.25, md: 2.5 },
           border: '1px solid',
           borderColor: 'var(--settings-panel-border)',
           background:
@@ -199,7 +205,7 @@ const SettingPage = () => {
           variant="overline"
           sx={(theme) => ({
             display: 'block',
-            mb: 0.75,
+            mb: 0.5,
             letterSpacing: '0.16em',
             color:
               theme.palette.mode === 'dark'
@@ -216,9 +222,9 @@ const SettingPage = () => {
         <Typography
           variant="h4"
           sx={{
-            mb: 1,
+            mb: 0.75,
             fontWeight: 800,
-            fontSize: { xs: '1.75rem', md: '2.1rem' },
+            fontSize: { xs: '1.55rem', md: '1.9rem' },
             color: 'var(--settings-ink)',
             position: 'relative',
             zIndex: 1,
@@ -231,7 +237,7 @@ const SettingPage = () => {
           variant="body1"
           sx={{
             maxWidth: 760,
-            lineHeight: 1.7,
+            lineHeight: 1.6,
             color: 'var(--settings-muted)',
             position: 'relative',
             zIndex: 1,
@@ -245,8 +251,8 @@ const SettingPage = () => {
           sx={{
             display: 'flex',
             flexWrap: 'wrap',
-            gap: 1,
-            mt: 2.5,
+            gap: 0.75,
+            mt: 1.75,
             position: 'relative',
             zIndex: 1,
           }}
@@ -257,9 +263,9 @@ const SettingPage = () => {
               sx={(theme) => ({
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 0.75,
-                px: 1.25,
-                py: 0.75,
+                gap: 0.5,
+                px: 1,
+                py: 0.625,
                 borderRadius: 999,
                 border: '1px solid',
                 borderColor: alpha(
@@ -287,7 +293,11 @@ const SettingPage = () => {
               </Box>
               <Typography
                 variant="body2"
-                sx={{ fontWeight: 700, color: 'var(--settings-ink)' }}
+                sx={{
+                  fontWeight: 700,
+                  fontSize: '0.8125rem',
+                  color: 'var(--settings-ink)',
+                }}
               >
                 {item.label}
               </Typography>
@@ -303,16 +313,16 @@ const SettingPage = () => {
             xs: 'repeat(2, minmax(0, 1fr))',
             md: 'repeat(5, minmax(0, 1fr))',
           },
-          gap: 1.5,
-          mb: 3,
+          gap: 1,
+          mb: 2,
         }}
       >
         {summaryItems.map((item) => (
           <Box
             key={item.title}
             sx={(theme) => ({
-              p: 1.5,
-              borderRadius: 3,
+              p: 1.25,
+              borderRadius: 2.5,
               border: '1px solid',
               borderColor: 'var(--settings-panel-border)',
               background: 'var(--settings-panel-bg-soft)',
@@ -327,7 +337,7 @@ const SettingPage = () => {
               variant="caption"
               sx={{
                 display: 'block',
-                mb: 1,
+                mb: 0.75,
                 color: 'var(--settings-summary-title)',
                 fontWeight: 600,
               }}
@@ -397,13 +407,13 @@ const SettingPage = () => {
             xs: 'minmax(0, 1fr)',
             lg: 'minmax(0, 1.08fr) minmax(320px, 0.92fr)',
           },
-          gap: 3,
+          gap: 2,
           alignItems: 'start',
         }}
       >
         <Box
           sx={(theme) => ({
-            borderRadius: 4,
+            borderRadius: 3.5,
             border: '1px solid',
             borderColor: 'var(--settings-panel-border)',
             background: 'var(--settings-section-bg)',
@@ -411,17 +421,24 @@ const SettingPage = () => {
               theme.palette.mode === 'dark'
                 ? `0 16px 36px ${alpha(theme.palette.common.black, 0.22)}`
                 : `0 14px 32px ${alpha(theme.palette.common.black, 0.05)}`,
-            p: { xs: 1.5, sm: 2, md: 2.5 },
+            p: { xs: 1.25, sm: 1.5, md: 2 },
           })}
         >
-          <Box sx={{ mb: 2.5 }}>
+          <Box sx={{ mb: 2 }}>
             <Typography
               variant="overline"
               sx={{ display: 'block', color: 'primary.main', fontWeight: 700 }}
             >
               {pageSections[0].eyebrow}
             </Typography>
-            <Typography variant="h5" sx={{ mb: 0.75, fontWeight: 800 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                mb: 0.5,
+                fontWeight: 800,
+                fontSize: { xs: '1.2rem', md: '1.35rem' },
+              }}
+            >
               {pageSections[0].title}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -429,7 +446,7 @@ const SettingPage = () => {
             </Typography>
           </Box>
 
-          <Box display="grid" gap={3}>
+          <Box display="grid" gap={2}>
             <Box sx={cardWrapperSx}>
               <SettingProxyMode />
             </Box>
@@ -441,7 +458,7 @@ const SettingPage = () => {
                   xs: 'minmax(0, 1fr)',
                   md: 'repeat(2, minmax(0, 1fr))',
                 },
-                gap: 3,
+                gap: 2,
               }}
             >
               <Box sx={cardWrapperSx}>
@@ -457,7 +474,7 @@ const SettingPage = () => {
 
         <Box
           sx={(theme) => ({
-            borderRadius: 4,
+            borderRadius: 3.5,
             border: '1px solid',
             borderColor: 'var(--settings-panel-border)',
             background: 'var(--settings-section-bg)',
@@ -465,17 +482,24 @@ const SettingPage = () => {
               theme.palette.mode === 'dark'
                 ? `0 16px 36px ${alpha(theme.palette.common.black, 0.22)}`
                 : `0 14px 32px ${alpha(theme.palette.common.black, 0.05)}`,
-            p: { xs: 1.5, sm: 2, md: 2.5 },
+            p: { xs: 1.25, sm: 1.5, md: 2 },
           })}
         >
-          <Box sx={{ mb: 2.5 }}>
+          <Box sx={{ mb: 2 }}>
             <Typography
               variant="overline"
               sx={{ display: 'block', color: 'success.main', fontWeight: 700 }}
             >
               {pageSections[1].eyebrow}
             </Typography>
-            <Typography variant="h5" sx={{ mb: 0.75, fontWeight: 800 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                mb: 0.5,
+                fontWeight: 800,
+                fontSize: { xs: '1.2rem', md: '1.35rem' },
+              }}
+            >
               {pageSections[1].title}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -483,7 +507,7 @@ const SettingPage = () => {
             </Typography>
           </Box>
 
-          <Box display="grid" gap={3}>
+          <Box display="grid" gap={2}>
             <Box sx={cardWrapperSx}>
               <SettingTunMode serviceManager={serviceManager} />
             </Box>

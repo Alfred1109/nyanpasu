@@ -97,9 +97,24 @@ export const GroupList = ({
               onClick={() => handleSelect(index)}
               sx={[
                 (theme) => ({
+                  borderRadius: 3,
                   backgroundColor: selected
-                    ? `${alpha(theme.palette.primary.main, 0.3)} !important`
+                    ? `${alpha(theme.palette.primary.main, 0.14)} !important`
                     : null,
+                  '&:hover': {
+                    backgroundColor: selected
+                      ? `${alpha(theme.palette.primary.main, 0.18)} !important`
+                      : alpha(theme.palette.primary.main, 0.05),
+                  },
+                  '& .MuiListItemText-primary': {
+                    color: selected
+                      ? theme.palette.primary.main
+                      : theme.palette.text.primary,
+                    fontWeight: selected ? 700 : 500,
+                  },
+                  '& .MuiListItemText-secondary': {
+                    color: theme.palette.text.secondary,
+                  },
                 }),
               ]}
               {...listItemButtonProps}

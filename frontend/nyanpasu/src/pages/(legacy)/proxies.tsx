@@ -16,6 +16,7 @@ import { proxyGroupAtom } from '@/store'
 import { proxiesFilterAtom } from '@/store/proxies'
 import { Check } from '@mui/icons-material'
 import { TextField, ToggleButton, ToggleButtonGroup } from '@mui/material'
+import { alpha as muiAlpha } from '@mui/material/styles'
 import {
   ProxyGroupItem,
   useClashProxies,
@@ -49,10 +50,14 @@ function SideBar() {
         input: {
           sx: (theme) => ({
             borderRadius: 7,
-            backgroundColor: alpha(theme.palette.primary.main, 0.1),
+            backgroundColor: muiAlpha(theme.palette.primary.main, 0.08),
+            border: `1px solid ${muiAlpha(theme.palette.primary.main, 0.14)}`,
 
             fieldset: {
               border: 'none',
+            },
+            '&:hover': {
+              backgroundColor: muiAlpha(theme.palette.primary.main, 0.1),
             },
           }),
         },
@@ -117,6 +122,11 @@ function ProxyPage() {
           size="small"
           exclusive
           onChange={(_, newValue) => handleSwitch(newValue)}
+          sx={(theme) => ({
+            backgroundColor: muiAlpha(theme.palette.background.paper, 0.92),
+            borderRadius: 999,
+            border: `1px solid ${muiAlpha(theme.palette.divider, 0.9)}`,
+          })}
         >
           {Object.entries(proxyMode).map(([key, enabled], index) => (
             <ToggleButton
@@ -161,10 +171,12 @@ function ProxyPage() {
         !proxyMode.direct && (
           <div
             className={cn(
-              'absolute z-10 flex w-full items-center justify-between px-4 py-2 backdrop-blur',
-              'bg-gray-200/30 dark:bg-gray-900/30',
-              'rounded-t-2xl!',
+              'absolute z-10 flex w-full items-center justify-between rounded-t-2xl! px-4 py-2 backdrop-blur',
             )}
+            style={{
+              background: 'var(--mui-palette-background-paper)',
+              borderBottom: '1px solid var(--mui-palette-divider)',
+            }}
           >
             <div className="flex items-center gap-4">
               {group?.name && <ProxyGroupName name={group?.name} />}

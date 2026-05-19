@@ -45,13 +45,16 @@ const NodeCard = memo(function NodeCard({
       sxPaper={
         ((theme) => ({
           backgroundColor: checked
-            ? alpha(theme.palette.primary.main, 0.3)
-            : theme.vars.palette.grey[100],
-          ...theme.applyStyles('dark', {
+            ? alpha(theme.palette.primary.main, 0.16)
+            : theme.palette.background.paper,
+          borderColor: checked
+            ? alpha(theme.palette.primary.main, 0.24)
+            : alpha(theme.palette.divider, 0.8),
+          '&:hover': {
             backgroundColor: checked
-              ? alpha(theme.palette.primary.main, 0.3)
-              : theme.vars.palette.grey[900],
-          }),
+              ? alpha(theme.palette.primary.main, 0.2)
+              : alpha(theme.palette.primary.main, 0.05),
+          },
         })) as SxProps<Theme>
       }
     >

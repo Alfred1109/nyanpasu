@@ -104,7 +104,7 @@ export default function SettingProxyMode() {
         />
       }
     >
-      <Box display="flex" flexDirection="column" gap={2}>
+      <Box display="flex" flexDirection="column" gap={1.5}>
         <Typography variant="body2" color="text.secondary">
           在这里快速切换规则、全局和直连模式，并查看当前 GeoIP 分流国家。
         </Typography>
@@ -113,9 +113,9 @@ export default function SettingProxyMode() {
           sx={(theme) => ({
             display: 'grid',
             gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
-            gap: 1,
-            p: 1.25,
-            borderRadius: 3,
+            gap: 0.75,
+            p: 1,
+            borderRadius: 2.5,
             border: '1px solid',
             borderColor:
               theme.palette.mode === 'dark'
@@ -151,14 +151,14 @@ export default function SettingProxyMode() {
               >
                 {item.label}
               </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.5 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.25 }}>
                 {item.value}
               </Typography>
             </Box>
           ))}
         </Box>
 
-        <Stack spacing={1.5}>
+        <Stack spacing={1}>
           {(Object.keys(MODE_META) as Array<keyof typeof MODE_META>).map(
             (mode) => {
               const checked = Boolean(proxyMode[mode])
@@ -214,10 +214,10 @@ export default function SettingProxyMode() {
                   {mode === 'rule' && (
                     <Collapse in={checked} timeout="auto" unmountOnExit>
                       <Box
-                        mt={1.25}
-                        px={1.5}
-                        py={1.5}
-                        borderRadius={3}
+                        mt={1}
+                        px={1.25}
+                        py={1.25}
+                        borderRadius={2.5}
                         bgcolor={(theme) =>
                           alpha(
                             theme.palette.primary.main,
@@ -233,14 +233,14 @@ export default function SettingProxyMode() {
                       >
                         <Typography
                           variant="body2"
-                          sx={{ fontWeight: 600, mb: 1 }}
+                          sx={{ fontWeight: 600, mb: 0.75 }}
                         >
                           国家地区
                         </Typography>
                         <Typography
                           variant="caption"
                           color="text.secondary"
-                          sx={{ display: 'block', mb: 1.5 }}
+                          sx={{ display: 'block', mb: 1 }}
                         >
                           规则模式下用于 GeoIP 判断的国家代码。
                         </Typography>

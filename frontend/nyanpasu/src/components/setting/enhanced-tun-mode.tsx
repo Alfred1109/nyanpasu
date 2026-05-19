@@ -251,8 +251,8 @@ const EnhancedTunModeButton = ({
         sx={(theme) => ({
           display: 'grid',
           gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
-          gap: 1,
-          mb: 2,
+          gap: 0.75,
+          mb: 1.5,
         })}
       >
         {[
@@ -275,8 +275,8 @@ const EnhancedTunModeButton = ({
           <Box
             key={item.label}
             sx={(theme) => ({
-              p: 1.25,
-              borderRadius: 3,
+              p: 1,
+              borderRadius: 2.5,
               border: '1px solid',
               borderColor:
                 theme.palette.mode === 'dark'
@@ -299,7 +299,7 @@ const EnhancedTunModeButton = ({
             >
               {item.label}
             </Typography>
-            <Box mt={1}>
+            <Box mt={0.75}>
               <Chip
                 size="small"
                 color={item.tone as 'default' | 'success' | 'warning' | 'info'}
@@ -428,7 +428,7 @@ const EnhancedTunModeButton = ({
           severity={statusInfo.severity}
           icon={getStatusIcon(statusInfo.severity)}
           sx={{
-            mt: 2,
+            mt: 1.5,
             '& .MuiAlert-message': {
               width: '100%',
             },
@@ -476,9 +476,9 @@ const EnhancedTunModeButton = ({
       {/* TUN模式技术说明 */}
       <Box
         sx={(theme) => ({
-          mt: 2,
-          p: 2,
-          borderRadius: 3,
+          mt: 1.5,
+          p: 1.5,
+          borderRadius: 2.5,
           background:
             theme.palette.mode === 'dark'
               ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.info.main, 0.14)} 100%)`

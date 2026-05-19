@@ -32,7 +32,14 @@ const SortSelector = memo(function SortSelector() {
         className="px-2!"
         sx={(theme) => ({
           textTransform: 'none',
-          backgroundColor: alpha(theme.palette.primary.main, 0.1),
+          color: theme.palette.text.primary,
+          backgroundColor: alpha(theme.palette.primary.main, 0.08),
+          border: '1px solid',
+          borderColor: alpha(theme.palette.primary.main, 0.14),
+          '&:hover': {
+            backgroundColor: alpha(theme.palette.primary.main, 0.12),
+            borderColor: alpha(theme.palette.primary.main, 0.2),
+          },
         })}
         onClick={(e) => setAnchorEl(e.currentTarget)}
       >

@@ -1,6 +1,7 @@
 import { memo, useState } from 'react'
 import { Bolt } from '@mui/icons-material'
 import { CircularProgress } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import { cn } from '@nyanpasu/ui'
 import FeatureChip from './feature-chip'
 
@@ -28,10 +29,27 @@ const DelayChip = memo(function DelayChip({
   return (
     <FeatureChip
       className={cn(className, loading && 'visible!')}
-      sx={{
+      sx={(theme) => ({
         ml: 'auto',
-        color: delay > 1000 ? 'red' : 'green'
-      }}
+        color:
+          delay === -1
+            ? theme.palette.text.secondary
+            : delay > 1000
+              ? theme.palette.error.main
+              : theme.palette.success.main,
+        backgroundColor:
+          delay === -1
+            ? alpha(theme.palette.text.primary, 0.08)
+            : delay > 1000
+              ? alpha(theme.palette.error.main, 0.12)
+              : alpha(theme.palette.success.main, 0.12),
+        borderColor:
+          delay === -1
+            ? alpha(theme.palette.divider, 0.8)
+            : delay > 1000
+              ? alpha(theme.palette.error.main, 0.22)
+              : alpha(theme.palette.success.main, 0.22),
+      })}
       label={
         <>
           <span

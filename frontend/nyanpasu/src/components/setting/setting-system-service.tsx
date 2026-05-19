@@ -173,7 +173,7 @@ export default function SettingSystemService({
           />
         }
       >
-        <Box display="flex" flexDirection="column" gap={2}>
+        <Box display="flex" flexDirection="column" gap={1.5}>
           <Typography variant="body2" color="text.secondary">
             系统服务为 TUN 和更稳定的代理接管提供底层能力，建议在需要 TUN
             时优先完成这里的配置。
@@ -214,7 +214,7 @@ export default function SettingSystemService({
                 xs: '1fr',
                 sm: 'repeat(2, minmax(0, 1fr))',
               },
-              gap: 1.25,
+              gap: 1,
             }}
           >
             {[
@@ -232,7 +232,7 @@ export default function SettingSystemService({
               <Box
                 key={item.label}
                 sx={(theme) => ({
-                  borderRadius: 3,
+                  borderRadius: 2.5,
                   border: '1px solid',
                   borderColor:
                     theme.palette.mode === 'dark'
@@ -246,8 +246,8 @@ export default function SettingSystemService({
                     theme.palette.mode === 'dark'
                       ? `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`
                       : `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
-                  px: 1.5,
-                  py: 1.25,
+                  px: 1.25,
+                  py: 1,
                 })}
               >
                 <Typography
@@ -257,7 +257,7 @@ export default function SettingSystemService({
                 >
                   {item.label}
                 </Typography>
-                <Box mt={1}>
+                <Box mt={0.75}>
                   <Chip
                     size="small"
                     color={item.tone as 'default' | 'success' | 'warning'}
@@ -291,7 +291,7 @@ export default function SettingSystemService({
 
           <Divider />
 
-          <Box display="flex" flexDirection="column" gap={1.5}>
+          <Box display="flex" flexDirection="column" gap={1}>
             <Box>
               <Typography variant="body2" sx={{ fontWeight: 700 }}>
                 操作
@@ -312,7 +312,7 @@ export default function SettingSystemService({
               <Button
                 variant="contained"
                 size="medium"
-                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 42 }}
+                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 38 }}
                 onClick={handleInstallService}
                 disabled={
                   !isInTauri ||
@@ -326,7 +326,7 @@ export default function SettingSystemService({
               <Button
                 variant="outlined"
                 size="medium"
-                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 42 }}
+                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 38 }}
                 onClick={handleStartService}
                 disabled={
                   !isInTauri ||
@@ -342,7 +342,7 @@ export default function SettingSystemService({
               <Button
                 variant="outlined"
                 size="medium"
-                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 42 }}
+                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 38 }}
                 onClick={handleStopService}
                 disabled={
                   !isInTauri ||
@@ -358,7 +358,7 @@ export default function SettingSystemService({
                 variant="outlined"
                 size="medium"
                 color="error"
-                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 42 }}
+                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 38 }}
                 onClick={handleUninstallService}
                 disabled={
                   !isInTauri ||

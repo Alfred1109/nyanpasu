@@ -5,7 +5,7 @@ import { message } from '@/utils/notification'
 import { IS_IN_TAURI } from '@/utils/tauri'
 import { Dns as ProxyIcon } from '@mui/icons-material'
 import { Alert, Box, Chip, Divider, Typography } from '@mui/material'
-import { alpha } from '@mui/material/styles'
+import { alpha, type Theme } from '@mui/material/styles'
 import {
   commands,
   unwrapResult,
@@ -14,6 +14,55 @@ import {
 } from '@nyanpasu/interface'
 import { BaseCard } from '@nyanpasu/ui'
 import { PaperSwitchButton } from './modules/system-proxy'
+
+const getSurfacePanelStyles =
+  (emphasized = false) =>
+  (theme: Theme) => ({
+    p: 1,
+    borderRadius: 2.5,
+    border: '1px solid',
+    borderColor: emphasized
+      ? alpha(theme.palette.primary.main, 0.18)
+      : alpha(theme.palette.primary.main, 0.12),
+    backgroundColor: emphasized
+      ? alpha(theme.palette.primary.main, 0.06)
+      : alpha(theme.palette.primary.main, 0.04),
+  })
+
+const getStatusSummaryItems = (
+  enabled: boolean,
+  systemProxyLoading: boolean,
+  systemProxyActive: boolean,
+  isStatusMismatched: boolean,
+) => [
+  { label: '应用开关', value: enabled ? '已启用' : '已关闭' },
+  {
+    label: '系统状态',
+    value: systemProxyLoading
+      ? '读取中'
+      : systemProxyActive
+        ? '已开启'
+        : '已关闭',
+  },
+  {
+    label: '同步情况',
+    value: isStatusMismatched ? '待同步' : '一致',
+  },
+]
+
+const getProxyDetailItems = (
+  systemProxyActive: boolean,
+  currentProxy?: { server?: string | null; bypass?: string | null } | null,
+) => [
+  {
+    label: systemProxyActive ? '当前地址' : '保留地址',
+    value: currentProxy?.server || '未设置',
+  },
+  {
+    label: '绕过列表',
+    value: currentProxy?.bypass || '未设置',
+  },
+]
 
 export default function SettingSystemProxy() {
   const { t } = useTranslation()
@@ -71,6 +120,13 @@ export default function SettingSystemProxy() {
     : enabled
       ? 'warning'
       : 'default'
+  const statusSummaryItems = getStatusSummaryItems(
+    enabled,
+    systemProxy.isLoading,
+    systemProxyActive,
+    isStatusMismatched,
+  )
+  const proxyDetailItems = getProxyDetailItems(systemProxyActive, currentProxy)
 
   return (
     <BaseCard
@@ -93,26 +149,16 @@ export default function SettingSystemProxy() {
             fontWeight: 800,
             ...(headerTone === 'default'
               ? {
-                  color:
-                    theme.palette.mode === 'dark'
-                      ? alpha(theme.palette.common.white, 0.82)
-                      : alpha(theme.palette.common.black, 0.78),
-                  backgroundColor:
-                    theme.palette.mode === 'dark'
-                      ? alpha(theme.palette.common.white, 0.08)
-                      : alpha(theme.palette.common.black, 0.06),
-                  border: `1px solid ${
-                    theme.palette.mode === 'dark'
-                      ? alpha(theme.palette.common.white, 0.1)
-                      : alpha(theme.palette.common.black, 0.08)
-                  }`,
+                  color: theme.palette.text.secondary,
+                  backgroundColor: alpha(theme.palette.text.primary, 0.06),
+                  border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
                 }
               : {}),
           })}
         />
       }
     >
-      <Box display="flex" flexDirection="column" gap={2}>
+      <Box display="flex" flexDirection="column" gap={1.5}>
         <Typography variant="body2" color="text.secondary">
           控制是否把当前 Clash 代理写入系统网络代理设置。
         </Typography>
@@ -121,39 +167,11 @@ export default function SettingSystemProxy() {
           sx={(theme) => ({
             display: 'grid',
             gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
-            gap: 1,
-            p: 1.25,
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor:
-              theme.palette.mode === 'dark'
-                ? alpha(theme.palette.common.white, 0.1)
-                : alpha(theme.palette.common.black, 0.08),
-            background:
-              theme.palette.mode === 'dark'
-                ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`
-                : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-            boxShadow:
-              theme.palette.mode === 'dark'
-                ? `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`
-                : `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
+            gap: 0.75,
+            ...getSurfacePanelStyles(true)(theme),
           })}
         >
-          {[
-            { label: '应用开关', value: enabled ? '已启用' : '已关闭' },
-            {
-              label: '系统状态',
-              value: systemProxy.isLoading
-                ? '读取中'
-                : systemProxyActive
-                  ? '已开启'
-                  : '已关闭',
-            },
-            {
-              label: '同步情况',
-              value: isStatusMismatched ? '待同步' : '一致',
-            },
-          ].map((item) => (
+          {statusSummaryItems.map((item) => (
             <Box key={item.label}>
               <Typography
                 variant="caption"
@@ -162,7 +180,7 @@ export default function SettingSystemProxy() {
               >
                 {item.label}
               </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.5 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.25 }}>
                 {item.value}
               </Typography>
             </Box>
@@ -201,7 +219,7 @@ export default function SettingSystemProxy() {
 
         <Divider />
 
-        <Box display="flex" flexDirection="column" gap={1}>
+        <Box display="flex" flexDirection="column" gap={0.75}>
           <Typography variant="caption" color="text.secondary">
             {t('Current System Proxy')}
           </Typography>
@@ -223,68 +241,26 @@ export default function SettingSystemProxy() {
                     xs: '1fr',
                     sm: 'repeat(2, minmax(0, 1fr))',
                   },
-                  gap: 1,
+                  gap: 0.75,
                 })}
               >
-                <Box
-                  sx={(theme) => ({
-                    p: 1.25,
-                    borderRadius: 3,
-                    border: '1px solid',
-                    borderColor:
-                      theme.palette.mode === 'dark'
-                        ? alpha(theme.palette.common.white, 0.1)
-                        : alpha(theme.palette.common.black, 0.08),
-                    background:
-                      theme.palette.mode === 'dark'
-                        ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.92)} 0%, ${alpha(theme.palette.primary.main, 0.1)} 100%)`
-                        : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.04)} 100%)`,
-                  })}
-                >
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ fontWeight: 600 }}
-                  >
-                    {systemProxyActive ? '当前地址' : '保留地址'}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ mt: 0.5, fontWeight: 700, wordBreak: 'break-all' }}
-                  >
-                    {currentProxy?.server || '未设置'}
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={(theme) => ({
-                    p: 1.25,
-                    borderRadius: 3,
-                    border: '1px solid',
-                    borderColor:
-                      theme.palette.mode === 'dark'
-                        ? alpha(theme.palette.common.white, 0.1)
-                        : alpha(theme.palette.common.black, 0.08),
-                    background:
-                      theme.palette.mode === 'dark'
-                        ? `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.92)} 0%, ${alpha(theme.palette.primary.main, 0.1)} 100%)`
-                        : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.04)} 100%)`,
-                  })}
-                >
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ fontWeight: 600 }}
-                  >
-                    绕过列表
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ mt: 0.5, fontWeight: 700, wordBreak: 'break-all' }}
-                  >
-                    {currentProxy?.bypass || '未设置'}
-                  </Typography>
-                </Box>
+                {proxyDetailItems.map((item) => (
+                  <Box key={item.label} sx={getSurfacePanelStyles()}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontWeight: 600 }}
+                    >
+                      {item.label}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ mt: 0.25, fontWeight: 700, wordBreak: 'break-all' }}
+                    >
+                      {item.value}
+                    </Typography>
+                  </Box>
+                ))}
               </Box>
 
               {isStatusMismatched && (
