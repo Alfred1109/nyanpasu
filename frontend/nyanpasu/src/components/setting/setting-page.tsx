@@ -87,15 +87,19 @@ const SettingPage = () => {
         ...(theme.palette.mode === 'dark'
           ? {
               '--settings-ink': '#ebf3ff',
-              '--settings-muted': alpha('#ebf3ff', 0.72),
+              '--settings-muted': alpha('#ebf3ff', 0.82),
               '--settings-panel-border': alpha(
                 theme.palette.common.white,
                 0.12,
               ),
               '--settings-panel-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`,
-              '--settings-panel-bg-soft': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.92)} 0%, ${alpha(theme.palette.common.white, 0.03)} 100%)`,
+              '--settings-panel-bg-soft': `linear-gradient(180deg, ${alpha('#243245', 0.96)} 0%, ${alpha('#0d141d', 0.98)} 100%)`,
               '--settings-panel-shadow': `0 20px 44px ${alpha(theme.palette.common.black, 0.28)}`,
               '--settings-section-bg': `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.6)} 0%, ${alpha(theme.palette.common.black, 0.14)} 100%)`,
+              '--settings-summary-title': alpha('#f4f8ff', 0.9),
+              '--settings-summary-default-bg': alpha('#f4f8ff', 0.12),
+              '--settings-summary-default-border': alpha('#f4f8ff', 0.18),
+              '--settings-summary-default-color': '#f4f8ff',
             }
           : {
               '--settings-ink': '#10203a',
@@ -108,6 +112,19 @@ const SettingPage = () => {
               '--settings-panel-bg-soft': `linear-gradient(180deg, ${alpha('#ffffff', 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
               '--settings-panel-shadow': `0 18px 40px ${alpha(theme.palette.common.black, 0.08)}`,
               '--settings-section-bg': `linear-gradient(180deg, ${alpha('#ffffff', 0.72)} 0%, ${alpha(theme.palette.primary.main, 0.03)} 100%)`,
+              '--settings-summary-title': alpha('#10203a', 0.72),
+              '--settings-summary-default-bg': alpha(
+                theme.palette.common.black,
+                0.06,
+              ),
+              '--settings-summary-default-border': alpha(
+                theme.palette.common.black,
+                0.08,
+              ),
+              '--settings-summary-default-color': alpha(
+                theme.palette.common.black,
+                0.76,
+              ),
             }),
         maxWidth: 1240,
         mx: 'auto',
@@ -303,6 +320,7 @@ const SettingPage = () => {
                 theme.palette.mode === 'dark'
                   ? `0 14px 28px ${alpha(theme.palette.common.black, 0.22)}`
                   : `0 12px 28px ${alpha(theme.palette.common.black, 0.06)}`,
+              backdropFilter: 'blur(10px)',
             })}
           >
             <Typography
@@ -310,7 +328,7 @@ const SettingPage = () => {
               sx={{
                 display: 'block',
                 mb: 1,
-                color: 'var(--settings-muted)',
+                color: 'var(--settings-summary-title)',
                 fontWeight: 600,
               }}
             >
@@ -355,18 +373,9 @@ const SettingPage = () => {
                     borderColor: alpha(theme.palette.warning.main, 0.22),
                   },
                   default: {
-                    backgroundColor:
-                      theme.palette.mode === 'dark'
-                        ? alpha(theme.palette.common.white, 0.08)
-                        : alpha(theme.palette.common.black, 0.06),
-                    color:
-                      theme.palette.mode === 'dark'
-                        ? alpha(theme.palette.common.white, 0.8)
-                        : alpha(theme.palette.common.black, 0.76),
-                    borderColor:
-                      theme.palette.mode === 'dark'
-                        ? alpha(theme.palette.common.white, 0.1)
-                        : alpha(theme.palette.common.black, 0.08),
+                    backgroundColor: 'var(--settings-summary-default-bg)',
+                    color: 'var(--settings-summary-default-color)',
+                    borderColor: 'var(--settings-summary-default-border)',
                   },
                 }
 

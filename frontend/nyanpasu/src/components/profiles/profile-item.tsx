@@ -110,7 +110,7 @@ const ProfileItem = memo(function ProfileItem({
       message(
         isFetchError
           ? `Failed to delete connections: \n ${err instanceof Error ? err.message : String(err)}`
-          : `Error setting profile: \n ${err instanceof Error ? err.message : String(err)}`,
+          : `Error setting profile: \n ${formatError(err)}`,
         {
           title: isFetchError ? t('DeleteConnectionsError') : t('Error'),
           kind: isFetchError ? 'warning' : 'error',
