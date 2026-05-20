@@ -3,7 +3,7 @@
  * 统一管理项目中重复出现的React Hook模式，减少代码冗余
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation as useI18nTranslation } from 'react-i18next'
 
 /**
@@ -19,11 +19,11 @@ export const useCommonTranslation = () => {
  */
 export const useLoadingState = (initialLoading = false) => {
   const [loading, setLoading] = useState<boolean>(initialLoading)
-  
+
   const startLoading = useCallback(() => setLoading(true), [])
   const stopLoading = useCallback(() => setLoading(false), [])
-  const toggleLoading = useCallback(() => setLoading(prev => !prev), [])
-  
+  const toggleLoading = useCallback(() => setLoading((prev) => !prev), [])
+
   return {
     loading,
     setLoading,
@@ -38,10 +38,10 @@ export const useLoadingState = (initialLoading = false) => {
  */
 export const useErrorState = <T = string>(initialError: T | null = null) => {
   const [error, setError] = useState<T | null>(initialError)
-  
+
   const clearError = useCallback(() => setError(null), [])
   const hasError = error !== null
-  
+
   return {
     error,
     setError,
@@ -55,11 +55,11 @@ export const useErrorState = <T = string>(initialError: T | null = null) => {
  */
 export const useToggleState = (initialState = false) => {
   const [isOpen, setIsOpen] = useState<boolean>(initialState)
-  
+
   const open = useCallback(() => setIsOpen(true), [])
   const close = useCallback(() => setIsOpen(false), [])
-  const toggle = useCallback(() => setIsOpen(prev => !prev), [])
-  
+  const toggle = useCallback(() => setIsOpen((prev) => !prev), [])
+
   return {
     isOpen,
     setIsOpen,
@@ -75,16 +75,16 @@ export const useToggleState = (initialState = false) => {
  */
 export const useAsyncState = <T = string>(
   initialLoading = false,
-  initialError: T | null = null
+  initialError: T | null = null,
 ) => {
   const loadingState = useLoadingState(initialLoading)
   const errorState = useErrorState<T>(initialError)
-  
+
   const reset = useCallback(() => {
     loadingState.stopLoading()
     errorState.clearError()
   }, [loadingState.stopLoading, errorState.clearError])
-  
+
   return {
     ...loadingState,
     ...errorState,
@@ -99,17 +99,17 @@ export const useAsyncState = <T = string>(
 export const useFormState = () => {
   const [isPending, setIsPending] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+
   const startSubmitting = useCallback(() => {
     setIsPending(true)
     setIsSubmitting(true)
   }, [])
-  
+
   const stopSubmitting = useCallback(() => {
     setIsPending(false)
     setIsSubmitting(false)
   }, [])
-  
+
   return {
     isPending,
     isSubmitting,
@@ -125,39 +125,39 @@ export const useFormState = () => {
  */
 export const useDebounce = <T>(value: T, delay: number): T => {
   const [debouncedValue, setDebouncedValue] = useState<T>(value)
-  
+
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedValue(value)
     }, delay)
-    
+
     return () => {
       clearTimeout(handler)
     }
   }, [value, delay])
-  
+
   return debouncedValue
 }
 
 /**
  * 节流Hook - 统一节流逻辑
  */
-export const useThrottle = <T extends (...args: any[]) => any>(
-  func: T,
-  delay: number
-): T => {
+export const useThrottle = <TArgs extends unknown[]>(
+  func: (...args: TArgs) => void,
+  delay: number,
+): ((...args: TArgs) => void) => {
   const lastRun = useRef(Date.now())
-  
+
   const throttledFunc = useCallback(
-    (...args: Parameters<T>) => {
+    (...args: TArgs) => {
       if (Date.now() - lastRun.current >= delay) {
         func(...args)
         lastRun.current = Date.now()
       }
     },
-    [func, delay]
-  ) as T
-  
+    [func, delay],
+  )
+
   return throttledFunc
 }
 
@@ -166,7 +166,7 @@ export const useThrottle = <T extends (...args: any[]) => any>(
  */
 export const useLocalStorage = <T>(
   key: string,
-  initialValue: T
+  initialValue: T,
 ): [T, (value: T | ((val: T) => T)) => void] => {
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
@@ -177,20 +177,21 @@ export const useLocalStorage = <T>(
       return initialValue
     }
   })
-  
+
   const setValue = useCallback(
     (value: T | ((val: T) => T)) => {
       try {
-        const valueToStore = value instanceof Function ? value(storedValue) : value
+        const valueToStore =
+          value instanceof Function ? value(storedValue) : value
         setStoredValue(valueToStore)
         window.localStorage.setItem(key, JSON.stringify(valueToStore))
       } catch (error) {
         console.error(`Error setting localStorage key "${key}":`, error)
       }
     },
-    [key, storedValue]
+    [key, storedValue],
   )
-  
+
   return [storedValue, setValue]
 }
 
@@ -199,11 +200,11 @@ export const useLocalStorage = <T>(
  */
 export const useInterval = (callback: () => void, delay: number | null) => {
   const savedCallback = useRef(callback)
-  
+
   useEffect(() => {
     savedCallback.current = callback
   }, [callback])
-  
+
   useEffect(() => {
     if (delay !== null) {
       const interval = setInterval(() => savedCallback.current(), delay)
@@ -216,22 +217,22 @@ export const useInterval = (callback: () => void, delay: number | null) => {
  * 点击外部Hook - 统一点击外部检测逻辑
  */
 export const useClickOutside = <T extends HTMLElement = HTMLElement>(
-  callback: () => void
+  callback: () => void,
 ) => {
   const ref = useRef<T>(null)
-  
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (ref.current && !ref.current.contains(event.target as Node)) {
         callback()
       }
     }
-    
+
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [callback])
-  
+
   return ref
 }

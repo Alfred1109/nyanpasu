@@ -70,13 +70,38 @@ const NYANPASU_PACKAGE_JSON_PATH = path.join(
   'frontend/nyanpasu/package.json',
 )
 
+interface TauriConfigLike {
+  version: string
+  build: {
+    devPath: string
+    distDir: string
+    beforeDevCommand: string
+    beforeBuildCommand: string
+  }
+  bundle: {
+    targets?: string[]
+    createUpdaterArtifacts?: boolean
+    windows: {
+      webviewInstallMode: {
+        silent?: boolean
+        path?: string
+      }
+    }
+  }
+  plugins?: {
+    updater?: {
+      endpoints?: string[]
+    }
+  }
+}
+
 const prepareNightly = async () => {
   consola.info('Preparing nightly build configuration...')
-  
+
   const tauriAppConf = await fs.readJSON(TAURI_APP_CONF)
   const tauriAppOverrides = await fs.readJSON(TAURI_DEV_APP_OVERRIDES_PATH)
   let tauriConf = merge(tauriAppConf, tauriAppOverrides)
-  
+
   const packageJson = await fs.readJSON(NYANPASU_PACKAGE_JSON_PATH)
   const rootPackageJson = await fs.readJSON(ROOT_PACKAGE_JSON_PATH)
 
@@ -104,7 +129,7 @@ const prepareNightly = async () => {
 
   const nightlyVersion = `${tauriConf.version}-alpha+${shortHash}`
   consola.info(`Nightly version: ${nightlyVersion}`)
-  
+
   tauriConf.version = nightlyVersion
   packageJson.version = nightlyVersion
   rootPackageJson.version = nightlyVersion
@@ -119,7 +144,7 @@ const prepareNightly = async () => {
 
 const prepareRelease = async () => {
   consola.info('Preparing release build configuration...')
-  
+
   const tauriAppConf = await fs.readJSON(TAURI_APP_CONF)
   let tauriConf = tauriAppConf
 
@@ -134,9 +159,9 @@ const prepareRelease = async () => {
 
 const preparePreview = async () => {
   consola.info('Preparing preview build configuration...')
-  
+
   const tauriAppConf = await fs.readJSON(TAURI_APP_CONF)
-  
+
   // For preview, we use dist directory as dev path
   tauriAppConf.build.devPath = tauriAppConf.build.distDir
   tauriAppConf.build.beforeDevCommand = tauriAppConf.build.beforeBuildCommand
@@ -145,17 +170,20 @@ const preparePreview = async () => {
   consola.success('Preview configuration prepared successfully')
 }
 
-const applyFixedWebviewConfig = async (tauriConf: any, isNightly: boolean) => {
+const applyFixedWebviewConfig = async (
+  tauriConf: TauriConfigLike,
+  isNightly: boolean,
+) => {
   consola.debug('Applying fixed WebView2 configuration...')
-  
+
   const fixedWebview2Config = await fs.readJSON(
     TAURI_FIXED_WEBVIEW2_CONFIG_OVERRIDE_PATH,
   )
-  
+
   const webviewPath = (await fs.readdir(TAURI_APP_DIR)).find((file) =>
     file.includes('WebView2'),
   )
-  
+
   if (!webviewPath) {
     throw new Error('WebView2 runtime not found')
   }
@@ -163,7 +191,7 @@ const applyFixedWebviewConfig = async (tauriConf: any, isNightly: boolean) => {
   const updatedConf = merge(tauriConf, fixedWebview2Config)
   delete updatedConf.bundle.windows.webviewInstallMode.silent
   updatedConf.bundle.windows.webviewInstallMode.path = `./${path.basename(webviewPath)}`
-  
+
   if (isNightly && updatedConf.plugins?.updater?.endpoints) {
     updatedConf.plugins.updater.endpoints =
       updatedConf.plugins.updater.endpoints.map((endpoint: string) =>
@@ -183,7 +211,9 @@ const main = async () => {
     } else if (argv.preview) {
       await preparePreview()
     } else {
-      consola.error('Please specify build type: --nightly, --release, or --preview')
+      consola.error(
+        'Please specify build type: --nightly, --release, or --preview',
+      )
       process.exit(1)
     }
   } catch (error) {

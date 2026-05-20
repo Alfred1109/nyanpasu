@@ -1,3 +1,4 @@
+import { useLockFn } from 'ahooks'
 import {
   createContext,
   PropsWithChildren,
@@ -6,7 +7,6 @@ import {
   useRef,
   useState,
 } from 'react'
-import { useLockFn } from 'ahooks'
 
 type BlockTaskStatus = 'idle' | 'pending' | 'success' | 'error'
 
@@ -39,7 +39,7 @@ const useBlockTaskContext = () => {
   return context
 }
 
-const useBlockTask = <T,>(key: string, fn: () => Promise<T>) => {
+export const useBlockTask = <T,>(key: string, fn: () => Promise<T>) => {
   const { run, tasks } = useBlockTaskContext()
 
   const execute = useLockFn(async () => {

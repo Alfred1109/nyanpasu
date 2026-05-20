@@ -5,8 +5,10 @@
   "dependencies": {
     "@actions/github": "6.0.1",
     "@types/semver": "7.7.1",
+    "octokit": "^5.0.5",
     "p-retry": "7.1.0",
     "semver": "7.7.3",
+    "telegram": "^2.26.22",
     "zod": "4.1.13"
   },
   "devDependencies": {

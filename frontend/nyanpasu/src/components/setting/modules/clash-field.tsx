@@ -106,7 +106,7 @@ interface ClashFieldItemProps extends ButtonBaseProps {
  * @author keiko233 <i@elaina.moe>
  * @copyright LibNyanpasu org. 2024
  */
-const ClashFieldItem = ({
+export const ClashFieldItem = ({
   label,
   fields,
   ...props

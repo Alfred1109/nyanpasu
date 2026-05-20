@@ -1,5 +1,5 @@
 import { version } from '~/package.json'
-import { useAsyncEffect, useLatest, useLockFn } from 'ahooks'
+import { useAsyncEffect, useLatest } from 'ahooks'
 import type { editor } from 'monaco-editor'
 import {
   createContext,

@@ -10,7 +10,33 @@ import tauriNightly from '../backend/tauri/overrides/nightly.conf.json'
 import { resolveUpdateLog } from './updatelog'
 import { getProxyAgent } from './utils'
 import { colorize, consola } from './utils/logger'
+
 const UPDATE_RELEASE_BODY = process.env.RELEASE_BODY || ''
+
+type ReleaseAsset = {
+  name: string
+  browser_download_url: string
+}
+
+type ReleaseTag = {
+  name: string
+}
+
+type PlatformStructure = ReturnType<typeof createPlatformStructure>
+
+type UpdateInfo = {
+  name: string
+  notes: string | null | undefined
+  pub_date: string
+  platforms: PlatformStructure
+}
+
+type UpdateData = {
+  updateInfo: UpdateInfo
+  assets: ReleaseAsset[]
+}
+
+type MatchFn = (name: string, extension: string, arch: string) => boolean
 
 const argv = yargs(hideBin(process.argv))
   .option('nightly', {
@@ -35,7 +61,7 @@ const argv = yargs(hideBin(process.argv))
 const getFileNames = (isNightly: boolean, isFixedWebview: boolean) => {
   const suffix = isNightly ? '-nightly' : ''
   const webviewSuffix = isFixedWebview ? '-fixed-webview' : ''
-  
+
   return {
     updateJson: `update${suffix}${webviewSuffix}.json`,
     updateProxy: `update${suffix}${webviewSuffix}-proxy.json`,
@@ -56,15 +82,15 @@ const resolveUpdater = async () => {
   const options = { owner: context.repo.owner, repo: context.repo.repo }
   const github = getOctokit(process.env.GITHUB_TOKEN)
 
-  let updateData: any
-  
+  let updateData: UpdateData
+
   if (isNightly) {
     updateData = await resolveNightlyUpdate(github, options)
   } else {
     updateData = await resolveReleaseUpdate(github, options)
   }
 
-  const promises = updateData.assets.map(async (asset: any) => {
+  const promises = updateData.assets.map(async (asset) => {
     const { name, browser_download_url: browserDownloadUrl } = asset
 
     function isMatch(name: string, extension: string, arch: string) {
@@ -78,20 +104,30 @@ const resolveUpdater = async () => {
     }
 
     // Update platform URLs and signatures
-    await updatePlatformData(updateData.updateInfo, name, browserDownloadUrl, isMatch, github, options)
+    await updatePlatformData(
+      updateData.updateInfo,
+      name,
+      browserDownloadUrl,
+      isMatch,
+    )
   })
 
   await Promise.all(promises)
 
   // Write update files
   await writeUpdateFiles(updateData.updateInfo, fileNames)
-  
-  consola.success(`Generated ${isNightly ? 'nightly' : 'release'} updater files successfully`)
+
+  consola.success(
+    `Generated ${isNightly ? 'nightly' : 'release'} updater files successfully`,
+  )
 }
 
-const resolveNightlyUpdate = async (github: any, options: any) => {
+const resolveNightlyUpdate = async (
+  github: ReturnType<typeof getOctokit>,
+  options: { owner: string; repo: string },
+): Promise<UpdateData> => {
   consola.debug('Resolving latest pre-release files...')
-  
+
   const { data: latestPreRelease } = await github.rest.repos.getReleaseByTag({
     ...options,
     tag: 'pre-release',
@@ -99,7 +135,7 @@ const resolveNightlyUpdate = async (github: any, options: any) => {
 
   let shortHash = ''
   const latestContent = latestPreRelease.assets.find(
-    (o: any) => o.name === 'latest.json',
+    (o: ReleaseAsset) => o.name === 'latest.json',
   )
 
   if (latestContent) {
@@ -138,16 +174,19 @@ const resolveNightlyUpdate = async (github: any, options: any) => {
   return { updateInfo, assets: latestPreRelease.assets }
 }
 
-const resolveReleaseUpdate = async (github: any, options: any) => {
+const resolveReleaseUpdate = async (
+  github: ReturnType<typeof getOctokit>,
+  options: { owner: string; repo: string },
+): Promise<UpdateData> => {
   const { data: tags } = await github.rest.repos.listTags({
     ...options,
     per_page: 10,
     page: 1,
   })
 
-  const tag = tags.find((t: any) => t.name.startsWith('v'))
+  const tag = tags.find((t: ReleaseTag) => t.name.startsWith('v'))
   if (!tag) throw new Error('Could not find the latest tag')
-  
+
   consola.debug(colorize`Latest tag: {gray.bold ${tag.name}}`)
 
   const { data: latestRelease } = await github.rest.repos.getReleaseByTag({
@@ -185,7 +224,12 @@ const createPlatformStructure = () => ({
   'windows-aarch64': { signature: '', url: '' },
 })
 
-const updatePlatformData = async (updateInfo: any, name: string, browserDownloadUrl: string, isMatch: Function, github: any, options: any) => {
+const updatePlatformData = async (
+  updateInfo: UpdateInfo,
+  name: string,
+  browserDownloadUrl: string,
+  isMatch: MatchFn,
+) => {
   // Windows platforms
   if (isMatch(name, '.nsis.zip', 'x64')) {
     updateInfo.platforms.win64.url = browserDownloadUrl
@@ -211,12 +255,15 @@ const getSignature = async (url: string) => {
   }
 }
 
-const writeUpdateFiles = async (updateInfo: any, fileNames: { updateJson: string; updateProxy: string }) => {
+const writeUpdateFiles = async (
+  updateInfo: UpdateInfo,
+  fileNames: { updateJson: string; updateProxy: string },
+) => {
   const updateStr = JSON.stringify(updateInfo, null, 2)
-  
+
   consola.debug(`Writing ${fileNames.updateJson}...`)
   await fs.writeFile(fileNames.updateJson, updateStr)
-  
+
   consola.debug(`Writing ${fileNames.updateProxy}...`)
   await fs.writeFile(fileNames.updateProxy, updateStr)
 }

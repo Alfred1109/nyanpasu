@@ -1,4 +1,4 @@
-const languageOptions = {
+export const languageOptions = {
   'zh-CN': '简体中文',
 }
 
@@ -19,4 +19,4 @@ export const languageQuirks: {
 
 type Language = 'zh-CN'
 
-const DEFAULT_LANGUAGE: Language = 'zh-CN'
+export const DEFAULT_LANGUAGE: Language = 'zh-CN'

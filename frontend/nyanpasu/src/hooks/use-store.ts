@@ -8,7 +8,7 @@ import { listen, UnlistenFn } from '@tauri-apps/api/event'
 
 const isInTauri = IS_IN_TAURI
 
-function useCoreType() {
+export function useCoreType() {
   const [coreType, setCoreType] = useAtom(coreTypeAtom)
 
   const { upsert } = useSetting('clash_core')

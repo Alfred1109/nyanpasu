@@ -21,7 +21,7 @@ const routes: { [key: string]: SvgIconComponent } = {
   providers: Apps,
 }
 
-const getRoutes = () => {
+export const getRoutes = () => {
   return Object.keys(routes).reduce(
     (acc, key) => {
       acc[key] = `/${key}`

@@ -4,11 +4,9 @@
  * 代码重复检测脚本
  * 自动检测项目中的重复代码模式，帮助维护代码质量
  */
-
-import { execSync } from 'child_process'
-import { existsSync, readFileSync, readdirSync, statSync } from 'fs'
-import { join } from 'path'
 import { createHash } from 'crypto'
+import { readdirSync, readFileSync, statSync } from 'fs'
+import { join } from 'path'
 
 interface DuplicatePattern {
   pattern: string
@@ -41,11 +39,18 @@ class DuplicateDetector {
     'coverage',
     '.next',
     '.nuxt',
-    '.output'
+    '.output',
   ]
 
   private readonly includeExtensions: string[] = [
-    '.ts', '.tsx', '.js', '.jsx', '.rs', '.json', '.yaml', '.yml'
+    '.ts',
+    '.tsx',
+    '.js',
+    '.jsx',
+    '.rs',
+    '.json',
+    '.yaml',
+    '.yml',
   ]
 
   constructor(projectRoot: string) {
@@ -57,17 +62,18 @@ class DuplicateDetector {
    */
   private detectEnvironmentChecks(): DuplicatePattern[] {
     const patterns: DuplicatePattern[] = []
-    
+
     // 检查遗留的环境检测代码
-    const envCheckPattern = /typeof window !== 'undefined' && '__TAURI__' in window/g
+    const envCheckPattern =
+      /typeof window !== 'undefined' && '__TAURI__' in window/g
     const files = this.findFilesWithPattern(envCheckPattern)
-    
+
     if (files.length > 1) {
       patterns.push({
         pattern: 'Environment detection code (isInTauri)',
         files,
         lines: files.length,
-        hash: this.generateHash('env-check')
+        hash: this.generateHash('env-check'),
       })
     }
 
@@ -82,12 +88,12 @@ class DuplicateDetector {
     const importMap = new Map<string, string[]>()
 
     const files = this.getAllSourceFiles()
-    
+
     for (const file of files) {
       try {
         const content = readFileSync(file, 'utf-8')
         const imports = content.match(/^import.*from.*$/gm) || []
-        
+
         for (const importLine of imports) {
           const normalized = importLine.trim()
           if (!importMap.has(normalized)) {
@@ -102,12 +108,13 @@ class DuplicateDetector {
 
     // Find imports that appear in multiple files
     for (const [importLine, fileList] of importMap.entries()) {
-      if (fileList.length > 3) { // Only report if appears in 4+ files
+      if (fileList.length > 3) {
+        // Only report if appears in 4+ files
         patterns.push({
           pattern: `Duplicate import: ${importLine}`,
           files: fileList,
           lines: fileList.length,
-          hash: this.generateHash(importLine)
+          hash: this.generateHash(importLine),
         })
       }
     }
@@ -122,13 +129,16 @@ class DuplicateDetector {
     const patterns: DuplicatePattern[] = []
     const typeMap = new Map<string, string[]>()
 
-    const files = this.getAllSourceFiles().filter(f => f.endsWith('.ts') || f.endsWith('.tsx'))
-    
+    const files = this.getAllSourceFiles().filter(
+      (f) => f.endsWith('.ts') || f.endsWith('.tsx'),
+    )
+
     for (const file of files) {
       try {
         const content = readFileSync(file, 'utf-8')
-        const types = content.match(/^(export\s+)?(interface|type|enum)\s+\w+/gm) || []
-        
+        const types =
+          content.match(/^(export\s+)?(interface|type|enum)\s+\w+/gm) || []
+
         for (const typeLine of types) {
           const normalized = typeLine.replace(/^export\s+/, '').trim()
           if (!typeMap.has(normalized)) {
@@ -148,7 +158,7 @@ class DuplicateDetector {
           pattern: `Duplicate type definition: ${typeLine}`,
           files: fileList,
           lines: fileList.length,
-          hash: this.generateHash(typeLine)
+          hash: this.generateHash(typeLine),
         })
       }
     }
@@ -161,8 +171,12 @@ class DuplicateDetector {
    */
   private detectDuplicateConfigs(): DuplicatePattern[] {
     const patterns: DuplicatePattern[] = []
-    const configFiles = this.getAllSourceFiles().filter(f => 
-      f.includes('config') || f.endsWith('.json') || f.endsWith('.yml') || f.endsWith('.yaml')
+    const configFiles = this.getAllSourceFiles().filter(
+      (f) =>
+        f.includes('config') ||
+        f.endsWith('.json') ||
+        f.endsWith('.yml') ||
+        f.endsWith('.yaml'),
     )
 
     const contentMap = new Map<string, string[]>()
@@ -171,7 +185,7 @@ class DuplicateDetector {
       try {
         const content = readFileSync(file, 'utf-8')
         const hash = this.generateHash(content)
-        
+
         if (!contentMap.has(hash)) {
           contentMap.set(hash, [])
         }
@@ -188,7 +202,7 @@ class DuplicateDetector {
           pattern: 'Identical configuration files',
           files: fileList,
           lines: fileList.length,
-          hash
+          hash,
         })
       }
     }
@@ -222,23 +236,27 @@ class DuplicateDetector {
    */
   private getAllSourceFiles(): string[] {
     const files: string[] = []
-    
+
     const traverse = (dir: string): void => {
       try {
         const entries = readdirSync(dir)
-        
+
         for (const entry of entries) {
           const fullPath = join(dir, entry)
-          
-          if (this.excludePatterns.some(pattern => fullPath.includes(pattern))) {
+
+          if (
+            this.excludePatterns.some((pattern) => fullPath.includes(pattern))
+          ) {
             continue
           }
-          
+
           const stat = statSync(fullPath)
-          
+
           if (stat.isDirectory()) {
             traverse(fullPath)
-          } else if (this.includeExtensions.some(ext => fullPath.endsWith(ext))) {
+          } else if (
+            this.includeExtensions.some((ext) => fullPath.endsWith(ext))
+          ) {
             files.push(fullPath)
           }
         }
@@ -263,7 +281,7 @@ class DuplicateDetector {
    */
   public detect(): DuplicateReport {
     console.log('🔍 Starting duplicate code detection...')
-    
+
     const allPatterns: DuplicatePattern[] = [
       ...this.detectEnvironmentChecks(),
       ...this.detectDuplicateImports(),
@@ -297,8 +315,8 @@ class DuplicateDetector {
         totalLinesAffected,
         severityHigh,
         severityMedium,
-        severityLow
-      }
+        severityLow,
+      },
     }
   }
 
@@ -307,7 +325,7 @@ class DuplicateDetector {
    */
   public generateReport(report: DuplicateReport): string {
     let output = '\n🎯 Duplicate Code Detection Report\n'
-    output += '=' .repeat(50) + '\n\n'
+    output += '='.repeat(50) + '\n\n'
 
     output += `📊 Summary:\n`
     output += `  • Total files scanned: ${report.totalFiles}\n`
@@ -325,21 +343,26 @@ class DuplicateDetector {
     output += '🔍 Detected Patterns:\n\n'
 
     for (const pattern of report.duplicatePatterns) {
-      const severity = pattern.files.length >= 10 ? '🚨 HIGH' : 
-                      pattern.files.length >= 5 ? '⚠️ MEDIUM' : 'ℹ️ LOW'
-      
+      const severity =
+        pattern.files.length >= 10
+          ? '🚨 HIGH'
+          : pattern.files.length >= 5
+            ? '⚠️ MEDIUM'
+            : 'ℹ️ LOW'
+
       output += `${severity} ${pattern.pattern} (${pattern.files.length} occurrences)\n`
       output += `  Hash: ${pattern.hash}\n`
       output += `  Files:\n`
-      
-      for (const file of pattern.files.slice(0, 10)) { // Show max 10 files
+
+      for (const file of pattern.files.slice(0, 10)) {
+        // Show max 10 files
         output += `    • ${file.replace(this.projectRoot, '.')}\n`
       }
-      
+
       if (pattern.files.length > 10) {
         output += `    • ... and ${pattern.files.length - 10} more files\n`
       }
-      
+
       output += '\n'
     }
 
@@ -351,12 +374,12 @@ class DuplicateDetector {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const projectRoot = process.cwd()
   const detector = new DuplicateDetector(projectRoot)
-  
+
   const report = detector.detect()
   const reportText = detector.generateReport(report)
-  
+
   console.log(reportText)
-  
+
   // Exit with error code if duplicates found
   if (report.summary.totalDuplicates > 0) {
     process.exit(1)

@@ -11,7 +11,6 @@ import {
 } from '../manifest/clash-rs'
 import { BinInfo, SupportedArch } from '../types'
 import { getProxyAgent } from './'
-import { SIDECAR_HOST } from './consts'
 import { consola } from './logger'
 
 const SERVICE_REPO = 'libnyanpasu/nyanpasu-service'

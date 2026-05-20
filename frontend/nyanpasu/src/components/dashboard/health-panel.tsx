@@ -53,7 +53,7 @@ const HealthPanel = () => {
   }
 
   useMount(() => {
-    void refreshHealth()
+    refreshHealth().catch(() => {})
   })
 
   useInterval(async () => {

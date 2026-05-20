@@ -12,7 +12,6 @@ export type ClashProfileBuilder = Extract<
 /**
  * Represents a Clash configuration profile that is a chain of multiple profiles.
  */
-type ChainProfile = Extract<Profile, { type: 'merge' | 'script' }>
 export type ChainProfileBuilder = Extract<
   ProfileBuilder,
   { type: 'merge' | 'script' }

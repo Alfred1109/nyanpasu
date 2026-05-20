@@ -145,7 +145,7 @@ const repoInfo = {
         forceDocument: true,
         caption: `Clash Nyanpasu Nightly Build ${GIT_SHORT_HASH} for Windows`,
         workers: 16,
-        progressCallback: (...args) => {
+        progressCallback: (...args: unknown[]) => {
           console.log('progressCallback', args)
         },
       }),

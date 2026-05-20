@@ -20,10 +20,12 @@ interface Props {
   children?: ReactNode
 }
 
-const BaseErrorBoundary = (props: Props) => {
+export const BaseErrorBoundary = (props: Props) => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       {props.children}
     </ErrorBoundary>
   )
 }
+
+export default BaseErrorBoundary

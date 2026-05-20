@@ -1,4 +1,5 @@
 import { IPSBResponse } from '@/openapi'
+import { isInTauri } from '@nyanpasu/utils'
 import {
   commands,
   type ClashCore,
@@ -17,8 +18,6 @@ import { unwrapResult } from '../utils'
 import { ManifestVersion } from './core'
 import { EnvInfos, InspectUpdater, SystemProxy, VergeConfig } from './types'
 
-import { isInTauri } from '@nyanpasu/utils'
-
 export const getNyanpasuConfig = async () => {
   return unwrapResult(await commands.getVergeConfig()) as VergeConfig
 }
@@ -26,7 +25,6 @@ export const getNyanpasuConfig = async () => {
 export const patchNyanpasuConfig = async (payload: VergeConfig) => {
   return unwrapResult(await commands.patchVergeConfig(payload as IVerge))
 }
-
 
 export const toggleTunMode = async () => {
   const result = unwrapResult(await commands.toggleTunMode())
@@ -288,15 +286,13 @@ export const setTrayIcon = async (
   mode: 'tun' | 'system_proxy' | 'normal',
   path?: string,
 ) => {
-  return unwrapResult(
-    await commands.setTrayIcon(mode as any, path ?? null),
-  )
+  return unwrapResult(await commands.setTrayIcon(mode, path ?? null))
 }
 
 export const isTrayIconSet = async (
   mode: 'tun' | 'system_proxy' | 'normal',
 ) => {
-  return unwrapResult(await commands.isTrayIconSet(mode as any))
+  return unwrapResult(await commands.isTrayIconSet(mode))
 }
 
 export const getCoreStatus = async () => {

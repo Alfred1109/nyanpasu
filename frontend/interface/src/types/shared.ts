@@ -83,7 +83,7 @@ export interface ConnectionSetting {
  */
 export interface BaseEnvironmentInfo {
   tauri: boolean
-  browser: boolean  
+  browser: boolean
   node: boolean
   current: 'tauri' | 'browser' | 'node' | 'unknown'
 }
@@ -101,7 +101,7 @@ export type ErrorHandler = (error: Error | unknown) => void
 /**
  * 通用的异步操作状态
  */
-export interface AsyncOperationState<T = any> {
+export interface AsyncOperationState<T = unknown> {
   loading: boolean
   error: Error | null
   data: T | null
@@ -117,7 +117,7 @@ export interface ValidationRule {
   min?: number
   max?: number
   message: string
-  validator?: (value: any) => boolean | Promise<boolean>
+  validator?: (value: unknown) => boolean | Promise<boolean>
 }
 
 /**
@@ -242,7 +242,12 @@ export interface BasePermissionDialogProps extends BaseDialogProps {
 /**
  * 服务操作相关类型
  */
-export type ServiceOperation = 'install' | 'uninstall' | 'start' | 'stop' | 'restart'
+export type ServiceOperation =
+  | 'install'
+  | 'uninstall'
+  | 'start'
+  | 'stop'
+  | 'restart'
 
 export interface ServiceOperationProps {
   operation?: ServiceOperation
@@ -265,7 +270,7 @@ export interface BaseVirtualizedListProps<T> {
  * 配置文件相关通用Props
  */
 export interface BaseProfileProps {
-  profile?: any // 具体类型根据使用场景定义
+  profile?: unknown // 具体类型根据使用场景定义
   selected?: boolean
   onSelect?: () => void
 }
@@ -279,7 +284,7 @@ export interface BaseMonacoProps {
   language?: string
   theme?: 'vs' | 'vs-dark' | 'hc-black'
   readOnly?: boolean
-  onValidate?: (markers: any[]) => void
+  onValidate?: (markers: unknown[]) => void
 }
 
 /**
@@ -297,7 +302,7 @@ export interface BaseStatisticData {
  */
 export interface BaseConnectionInfo {
   id: string
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
   uploadSpeed?: number
   downloadSpeed?: number
 }
@@ -326,7 +331,7 @@ export interface BaseEmptyProps {
 export interface BaseErrorBoundaryProps {
   children?: React.ReactNode
   fallback?: React.ComponentType<{ error: Error }>
-  onError?: (error: Error, errorInfo: any) => void
+  onError?: (error: Error, errorInfo: React.ErrorInfo) => void
 }
 
 /**
@@ -352,7 +357,8 @@ export interface BaseNoticeProps {
  * 导出类型工具函数
  */
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
-export type RequiredFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>
+export type RequiredFields<T, K extends keyof T> = Omit<T, K> &
+  Required<Pick<T, K>>
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P]
 }

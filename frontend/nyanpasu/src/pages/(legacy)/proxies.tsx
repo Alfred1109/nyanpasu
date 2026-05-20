@@ -22,7 +22,7 @@ import {
   useClashProxies,
   useProxyMode,
 } from '@nyanpasu/interface'
-import { alpha, cn, SidePage } from '@nyanpasu/ui'
+import { cn, SidePage } from '@nyanpasu/ui'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/(legacy)/proxies')({

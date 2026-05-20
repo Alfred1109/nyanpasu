@@ -1,7 +1,7 @@
-import { createContext, PropsWithChildren, useContext } from 'react'
 import { useLockFn } from 'ahooks'
-import { useSetting } from '@nyanpasu/interface'
+import { createContext, PropsWithChildren, useContext } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSetting } from '@nyanpasu/interface'
 
 type Language = 'zh-CN'
 
@@ -10,7 +10,7 @@ const LanguageContext = createContext<{
   setLanguage: (value: Language) => Promise<void>
 } | null>(null)
 
-const useLanguage = () => {
+export const useLanguage = () => {
   const context = useContext(LanguageContext)
 
   if (!context) {

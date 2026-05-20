@@ -6,7 +6,7 @@ import { NodePackageImporter } from 'sass-embedded'
 import AutoImport from 'unplugin-auto-import/vite'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
-import { defineConfig, UserConfig } from 'vite'
+import { defineConfig, type UserConfig, type ViteDevServer } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import sassDts from 'vite-plugin-sass-dts'
 import svgr from 'vite-plugin-svgr'
@@ -20,6 +20,18 @@ import react from '@vitejs/plugin-react-swc'
 const IS_NIGHTLY = process.env.NIGHTLY?.toLowerCase() === 'true'
 
 const execFile = promisify(execFileCb)
+
+type MiddlewareRequest = {
+  method?: string
+}
+
+type MiddlewareResponse = {
+  statusCode: number
+  end: (body?: string) => void
+  setHeader: (name: string, value: string) => void
+}
+
+type MiddlewareNext = () => void
 
 const builtinVars = () => {
   return {
@@ -40,10 +52,14 @@ export default defineConfig(({ command, mode }) => {
   const localServiceApi = () => {
     return {
       name: 'local-service-api',
-      configureServer(server: any) {
+      configureServer(server: ViteDevServer) {
         server.middlewares.use(
           '/__local_api/service/status',
-          async (req: any, res: any, next: any) => {
+          async (
+            req: MiddlewareRequest,
+            res: MiddlewareResponse,
+            _next: MiddlewareNext,
+          ) => {
             try {
               if (req.method && req.method !== 'GET') {
                 res.statusCode = 405
@@ -139,14 +155,14 @@ export default defineConfig(({ command, mode }) => {
 
               res.setHeader('Content-Type', 'application/json')
               res.end(JSON.stringify({ status: 'unknown', source: 'none' }))
-            } catch (e: any) {
+            } catch (e: unknown) {
               res.statusCode = 500
               res.setHeader('Content-Type', 'application/json')
               res.end(
                 JSON.stringify({
                   status: 'unknown',
                   source: 'error',
-                  error: e?.message ?? String(e),
+                  error: e instanceof Error ? e.message : String(e),
                 }),
               )
             }
@@ -188,7 +204,7 @@ export default defineConfig(({ command, mode }) => {
                 }
               }
               return null
-            }) as any, // Type assertion needed for sass importer compatibility
+            }) as unknown, // Type assertion needed for sass importer compatibility
           ],
         },
       },

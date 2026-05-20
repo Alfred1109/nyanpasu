@@ -6,6 +6,19 @@ import { commands, unwrapResult, useSetting } from '@nyanpasu/interface'
 import { Update } from '@tauri-apps/plugin-updater'
 import { useIsAppImage } from './use-consts'
 
+interface CheckUpdateMetadata {
+  rid: number
+  current_version: string
+  version: string
+  raw_json: Record<string, unknown>
+}
+
+interface CommandResult<T> {
+  status: 'ok' | 'error'
+  data?: T
+  error?: unknown
+}
+
 export function useUpdaterPlatformSupported() {
   const [supported, setSupported] = useState(false)
   const isAppImage = useIsAppImage()
@@ -24,10 +37,12 @@ export function useUpdaterPlatformSupported() {
 }
 
 export async function checkUpdate() {
-  // The generated interface typings currently lack checkUpdate, so fall back to any
+  const updaterCommands = commands as typeof commands & {
+    checkUpdate: () => Promise<CommandResult<CheckUpdateMetadata | null>>
+  }
   const metadata = unwrapResult(
-    await (commands as any).checkUpdate(),
-  ) as any /* eslint-disable-line @typescript-eslint/no-explicit-any */
+    await updaterCommands.checkUpdate(),
+  ) as CheckUpdateMetadata | null
 
   if (!metadata) return null
 

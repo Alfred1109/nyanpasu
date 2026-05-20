@@ -7,8 +7,8 @@ import { type editor } from 'monaco-editor'
 import { configureMonacoYaml } from 'monaco-yaml'
 import { nanoid } from 'nanoid'
 import { useCallback, useMemo, useRef } from 'react'
-import { useColorScheme } from '@mui/material/styles'
 import MonacoEditor, { type Monaco } from '@monaco-editor/react'
+import { useColorScheme } from '@mui/material/styles'
 import { openThat } from '@nyanpasu/interface'
 import { cn } from '@nyanpasu/ui'
 
@@ -20,10 +20,6 @@ interface ProfileMonacoViewProps {
   readonly?: boolean
   schemaType?: 'clash' | 'merge'
   onValidate?: (markers: editor.IMarker[]) => void
-}
-
-interface ProfileMonacoViewRef {
-  getValue: () => string | undefined
 }
 
 let initd = false
