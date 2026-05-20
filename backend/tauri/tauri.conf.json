@@ -58,7 +58,7 @@
     "devUrl": "http://localhost:3000/"
   },
   "productName": "nyanpasu",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "identifier": "moe.elaina.clash.nyanpasu",
   "plugins": {
     "updater": {
