@@ -5,8 +5,11 @@ type ThemeSxObject = NonNullable<
 >
 
 export const applyDarkStyles = (
-  theme: Theme,
+  _theme: Theme,
   styles: ThemeSxObject,
 ): ThemeSxObject => {
-  return (theme.applyStyles?.('dark', styles as never) ?? {}) as ThemeSxObject
+  return {
+    ':root.dark &': styles,
+    '.dark &': styles,
+  } as ThemeSxObject
 }

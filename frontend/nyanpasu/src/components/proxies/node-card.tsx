@@ -1,5 +1,6 @@
 import { useLockFn } from 'ahooks'
 import { CSSProperties, memo, useMemo } from 'react'
+import { applyDarkStyles } from '@/utils/theme'
 import Box from '@mui/material/Box'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { ClashProxiesQueryProxyItem } from '@nyanpasu/interface'
@@ -43,19 +44,36 @@ const NodeCard = memo(function NodeCard({
       style={style}
       className={cn(styles.Card, delay === -1 && styles.NoDelay)}
       sxPaper={
-        ((theme) => ({
-          backgroundColor: checked
-            ? alpha(theme.palette.primary.main, 0.16)
-            : theme.palette.background.paper,
-          borderColor: checked
-            ? alpha(theme.palette.primary.main, 0.24)
-            : alpha(theme.palette.divider, 0.8),
-          '&:hover': {
+        ((theme) => {
+          const darkPalette = theme.colorSchemes.dark?.palette ?? theme.palette
+
+          return {
             backgroundColor: checked
-              ? alpha(theme.palette.primary.main, 0.2)
-              : alpha(theme.palette.primary.main, 0.05),
-          },
-        })) as SxProps<Theme>
+              ? alpha(theme.palette.primary.main, 0.16)
+              : theme.palette.background.paper,
+            borderColor: checked
+              ? alpha(theme.palette.primary.main, 0.24)
+              : alpha(theme.palette.divider, 0.8),
+            '&:hover': {
+              backgroundColor: checked
+                ? alpha(theme.palette.primary.main, 0.2)
+                : alpha(theme.palette.primary.main, 0.05),
+            },
+            ...applyDarkStyles(theme, {
+              backgroundColor: checked
+                ? alpha(darkPalette.primary.main, 0.22)
+                : alpha(darkPalette.background.paper, 0.96),
+              borderColor: checked
+                ? alpha(darkPalette.primary.main, 0.34)
+                : alpha(darkPalette.text.primary, 0.16),
+              '&:hover': {
+                backgroundColor: checked
+                  ? alpha(darkPalette.primary.main, 0.28)
+                  : alpha(darkPalette.primary.main, 0.12),
+              },
+            }),
+          }
+        }) as SxProps<Theme>
       }
     >
       <Box width="100%" display="flex" gap={0.5}>
