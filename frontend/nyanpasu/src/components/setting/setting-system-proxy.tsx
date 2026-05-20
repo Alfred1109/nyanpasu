@@ -3,9 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
 import { IS_IN_TAURI } from '@/utils/tauri'
+import {
+  getDefaultChipStyles,
+  getThemePaletteTokens,
+  tokenAlpha,
+} from '@/utils/theme'
 import { Dns as ProxyIcon } from '@mui/icons-material'
 import { Alert, Box, Chip, Divider, Typography } from '@mui/material'
-import { alpha, type Theme } from '@mui/material/styles'
+import type { Theme } from '@mui/material/styles'
 import {
   commands,
   unwrapResult,
@@ -14,19 +19,34 @@ import {
 } from '@nyanpasu/interface'
 import { BaseCard } from '@nyanpasu/ui'
 import { PaperSwitchButton } from './modules/system-proxy'
+import {
+  getOnOffLabel,
+  getSyncStatusLabel,
+  getTakeoverLabel,
+} from './setting-status'
+import {
+  SettingSummaryItem,
+  SettingSummaryPanel,
+} from './setting-summary-panel'
 
 const getSurfacePanelStyles =
   (emphasized = false) =>
   (theme: Theme) => ({
+    ...(() => {
+      const tokens = getThemePaletteTokens(theme)
+
+      return {
+        borderColor: emphasized
+          ? tokenAlpha(tokens.primary.main, 0.18)
+          : tokenAlpha(tokens.primary.main, 0.12),
+        backgroundColor: emphasized
+          ? tokenAlpha(tokens.primary.main, 0.08)
+          : tokenAlpha(tokens.primary.main, 0.05),
+      }
+    })(),
     p: 1,
     borderRadius: 2.5,
     border: '1px solid',
-    borderColor: emphasized
-      ? alpha(theme.palette.primary.main, 0.18)
-      : alpha(theme.palette.primary.main, 0.12),
-    backgroundColor: emphasized
-      ? alpha(theme.palette.primary.main, 0.06)
-      : alpha(theme.palette.primary.main, 0.04),
   })
 
 const getStatusSummaryItems = (
@@ -35,18 +55,14 @@ const getStatusSummaryItems = (
   systemProxyActive: boolean,
   isStatusMismatched: boolean,
 ) => [
-  { label: '应用开关', value: enabled ? '已启用' : '已关闭' },
+  { label: '应用开关', value: getOnOffLabel(enabled) },
   {
     label: '系统状态',
-    value: systemProxyLoading
-      ? '读取中'
-      : systemProxyActive
-        ? '已开启'
-        : '已关闭',
+    value: systemProxyLoading ? '读取中' : getTakeoverLabel(systemProxyActive),
   },
   {
     label: '同步情况',
-    value: isStatusMismatched ? '待同步' : '一致',
+    value: getSyncStatusLabel(!isStatusMismatched),
   },
 ]
 
@@ -140,52 +156,32 @@ export default function SettingSystemProxy() {
             systemProxy.isLoading
               ? '读取中'
               : systemProxyActive
-                ? '已接管'
+                ? getTakeoverLabel(true)
                 : enabled
-                  ? '等待同步'
-                  : '未接管'
+                  ? getSyncStatusLabel(false)
+                  : getTakeoverLabel(false)
           }
           sx={(theme) => ({
             fontWeight: 800,
-            ...(headerTone === 'default'
-              ? {
-                  color: theme.palette.text.secondary,
-                  backgroundColor: alpha(theme.palette.text.primary, 0.06),
-                  border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
-                }
-              : {}),
+            ...(headerTone === 'default' ? getDefaultChipStyles(theme) : {}),
           })}
         />
       }
     >
       <Box display="flex" flexDirection="column" gap={1.5}>
         <Typography variant="body2" color="text.secondary">
-          控制是否把当前 Clash 代理写入系统网络代理设置。
+          控制是否把当前 Clash 代理写入系统代理设置。
         </Typography>
 
-        <Box
-          sx={(theme) => ({
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
-            gap: 0.75,
-            ...getSurfacePanelStyles(true)(theme),
-          })}
-        >
+        <SettingSummaryPanel>
           {statusSummaryItems.map((item) => (
-            <Box key={item.label}>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontWeight: 600 }}
-              >
-                {item.label}
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.25 }}>
-                {item.value}
-              </Typography>
-            </Box>
+            <SettingSummaryItem
+              key={item.label}
+              label={item.label}
+              value={item.value}
+            />
           ))}
-        </Box>
+        </SettingSummaryPanel>
 
         {!isInTauri && (
           <Alert severity="info">
@@ -198,7 +194,7 @@ export default function SettingSystemProxy() {
           loading={pending || systemProxyEnabled.isPending}
           label={t('System Proxy')}
           onClick={handleToggle}
-          statusText={enabled ? '已启用' : '已关闭'}
+          statusText={getOnOffLabel(enabled)}
         >
           <Box
             display="flex"
@@ -265,13 +261,13 @@ export default function SettingSystemProxy() {
 
               {isStatusMismatched && (
                 <Alert severity="warning" sx={{ mt: 0.5 }}>
-                  应用设置与系统当前状态暂时不一致。通常是系统设置尚未刷新，或系统仍保留了上次代理配置。
+                  应用设置与系统状态暂时不一致，通常是系统尚未刷新或仍保留上次配置。
                 </Alert>
               )}
 
               {!systemProxyActive && hasStoredProxyConfig && (
                 <Typography variant="caption" color="text.secondary">
-                  系统代理关闭时，操作系统仍可能保留上次写入的地址和绕过列表；这不代表当前仍在接管流量。
+                  系统代理关闭后，系统仍可能保留上次写入的地址和绕过列表，但当前不会继续接管流量。
                 </Typography>
               )}
             </>

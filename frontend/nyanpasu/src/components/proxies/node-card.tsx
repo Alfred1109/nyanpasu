@@ -1,10 +1,10 @@
 import { useLockFn } from 'ahooks'
 import { CSSProperties, memo, useMemo } from 'react'
-import { applyDarkStyles } from '@/utils/theme'
+import { getThemePaletteTokens, tokenAlpha } from '@/utils/theme'
 import Box from '@mui/material/Box'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { ClashProxiesQueryProxyItem } from '@nyanpasu/interface'
-import { alpha, cn } from '@nyanpasu/ui'
+import { cn } from '@nyanpasu/ui'
 import { PaperSwitchButton } from '../setting/modules/system-proxy'
 import DelayChip from './delay-chip'
 import FeatureChip from './feature-chip'
@@ -45,36 +45,30 @@ const NodeCard = memo(function NodeCard({
       className={cn(styles.Card, delay === -1 && styles.NoDelay)}
       sxPaper={
         ((theme) => {
-          const darkPalette = theme.colorSchemes.dark?.palette ?? theme.palette
+          const tokens = getThemePaletteTokens(theme)
 
           return {
             backgroundColor: checked
-              ? alpha(theme.palette.primary.main, 0.16)
-              : theme.palette.background.paper,
+              ? tokenAlpha(tokens.primary.main, 0.18)
+              : tokenAlpha(tokens.background.paper, 0.96),
             borderColor: checked
-              ? alpha(theme.palette.primary.main, 0.24)
-              : alpha(theme.palette.divider, 0.8),
+              ? tokenAlpha(tokens.primary.main, 0.32)
+              : tokenAlpha(tokens.text.primary, 0.14),
             '&:hover': {
               backgroundColor: checked
-                ? alpha(theme.palette.primary.main, 0.2)
-                : alpha(theme.palette.primary.main, 0.05),
+                ? tokenAlpha(tokens.primary.main, 0.24)
+                : tokenAlpha(tokens.primary.main, 0.1),
             },
-            ...applyDarkStyles(theme, {
-              backgroundColor: checked
-                ? alpha(darkPalette.primary.main, 0.22)
-                : alpha(darkPalette.background.paper, 0.96),
-              borderColor: checked
-                ? alpha(darkPalette.primary.main, 0.34)
-                : alpha(darkPalette.text.primary, 0.16),
-              '&:hover': {
-                backgroundColor: checked
-                  ? alpha(darkPalette.primary.main, 0.28)
-                  : alpha(darkPalette.primary.main, 0.12),
-              },
-            }),
           }
         }) as SxProps<Theme>
       }
+      sxLabel={(theme) => {
+        const tokens = getThemePaletteTokens(theme)
+
+        return {
+          color: checked ? tokens.primary.main : tokens.text.primary,
+        }
+      }}
     >
       <Box width="100%" display="flex" gap={0.5}>
         <FeatureChip label={node.type} />

@@ -2,8 +2,8 @@ import { useAtom } from 'jotai'
 import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { proxyGroupSortAtom } from '@/store'
+import { getThemePaletteTokens, tokenAlpha } from '@/utils/theme'
 import { Button, Menu, MenuItem } from '@mui/material'
-import { alpha } from '@nyanpasu/ui'
 
 const SortSelector = memo(function SortSelector() {
   const { t } = useTranslation()
@@ -30,17 +30,21 @@ const SortSelector = memo(function SortSelector() {
       <Button
         size="small"
         className="px-2!"
-        sx={(theme) => ({
-          textTransform: 'none',
-          color: theme.palette.text.primary,
-          backgroundColor: alpha(theme.palette.primary.main, 0.08),
-          border: '1px solid',
-          borderColor: alpha(theme.palette.primary.main, 0.14),
-          '&:hover': {
-            backgroundColor: alpha(theme.palette.primary.main, 0.12),
-            borderColor: alpha(theme.palette.primary.main, 0.2),
-          },
-        })}
+        sx={(theme) => {
+          const tokens = getThemePaletteTokens(theme)
+
+          return {
+            textTransform: 'none',
+            color: tokens.text.primary,
+            backgroundColor: tokenAlpha(tokens.primary.main, 0.08),
+            border: '1px solid',
+            borderColor: tokenAlpha(tokens.primary.main, 0.14),
+            '&:hover': {
+              backgroundColor: tokenAlpha(tokens.primary.main, 0.12),
+              borderColor: tokenAlpha(tokens.primary.main, 0.2),
+            },
+          }
+        }}
         onClick={(e) => setAnchorEl(e.currentTarget)}
       >
         {t(tmaps[proxyGroupSort])}

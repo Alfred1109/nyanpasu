@@ -3,13 +3,21 @@ import { useTranslation } from 'react-i18next'
 import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
 import { IS_IN_TAURI } from '@/utils/tauri'
-import { applyDarkStyles } from '@/utils/theme'
+import {
+  getDefaultChipStyles,
+  getThemePaletteTokens,
+  tokenAlpha,
+} from '@/utils/theme'
 import { Launch, RocketLaunch } from '@mui/icons-material'
 import { Alert, Box, Chip, Divider, Typography } from '@mui/material'
-import { alpha } from '@mui/material/styles'
 import { commands, unwrapResult, useSetting } from '@nyanpasu/interface'
 import { BaseCard } from '@nyanpasu/ui'
 import { PaperSwitchButton } from './modules/system-proxy'
+import { getOnOffLabel } from './setting-status'
+import {
+  SettingSummaryItem,
+  SettingSummaryPanel,
+} from './setting-summary-panel'
 
 export default function SettingAutoLaunch() {
   const { t } = useTranslation()
@@ -92,68 +100,32 @@ export default function SettingAutoLaunch() {
           size="small"
           color={enabled ? 'primary' : 'default'}
           variant="filled"
-          label={enabled ? '已启用' : '未启用'}
+          label={getOnOffLabel(enabled)}
           sx={(theme) => ({
             fontWeight: 800,
-            ...(enabled
-              ? {}
-              : {
-                  color: alpha(theme.palette.common.black, 0.78),
-                  backgroundColor: alpha(theme.palette.common.black, 0.06),
-                  border: `1px solid ${alpha(theme.palette.common.black, 0.08)}`,
-                  ...applyDarkStyles(theme, {
-                    color: alpha(theme.palette.common.white, 0.82),
-                    backgroundColor: alpha(theme.palette.common.white, 0.08),
-                    border: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
-                  }),
-                }),
+            ...(enabled ? {} : getDefaultChipStyles(theme)),
           })}
         />
       }
     >
       <Box display="flex" flexDirection="column" gap={1.5}>
         <Typography variant="body2" color="text.secondary">
-          控制 Clash Nyanpasu
-          的启动行为，包括随系统启动和启动时是否直接显示窗口。
+          控制应用是否随系统启动，以及启动时是否直接显示窗口。
         </Typography>
 
-        <Box
-          sx={(theme) => ({
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
-            gap: 0.75,
-            p: 1,
-            borderRadius: 2.5,
-            border: '1px solid',
-            borderColor: alpha(theme.palette.common.black, 0.08),
-            background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-            boxShadow: `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
-            ...applyDarkStyles(theme, {
-              borderColor: alpha(theme.palette.common.white, 0.1),
-              background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`,
-              boxShadow: `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`,
-            }),
-          })}
-        >
+        <SettingSummaryPanel>
           {[
-            { label: '开机启动', value: enabled ? '已启用' : '未启用' },
-            { label: '静默启动', value: silentEnabled ? '已启用' : '未启用' },
+            { label: '开机启动', value: getOnOffLabel(enabled) },
+            { label: '静默启动', value: getOnOffLabel(silentEnabled) },
             { label: '运行环境', value: isInTauri ? '桌面端' : '浏览器' },
           ].map((item) => (
-            <Box key={item.label}>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontWeight: 600 }}
-              >
-                {item.label}
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.25 }}>
-                {item.value}
-              </Typography>
-            </Box>
+            <SettingSummaryItem
+              key={item.label}
+              label={item.label}
+              value={item.value}
+            />
           ))}
-        </Box>
+        </SettingSummaryPanel>
 
         {!isInTauri && (
           <Alert severity="info">
@@ -166,7 +138,7 @@ export default function SettingAutoLaunch() {
           loading={pending || autoLaunch.isPending}
           label={t('Auto Start')}
           onClick={handleToggle}
-          statusText={enabled ? '已启用' : '已关闭'}
+          statusText={getOnOffLabel(enabled)}
         >
           <Box
             display="flex"
@@ -187,21 +159,22 @@ export default function SettingAutoLaunch() {
 
         <Box
           sx={(theme) => ({
+            ...(() => {
+              const tokens = getThemePaletteTokens(theme)
+
+              return {
+                backgroundColor: enabled
+                  ? tokenAlpha(tokens.primary.main, 0.1)
+                  : tokenAlpha(tokens.background.paper, 0.88),
+              }
+            })(),
             ml: { xs: 0, sm: 2 },
             pl: 1.5,
             borderLeft: '2px solid',
             borderColor: enabled ? 'primary.main' : 'divider',
-            background: enabled
-              ? `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`
-              : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.92)} 0%, ${alpha(theme.palette.action.hover, 0.5)} 100%)`,
             borderRadius: 2.5,
             py: 1.25,
             pr: 1.25,
-            ...applyDarkStyles(theme, {
-              background: enabled
-                ? `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.18)} 0%, ${alpha(theme.palette.primary.main, 0.1)} 100%)`
-                : `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.9)} 0%, ${alpha(theme.palette.common.white, 0.04)} 100%)`,
-            }),
           })}
         >
           <Box mb={1}>
@@ -209,7 +182,7 @@ export default function SettingAutoLaunch() {
               {t('Silent Start')}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              这是开机启动后的附加行为，用于控制启动时是否直接显示主窗口。
+              这是开机启动后的附加选项，用来控制是否直接显示主窗口。
             </Typography>
           </Box>
 
@@ -219,7 +192,7 @@ export default function SettingAutoLaunch() {
             checked={silentEnabled}
             loading={silentPending || silentStart.isPending}
             onClick={handleSilentToggle}
-            statusText={silentEnabled ? '已启用' : '已关闭'}
+            statusText={getOnOffLabel(silentEnabled)}
             sxPaper={{
               opacity: enabled ? 1 : 0.8,
             }}
@@ -249,7 +222,7 @@ export default function SettingAutoLaunch() {
               color="text.secondary"
               sx={{ display: 'block', mt: 1 }}
             >
-              当前即使开启静默启动，也只有在启用开机启动后才会真正参与系统启动流程。
+              静默启动只有在开启开机启动后才会参与系统启动流程。
             </Typography>
           )}
         </Box>

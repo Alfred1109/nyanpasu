@@ -3,6 +3,7 @@ import { memo, RefObject, useDeferredValue, useMemo } from 'react'
 import { Virtualizer } from 'virtua'
 import { proxyGroupAtom } from '@/store'
 import { proxiesFilterAtom } from '@/store/proxies'
+import { getThemePaletteTokens, tokenAlpha } from '@/utils/theme'
 import {
   ListItem,
   ListItemButton,
@@ -11,7 +12,7 @@ import {
   ListItemText,
 } from '@mui/material'
 import { getServerPort, useClashProxies } from '@nyanpasu/interface'
-import { alpha, LazyImage } from '@nyanpasu/ui'
+import { LazyImage } from '@nyanpasu/ui'
 import { useQuery } from '@tanstack/react-query'
 
 const IconRender = memo(function IconRender({ icon }: { icon: string }) {
@@ -97,24 +98,30 @@ export const GroupList = ({
               onClick={() => handleSelect(index)}
               sx={[
                 (theme) => ({
-                  borderRadius: 3,
-                  backgroundColor: selected
-                    ? `${alpha(theme.palette.primary.main, 0.14)} !important`
-                    : null,
-                  '&:hover': {
-                    backgroundColor: selected
-                      ? `${alpha(theme.palette.primary.main, 0.18)} !important`
-                      : alpha(theme.palette.primary.main, 0.05),
-                  },
-                  '& .MuiListItemText-primary': {
-                    color: selected
-                      ? theme.palette.primary.main
-                      : theme.palette.text.primary,
-                    fontWeight: selected ? 700 : 500,
-                  },
-                  '& .MuiListItemText-secondary': {
-                    color: theme.palette.text.secondary,
-                  },
+                  ...(() => {
+                    const tokens = getThemePaletteTokens(theme)
+
+                    return {
+                      borderRadius: 3,
+                      backgroundColor: selected
+                        ? `${tokenAlpha(tokens.primary.main, 0.14)} !important`
+                        : null,
+                      '&:hover': {
+                        backgroundColor: selected
+                          ? `${tokenAlpha(tokens.primary.main, 0.18)} !important`
+                          : tokenAlpha(tokens.primary.main, 0.08),
+                      },
+                      '& .MuiListItemText-primary': {
+                        color: selected
+                          ? tokens.primary.main
+                          : tokens.text.primary,
+                        fontWeight: selected ? 700 : 500,
+                      },
+                      '& .MuiListItemText-secondary': {
+                        color: tokens.text.secondary,
+                      },
+                    }
+                  })(),
                 }),
               ]}
               {...listItemButtonProps}

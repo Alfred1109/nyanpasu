@@ -1,7 +1,8 @@
 import { useControllableValue } from 'ahooks'
 import { memo, ReactNode } from 'react'
+import { getThemePaletteTokens, tokenAlpha } from '@/utils/theme'
 import { Box, CircularProgress, Switch, Typography } from '@mui/material'
-import { alpha, type SxProps, type Theme } from '@mui/material/styles'
+import type { SxProps, Theme } from '@mui/material/styles'
 import { PaperButton, PaperButtonProps } from './nyanpasu-path'
 
 interface PaperSwitchButtonProps extends PaperButtonProps {
@@ -14,59 +15,70 @@ interface PaperSwitchButtonProps extends PaperButtonProps {
   onClick?: () => Promise<void> | void
   sxPaper?: SxProps<Theme>
   sxButton?: SxProps<Theme>
+  sxLabel?: SxProps<Theme>
 }
 
-const getPaperSwitchStyles = (theme: Theme, checked: boolean) => ({
-  position: 'relative',
-  overflow: 'hidden',
-  backgroundColor: checked
-    ? theme.palette.primary.main
-    : theme.palette.background.paper,
-  border: '1px solid',
-  borderColor: checked
-    ? alpha(theme.palette.primary.main, 0.4)
-    : alpha(theme.palette.primary.main, 0.16),
-  boxShadow: checked
-    ? `0 0 0 1px ${alpha(theme.palette.primary.main, 0.14)}`
-    : 'none',
-  transition:
-    'background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease',
-  '&:hover': {
+const getPaperSwitchStyles = (theme: Theme, checked: boolean) => {
+  const tokens = getThemePaletteTokens(theme)
+
+  return {
+    position: 'relative',
+    overflow: 'hidden',
     backgroundColor: checked
-      ? theme.palette.primary.main
-      : alpha(theme.palette.primary.main, 0.05),
+      ? tokens.primary.main
+      : tokenAlpha(tokens.background.paper, 0.96),
+    border: '1px solid',
     borderColor: checked
-      ? alpha(theme.palette.primary.main, 0.48)
-      : alpha(theme.palette.primary.main, 0.22),
+      ? tokenAlpha(tokens.primary.main, 0.42)
+      : tokenAlpha(tokens.primary.main, 0.18),
     boxShadow: checked
-      ? `0 0 0 1px ${alpha(theme.palette.primary.main, 0.18)}`
+      ? `0 0 0 1px ${tokenAlpha(tokens.primary.main, 0.16)}`
       : 'none',
-  },
-})
+    transition:
+      'background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease',
+    '&:hover': {
+      backgroundColor: checked
+        ? tokens.primary.main
+        : tokenAlpha(tokens.primary.main, 0.08),
+      borderColor: checked
+        ? tokenAlpha(tokens.primary.main, 0.5)
+        : tokenAlpha(tokens.primary.main, 0.24),
+      boxShadow: checked
+        ? `0 0 0 1px ${tokenAlpha(tokens.primary.main, 0.2)}`
+        : 'none',
+    },
+  }
+}
 
-const getSwitchStyles = (theme: Theme, checked: boolean) => ({
-  pointerEvents: 'none',
-  '& .MuiSwitch-thumb': {
-    backgroundColor: checked
-      ? theme.palette.primary.contrastText
-      : theme.palette.primary.main,
-  },
-  '& .MuiSwitch-track': {
-    opacity: 1,
-    backgroundColor: checked
-      ? alpha(theme.palette.primary.contrastText, 0.32)
-      : alpha(theme.palette.primary.main, 0.22),
-  },
-})
+const getSwitchStyles = (theme: Theme, checked: boolean) => {
+  const tokens = getThemePaletteTokens(theme)
 
-const getStatusTextStyles = (theme: Theme, checked: boolean) => ({
-  color: checked
-    ? theme.palette.primary.contrastText
-    : theme.palette.text.secondary,
-  fontWeight: 700,
-  fontSize: '0.7rem',
-  whiteSpace: 'nowrap',
-})
+  return {
+    pointerEvents: 'none',
+    '& .MuiSwitch-thumb': {
+      backgroundColor: checked
+        ? tokens.primary.contrastText
+        : tokens.primary.main,
+    },
+    '& .MuiSwitch-track': {
+      opacity: 1,
+      backgroundColor: checked
+        ? tokenAlpha(tokens.primary.contrastText, 0.32)
+        : tokenAlpha(tokens.primary.main, 0.22),
+    },
+  }
+}
+
+const getStatusTextStyles = (theme: Theme, checked: boolean) => {
+  const tokens = getThemePaletteTokens(theme)
+
+  return {
+    color: checked ? tokens.primary.contrastText : tokens.text.secondary,
+    fontWeight: 700,
+    fontSize: '0.7rem',
+    whiteSpace: 'nowrap',
+  }
+}
 
 export const PaperSwitchButton = memo(function PaperSwitchButton({
   label,
@@ -78,6 +90,7 @@ export const PaperSwitchButton = memo(function PaperSwitchButton({
   onClick,
   sxPaper,
   sxButton,
+  sxLabel,
   ...props
 }: PaperSwitchButtonProps) {
   const [pending, setPending] = useControllableValue<boolean>(
@@ -157,18 +170,28 @@ export const PaperSwitchButton = memo(function PaperSwitchButton({
             alignItems="center"
             justifyContent="space-between"
             gap={1}
+            flexWrap="wrap"
             width="100%"
           >
             <Box flex={1} minWidth={0}>
               <Typography
                 noWrap
                 component="p"
-                sx={{
-                  fontWeight: 700,
-                  textOverflow: 'ellipsis',
-                  overflow: 'hidden',
-                  color: checked ? 'primary.contrastText' : 'text.primary',
-                }}
+                sx={[
+                  (theme) => {
+                    const tokens = getThemePaletteTokens(theme)
+
+                    return {
+                      fontWeight: 700,
+                      textOverflow: 'ellipsis',
+                      overflow: 'hidden',
+                      color: checked
+                        ? tokens.primary.contrastText
+                        : tokens.text.primary,
+                    }
+                  },
+                  ...normalizeSx(sxLabel),
+                ]}
               >
                 {label}
               </Typography>
@@ -179,9 +202,10 @@ export const PaperSwitchButton = memo(function PaperSwitchButton({
 
           <Box
             display="flex"
-            alignItems="center"
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
             justifyContent="space-between"
             gap={1}
+            flexWrap="wrap"
             width="100%"
           >
             <Box flex={1} minWidth={0}>
@@ -194,9 +218,10 @@ export const PaperSwitchButton = memo(function PaperSwitchButton({
       ) : (
         <Box
           display="flex"
-          alignItems="center"
+          alignItems={{ xs: 'flex-start', sm: 'center' }}
           justifyContent="space-between"
           gap={1}
+          flexWrap="wrap"
           width="100%"
         >
           <Box flex={1} minWidth={0}>
@@ -208,6 +233,7 @@ export const PaperSwitchButton = memo(function PaperSwitchButton({
             flexDirection="column"
             alignItems="flex-end"
             gap={0.5}
+            ml="auto"
           >
             {switchIndicator}
             {statusCaption}

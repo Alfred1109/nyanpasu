@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UseServiceManagerReturn } from '@/hooks/use-service-manager'
 import { IS_IN_TAURI } from '@/utils/tauri'
-import { applyDarkStyles } from '@/utils/theme'
+import { getDefaultChipStyles, getTokenSurfaceStyles } from '@/utils/theme'
 import { Alert, Box, Button, Chip, Divider, Typography } from '@mui/material'
-import { alpha } from '@mui/material/styles'
 import { BaseCard } from '@nyanpasu/ui'
 import ServiceInstallDialog from './modules/service-install-dialog'
+import {
+  SettingSummaryItem,
+  SettingSummaryPanel,
+} from './setting-summary-panel'
 
 interface SettingSystemServiceProps {
   serviceManager: UseServiceManagerReturn
@@ -61,7 +64,6 @@ export default function SettingSystemService({
       : serviceManager.serviceStatus === 'stopped'
         ? 'warning'
         : 'default'
-
   const handleInstallService = async () => {
     if (!isInTauri) {
       setMessage('该功能仅在桌面端可用，请使用 tauri dev 或安装版 exe 测试。')
@@ -141,6 +143,64 @@ export default function SettingSystemService({
     }
   }
 
+  const actionItems = [
+    {
+      key: 'install',
+      title: '安装与启用',
+      description: '写入系统服务并打开服务模式，为 TUN 和后台接管做准备。',
+      buttonLabel: primaryActionLabel,
+      variant: 'contained' as const,
+      color: 'primary' as const,
+      handleClick: handleInstallService,
+      disabled:
+        !isInTauri ||
+        serviceManager.isInstalling ||
+        (serviceManager.isServiceInstalled && isServiceModeEnabled),
+    },
+    {
+      key: 'start',
+      title: '启动服务',
+      description: '在已安装且已启用服务模式后拉起后台服务进程。',
+      buttonLabel: startActionLabel,
+      variant: 'outlined' as const,
+      color: 'primary' as const,
+      handleClick: handleStartService,
+      disabled:
+        !isInTauri ||
+        serviceManager.isInstalling ||
+        !serviceManager.isServiceInstalled ||
+        !isServiceModeEnabled ||
+        serviceManager.serviceStatus === 'running',
+    },
+    {
+      key: 'stop',
+      title: '停止服务',
+      description: '停止当前运行中的服务进程，但保留服务安装状态。',
+      buttonLabel: stopActionLabel,
+      variant: 'outlined' as const,
+      color: 'primary' as const,
+      handleClick: handleStopService,
+      disabled:
+        !isInTauri ||
+        serviceManager.isInstalling ||
+        !serviceManager.isServiceInstalled ||
+        serviceManager.serviceStatus !== 'running',
+    },
+    {
+      key: 'uninstall',
+      title: '卸载服务',
+      description: '移除本地服务安装，适合排障或恢复到不使用服务模式。',
+      buttonLabel: uninstallActionLabel,
+      variant: 'outlined' as const,
+      color: 'error' as const,
+      handleClick: handleUninstallService,
+      disabled:
+        !isInTauri ||
+        serviceManager.isInstalling ||
+        !serviceManager.isServiceInstalled,
+    },
+  ]
+
   return (
     <>
       <BaseCard
@@ -154,16 +214,7 @@ export default function SettingSystemService({
             sx={(theme) => ({
               fontWeight: 800,
               ...(serviceStatusTone === 'default'
-                ? {
-                    color: alpha(theme.palette.common.black, 0.78),
-                    backgroundColor: alpha(theme.palette.common.black, 0.06),
-                    border: `1px solid ${alpha(theme.palette.common.black, 0.08)}`,
-                    ...applyDarkStyles(theme, {
-                      color: alpha(theme.palette.common.white, 0.82),
-                      backgroundColor: alpha(theme.palette.common.white, 0.08),
-                      border: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
-                    }),
-                  }
+                ? getDefaultChipStyles(theme)
                 : {}),
             })}
           />
@@ -203,16 +254,7 @@ export default function SettingSystemService({
             </Alert>
           )}
 
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, minmax(0, 1fr))',
-              },
-              gap: 1,
-            }}
-          >
+          <SettingSummaryPanel columns={2}>
             {[
               {
                 label: '服务进程',
@@ -225,31 +267,10 @@ export default function SettingSystemService({
                 tone: isServiceModeEnabled ? 'success' : 'default',
               },
             ].map((item) => (
-              <Box
+              <SettingSummaryItem
                 key={item.label}
-                sx={(theme) => ({
-                  borderRadius: 2.5,
-                  border: '1px solid',
-                  borderColor: alpha(theme.palette.common.black, 0.08),
-                  background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-                  boxShadow: `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
-                  px: 1.25,
-                  py: 1,
-                  ...applyDarkStyles(theme, {
-                    borderColor: alpha(theme.palette.common.white, 0.1),
-                    background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`,
-                    boxShadow: `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`,
-                  }),
-                })}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ fontWeight: 600 }}
-                >
-                  {item.label}
-                </Typography>
-                <Box mt={0.75}>
+                label={item.label}
+                value={
                   <Chip
                     size="small"
                     color={item.tone as 'default' | 'success' | 'warning'}
@@ -257,110 +278,77 @@ export default function SettingSystemService({
                     label={item.value}
                     sx={(theme) => ({
                       fontWeight: 800,
+                      mt: 0.5,
                       ...(item.tone === 'default'
-                        ? {
-                            color: alpha(theme.palette.common.black, 0.78),
-                            backgroundColor: alpha(
-                              theme.palette.common.black,
-                              0.06,
-                            ),
-                            border: `1px solid ${alpha(theme.palette.common.black, 0.08)}`,
-                            ...applyDarkStyles(theme, {
-                              color: alpha(theme.palette.common.white, 0.82),
-                              backgroundColor: alpha(
-                                theme.palette.common.white,
-                                0.08,
-                              ),
-                              border: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
-                            }),
-                          }
+                        ? getDefaultChipStyles(theme)
                         : {}),
                     })}
                   />
-                </Box>
-              </Box>
+                }
+              />
             ))}
-          </Box>
+          </SettingSummaryPanel>
 
           <Divider />
 
           <Box display="flex" flexDirection="column" gap={1}>
             <Box>
               <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                操作
+                服务操作面板
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                先安装并启用服务模式，再按需启动或停止服务。
+                按安装、启动、停止、卸载的顺序组织，方便排障时逐步确认状态。
               </Typography>
             </Box>
 
             <Box
-              display="grid"
-              gap={1}
-              gridTemplateColumns={{
-                xs: '1fr',
-                sm: 'repeat(2, minmax(0, 1fr))',
+              sx={{
+                display: 'grid',
+                gap: 1,
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, minmax(0, 1fr))',
+                },
               }}
             >
-              <Button
-                variant="contained"
-                size="medium"
-                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 38 }}
-                onClick={handleInstallService}
-                disabled={
-                  !isInTauri ||
-                  serviceManager.isInstalling ||
-                  (serviceManager.isServiceInstalled && isServiceModeEnabled)
-                }
-              >
-                {primaryActionLabel}
-              </Button>
+              {actionItems.map((item) => (
+                <Box
+                  key={item.key}
+                  sx={(theme) => ({
+                    ...getTokenSurfaceStyles(theme, { elevated: true }),
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1,
+                    p: 1.25,
+                    borderRadius: 2.5,
+                    border: '1px solid',
+                  })}
+                >
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                      {item.title}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block', mt: 0.5, lineHeight: 1.45 }}
+                    >
+                      {item.description}
+                    </Typography>
+                  </Box>
 
-              <Button
-                variant="outlined"
-                size="medium"
-                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 38 }}
-                onClick={handleStartService}
-                disabled={
-                  !isInTauri ||
-                  serviceManager.isInstalling ||
-                  !serviceManager.isServiceInstalled ||
-                  !isServiceModeEnabled ||
-                  serviceManager.serviceStatus === 'running'
-                }
-              >
-                {startActionLabel}
-              </Button>
-
-              <Button
-                variant="outlined"
-                size="medium"
-                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 38 }}
-                onClick={handleStopService}
-                disabled={
-                  !isInTauri ||
-                  serviceManager.isInstalling ||
-                  !serviceManager.isServiceInstalled ||
-                  serviceManager.serviceStatus !== 'running'
-                }
-              >
-                {stopActionLabel}
-              </Button>
-
-              <Button
-                variant="outlined"
-                size="medium"
-                color="error"
-                sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 38 }}
-                onClick={handleUninstallService}
-                disabled={
-                  !isInTauri ||
-                  serviceManager.isInstalling ||
-                  !serviceManager.isServiceInstalled
-                }
-              >
-                {uninstallActionLabel}
-              </Button>
+                  <Button
+                    variant={item.variant}
+                    size="medium"
+                    color={item.color}
+                    sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 38 }}
+                    onClick={item.handleClick}
+                    disabled={item.disabled}
+                  >
+                    {item.buttonLabel}
+                  </Button>
+                </Box>
+              ))}
             </Box>
           </Box>
         </Box>

@@ -3,7 +3,12 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UseServiceManagerReturn } from '@/hooks/use-service-manager'
 import { IS_IN_TAURI } from '@/utils/tauri'
-import { applyDarkStyles } from '@/utils/theme'
+import {
+  getDefaultChipStyles,
+  getThemePaletteTokens,
+  getTokenSurfaceStyles,
+  tokenAlpha,
+} from '@/utils/theme'
 import {
   CheckCircle as CheckIcon,
   Error as ErrorIcon,
@@ -11,11 +16,15 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material'
 import { Alert, Box, Chip, Fade, Typography } from '@mui/material'
-import { alpha } from '@mui/material/styles'
 import { toggleTunMode, useSetting } from '@nyanpasu/interface'
 import { BaseCard } from '@nyanpasu/ui'
 import { message } from '@tauri-apps/plugin-dialog'
 import { PaperSwitchButton } from './modules/system-proxy'
+import { getAvailabilityLabel, getOnOffLabel } from './setting-status'
+import {
+  SettingSummaryItem,
+  SettingSummaryPanel,
+} from './setting-summary-panel'
 
 /**
  * 服务状态类型定义
@@ -248,85 +257,48 @@ const EnhancedTunModeButton = ({
 
   return (
     <Box>
-      <Box
-        sx={(theme) => ({
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
-          gap: 0.75,
-          mb: 1.5,
-        })}
-      >
-        {[
-          {
-            label: 'TUN 状态',
-            value: isTunEnabled ? '已开启' : '已关闭',
-            tone: isTunEnabled ? 'success' : 'default',
-          },
-          {
-            label: '服务模式',
-            value: serviceModeEnabled ? '已启用' : '未启用',
-            tone: serviceModeEnabled ? 'success' : 'warning',
-          },
-          {
-            label: '可用性',
-            value: statusInfo.canUseTun ? '可用' : '不可用',
-            tone: statusInfo.canUseTun ? 'success' : statusInfo.severity,
-          },
-        ].map((item) => (
-          <Box
-            key={item.label}
-            sx={(theme) => ({
-              p: 1,
-              borderRadius: 2.5,
-              border: '1px solid',
-              borderColor: alpha(theme.palette.common.black, 0.08),
-              background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-              boxShadow: `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
-              ...applyDarkStyles(theme, {
-                borderColor: alpha(theme.palette.common.white, 0.1),
-                background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`,
-                boxShadow: `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`,
-              }),
-            })}
-          >
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontWeight: 600 }}
-            >
-              {item.label}
-            </Typography>
-            <Box mt={0.75}>
-              <Chip
-                size="small"
-                color={item.tone as 'default' | 'success' | 'warning' | 'info'}
-                variant="filled"
-                label={item.value}
-                sx={(theme) => ({
-                  fontWeight: 800,
-                  ...(item.tone === 'default'
-                    ? {
-                        color: alpha(theme.palette.common.black, 0.78),
-                        backgroundColor: alpha(
-                          theme.palette.common.black,
-                          0.06,
-                        ),
-                        border: `1px solid ${alpha(theme.palette.common.black, 0.08)}`,
-                        ...applyDarkStyles(theme, {
-                          color: alpha(theme.palette.common.white, 0.82),
-                          backgroundColor: alpha(
-                            theme.palette.common.white,
-                            0.08,
-                          ),
-                          border: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
-                        }),
-                      }
-                    : {}),
-                })}
-              />
-            </Box>
-          </Box>
-        ))}
+      <Box sx={{ mb: 1.5 }}>
+        <SettingSummaryPanel>
+          {[
+            {
+              label: 'TUN 状态',
+              value: getOnOffLabel(isTunEnabled),
+              tone: isTunEnabled ? 'success' : 'default',
+            },
+            {
+              label: '服务模式',
+              value: getOnOffLabel(Boolean(serviceModeEnabled)),
+              tone: serviceModeEnabled ? 'success' : 'warning',
+            },
+            {
+              label: '可用性',
+              value: getAvailabilityLabel(statusInfo.canUseTun),
+              tone: statusInfo.canUseTun ? 'success' : statusInfo.severity,
+            },
+          ].map((item) => (
+            <SettingSummaryItem
+              key={item.label}
+              label={item.label}
+              value={
+                <Chip
+                  size="small"
+                  color={
+                    item.tone as 'default' | 'success' | 'warning' | 'info'
+                  }
+                  variant="filled"
+                  label={item.value}
+                  sx={(theme) => ({
+                    fontWeight: 800,
+                    mt: 0.5,
+                    ...(item.tone === 'default'
+                      ? getDefaultChipStyles(theme)
+                      : {}),
+                  })}
+                />
+              }
+            />
+          ))}
+        </SettingSummaryPanel>
       </Box>
 
       {/* 主要的TUN模式开关 */}
@@ -338,44 +310,30 @@ const EnhancedTunModeButton = ({
         disabled={isDisabled}
         statusText={null}
         sxPaper={(theme) => ({
-          background:
-            isTunEnabled && statusInfo.canUseTun
-              ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
-              : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-          borderColor:
-            isTunEnabled && statusInfo.canUseTun
-              ? alpha(theme.palette.primary.main, 0.42)
-              : alpha(theme.palette.common.black, 0.08),
-          boxShadow:
-            isTunEnabled && statusInfo.canUseTun
-              ? `0 16px 32px ${alpha(theme.palette.primary.main, 0.22)}`
-              : `0 10px 24px ${alpha(theme.palette.common.black, 0.06)}`,
-          '&:hover': {
-            background:
-              isTunEnabled && statusInfo.canUseTun
-                ? `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`
-                : `linear-gradient(180deg, ${alpha(theme.palette.common.white, 1)} 0%, ${alpha(theme.palette.primary.main, 0.08)} 100%)`,
-          },
-          ...applyDarkStyles(theme, {
-            background:
-              isTunEnabled && statusInfo.canUseTun
-                ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
-                : `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.14)} 100%)`,
-            borderColor:
-              isTunEnabled && statusInfo.canUseTun
-                ? alpha(theme.palette.primary.main, 0.42)
-                : alpha(theme.palette.common.white, 0.12),
-            boxShadow:
-              isTunEnabled && statusInfo.canUseTun
-                ? `0 16px 32px ${alpha(theme.palette.primary.main, 0.22)}`
-                : `0 12px 28px ${alpha(theme.palette.common.black, 0.22)}`,
-            '&:hover': {
+          ...(() => {
+            const tokens = getThemePaletteTokens(theme)
+
+            return {
               background:
                 isTunEnabled && statusInfo.canUseTun
-                  ? `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`
-                  : `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.98)} 0%, ${alpha(theme.palette.primary.main, 0.18)} 100%)`,
-            },
-          }),
+                  ? tokens.primary.main
+                  : tokenAlpha(tokens.background.paper, 0.96),
+              borderColor:
+                isTunEnabled && statusInfo.canUseTun
+                  ? tokenAlpha(tokens.primary.main, 0.42)
+                  : tokenAlpha(tokens.text.primary, 0.1),
+              boxShadow:
+                isTunEnabled && statusInfo.canUseTun
+                  ? `0 16px 32px ${tokenAlpha(tokens.primary.main, 0.22)}`
+                  : `0 10px 24px ${tokenAlpha(tokens.text.primary, 0.08)}`,
+              '&:hover': {
+                backgroundColor:
+                  isTunEnabled && statusInfo.canUseTun
+                    ? tokens.primary.dark
+                    : tokenAlpha(tokens.primary.main, 0.1),
+              },
+            }
+          })(),
         })}
         sx={{
           opacity: statusInfo.canUseTun ? 1 : 0.6,
@@ -395,7 +353,7 @@ const EnhancedTunModeButton = ({
             {statusInfo.canUseTun ? (
               <Chip
                 icon={getStatusIcon('success')}
-                label="可用"
+                label={getAvailabilityLabel(true)}
                 size="small"
                 color="success"
                 variant="filled"
@@ -404,7 +362,7 @@ const EnhancedTunModeButton = ({
             ) : (
               <Chip
                 icon={getStatusIcon(statusInfo.severity)}
-                label="不可用"
+                label={getAvailabilityLabel(false)}
                 size="small"
                 color={statusInfo.severity}
                 variant="filled"
@@ -427,7 +385,7 @@ const EnhancedTunModeButton = ({
               whiteSpace: 'nowrap',
             }}
           >
-            {isTunEnabled ? 'TUN已开启' : 'TUN已关闭'}
+            {`TUN${getOnOffLabel(isTunEnabled)}`}
           </Typography>
         </Box>
       </PaperSwitchButton>
@@ -486,16 +444,11 @@ const EnhancedTunModeButton = ({
       {/* TUN模式技术说明 */}
       <Box
         sx={(theme) => ({
+          ...getTokenSurfaceStyles(theme, { tint: 'info' }),
           mt: 1.5,
           p: 1.5,
           borderRadius: 2.5,
-          background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.info.main, 0.06)} 100%)`,
           border: '1px solid',
-          borderColor: alpha(theme.palette.info.main, 0.14),
-          ...applyDarkStyles(theme, {
-            background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.info.main, 0.14)} 100%)`,
-            borderColor: alpha(theme.palette.info.main, 0.22),
-          }),
         })}
       >
         <Typography

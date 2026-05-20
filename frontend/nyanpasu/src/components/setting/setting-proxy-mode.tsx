@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
-import { applyDarkStyles } from '@/utils/theme'
+import { getThemePaletteTokens, tokenAlpha } from '@/utils/theme'
 import {
   Route as DirectIcon,
   ExpandLess,
@@ -20,10 +20,13 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { alpha } from '@mui/material/styles'
 import { useClashConfig, useProxyMode } from '@nyanpasu/interface'
 import { BaseCard } from '@nyanpasu/ui'
 import { PaperSwitchButton } from './modules/system-proxy'
+import {
+  SettingSummaryItem,
+  SettingSummaryPanel,
+} from './setting-summary-panel'
 
 const RULE_MODE_COUNTRIES = [
   { code: 'CN', label: '中国' },
@@ -107,27 +110,10 @@ export default function SettingProxyMode() {
     >
       <Box display="flex" flexDirection="column" gap={1.5}>
         <Typography variant="body2" color="text.secondary">
-          在这里快速切换规则、全局和直连模式，并查看当前 GeoIP 分流国家。
+          在这里切换代理模式，并查看当前 GeoIP 国家。
         </Typography>
 
-        <Box
-          sx={(theme) => ({
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
-            gap: 0.75,
-            p: 1,
-            borderRadius: 2.5,
-            border: '1px solid',
-            borderColor: alpha(theme.palette.common.black, 0.08),
-            background: `linear-gradient(180deg, ${alpha(theme.palette.common.white, 0.96)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-            boxShadow: `0 10px 24px ${alpha(theme.palette.common.black, 0.04)}`,
-            ...applyDarkStyles(theme, {
-              borderColor: alpha(theme.palette.common.white, 0.1),
-              background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.primary.main, 0.12)} 100%)`,
-              boxShadow: `0 12px 24px ${alpha(theme.palette.common.black, 0.2)}`,
-            }),
-          })}
-        >
+        <SettingSummaryPanel>
           {[
             {
               label: '活跃模式',
@@ -140,20 +126,13 @@ export default function SettingProxyMode() {
             { label: '规则国家', value: ruleModeGeoipCode },
             { label: '切换方式', value: '即时生效' },
           ].map((item) => (
-            <Box key={item.label}>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontWeight: 600 }}
-              >
-                {item.label}
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.25 }}>
-                {item.value}
-              </Typography>
-            </Box>
+            <SettingSummaryItem
+              key={item.label}
+              label={item.label}
+              value={item.value}
+            />
           ))}
-        </Box>
+        </SettingSummaryPanel>
 
         <Stack spacing={1}>
           {(Object.keys(MODE_META) as Array<keyof typeof MODE_META>).map(
@@ -215,21 +194,16 @@ export default function SettingProxyMode() {
                         px={1.25}
                         py={1.25}
                         borderRadius={2.5}
-                        bgcolor={(theme) =>
-                          alpha(theme.palette.primary.main, 0.06)
-                        }
                         border="1px solid"
-                        borderColor={(theme) =>
-                          alpha(theme.palette.common.black, 0.08)
-                        }
                         sx={(theme) => ({
-                          ...applyDarkStyles(theme, {
-                            backgroundColor: alpha(
-                              theme.palette.primary.main,
-                              0.14,
-                            ),
-                            borderColor: alpha(theme.palette.common.white, 0.1),
-                          }),
+                          backgroundColor: tokenAlpha(
+                            getThemePaletteTokens(theme).primary.main,
+                            0.08,
+                          ),
+                          borderColor: tokenAlpha(
+                            getThemePaletteTokens(theme).text.primary,
+                            0.1,
+                          ),
                         })}
                       >
                         <Typography
@@ -243,7 +217,7 @@ export default function SettingProxyMode() {
                           color="text.secondary"
                           sx={{ display: 'block', mb: 1 }}
                         >
-                          规则模式下用于 GeoIP 判断的国家代码。
+                          规则模式使用的 GeoIP 国家代码。
                         </Typography>
 
                         <TextField
