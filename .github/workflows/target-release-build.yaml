@@ -3,6 +3,16 @@ name: '[Entire] Build Release Version'
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to build'
+        required: true
+        type: string
+      release_body:
+        description: 'Optional release body override for updater generation'
+        required: false
+        type: string
 
 env:
   CARGO_INCREMENTAL: 0
@@ -13,9 +23,12 @@ jobs:
     name: Windows Build
     uses: ./.github/workflows/deps-build-windows-nsis.yaml
     with:
+      upload-release: true
       portable: true
+      fixed-webview: false
       nightly: false
-      tag: ${{ github.event.release.tag_name }}
+      tag: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
+      arch: x86_64
     secrets: inherit
 
   linux_build:
@@ -23,7 +36,8 @@ jobs:
     uses: ./.github/workflows/deps-build-linux.yaml
     with:
       nightly: false
-      tag: ${{ github.event.release.tag_name }}
+      tag: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
+      arch: x86_64
     secrets: inherit
 
   macos_amd64_build:
@@ -32,7 +46,7 @@ jobs:
     with:
       nightly: false
       aarch64: false
-      tag: ${{ github.event.release.tag_name }}
+      tag: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
     secrets: inherit
 
   macos_aarch64_build:
@@ -41,7 +55,7 @@ jobs:
     with:
       nightly: false
       aarch64: true
-      tag: ${{ github.event.release.tag_name }}
+      tag: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
     secrets: inherit
 
   updater:
@@ -50,6 +64,8 @@ jobs:
     needs: [windows_build, linux_build, macos_amd64_build, macos_aarch64_build]
     with:
       nightly: false
+      release_body: ${{ github.event_name == 'workflow_dispatch' && inputs.release_body || github.event.release.body }}
+    secrets: inherit
 
   telegram:
     name: Send Release Message to Telegram
