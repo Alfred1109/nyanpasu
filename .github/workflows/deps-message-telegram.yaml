@@ -16,6 +16,13 @@ on:
         required: true
         type: boolean
         default: false
+    secrets:
+      TELEGRAM_TOKEN:
+        required: true
+      TELEGRAM_API_ID:
+        required: true
+      TELEGRAM_API_HASH:
+        required: true
 
 jobs:
   telegram:
