@@ -21,6 +21,7 @@ use self::proxies::SystemTrayMenuProxiesExt;
 
 #[cfg(target_os = "linux")]
 use std::sync::atomic::AtomicU16;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 struct TrayState<R: Runtime> {
     menu: Mutex<Menu<R>>,
@@ -30,6 +31,7 @@ pub struct Tray {}
 
 static UPDATE_SYSTRAY_MUTEX: Lazy<parking_lot::Mutex<()>> =
     Lazy::new(|| parking_lot::Mutex::new(()));
+static UPDATE_SYSTRAY_PENDING: AtomicBool = AtomicBool::new(false);
 
 const TRAY_ID: &str = "main-tray";
 
@@ -203,7 +205,20 @@ impl Tray {
 
     #[instrument(skip(app_handle))]
     pub fn update_systray(app_handle: &AppHandle<tauri::Wry>) -> Result<()> {
+        if UPDATE_SYSTRAY_PENDING.swap(true, Ordering::AcqRel) {
+            tracing::debug!("tray update already pending, coalescing request");
+            return Ok(());
+        }
+
         let _guard = UPDATE_SYSTRAY_MUTEX.lock();
+        struct PendingReset;
+        impl Drop for PendingReset {
+            fn drop(&mut self) {
+                UPDATE_SYSTRAY_PENDING.store(false, Ordering::Release);
+            }
+        }
+        let _pending_reset = PendingReset;
+
         let tray_id = get_tray_id();
         let tray = {
             // if cfg!(target_os = "linux") {
