@@ -54,8 +54,8 @@ export default function HotkeyDialog({
   const [hotkeyMap, setHotkeyMap] = useState<HotkeyMap>({} as HotkeyMap)
 
   useEffect(() => {
-    if (open && Object.keys(hotkeyMap).length === 0) {
-      const map = {} as typeof hotkeyMap
+    if (open) {
+      const map = {} as HotkeyMap
       value?.forEach((text) => {
         const [func, key] = text.split(',').map((i) => i.trim())
         if (!func || !key) return
@@ -67,7 +67,7 @@ export default function HotkeyDialog({
       setHotkeyMap(map)
       setDuplicateItems([])
     }
-  }, [hotkeyMap, open, value])
+  }, [open, value])
 
   const [errorMessages, setErrorMessages] = useState<HotKeyErrorMessages>(
     HOTKEY_FUNC.reduce(

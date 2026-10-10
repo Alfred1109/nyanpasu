@@ -93,7 +93,6 @@ export const BaseDialog = ({
         onClose()
       }
     }
-    runMounted()
   })
 
   const handleOk = useLockFn(async () => {
@@ -117,9 +116,9 @@ export const BaseDialog = ({
       setMounted(true)
       cancelMounted()
     } else {
-      handleClose()
+      runMounted()
     }
-  }, [cancelMounted, handleClose, open])
+  }, [cancelMounted, runMounted, open])
 
   return (
     <AnimatePresence initial={false}>
