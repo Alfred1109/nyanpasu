@@ -30,7 +30,11 @@ enum Commands {
     Migrate(MigrateOpts),
 
     /// Collect the environment variables.
-    Collect,
+    Collect {
+        /// Report only the updater bundle type, without inspecting optional cores.
+        #[arg(long)]
+        bundle_only: bool,
+    },
     /// A launch bridge to resolve the delay exit issue.
     Launch {
         #[arg(raw = true)]
@@ -87,10 +91,12 @@ pub fn parse() -> anyhow::Result<()> {
                 #[allow(clippy::zombie_processes)]
                 std::process::Command::new(path).args(args).spawn().unwrap();
             }
-            Commands::Collect => {
+            Commands::Collect { bundle_only } => {
                 println!("Bundle type: {:?}", tauri::utils::platform::bundle_type());
-                let envs = crate::utils::collect::collect_envs().unwrap();
-                println!("{envs:#?}");
+                if !bundle_only {
+                    let envs = crate::utils::collect::collect_envs().unwrap();
+                    println!("{envs:#?}");
+                }
             }
             Commands::PanicDialog { message } => {
                 log::error!("Panic: {}", message);
