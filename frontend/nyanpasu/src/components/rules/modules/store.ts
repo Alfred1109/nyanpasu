@@ -4,5 +4,7 @@ import { ClashRule } from '@nyanpasu/interface'
 
 export const atomRulePage = atom<{
   data?: ClashRule[]
+  isLoading?: boolean
+  isError?: boolean
   scrollRef?: RefObject<HTMLElement>
 }>()

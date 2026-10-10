@@ -1,7 +1,7 @@
 {
   "manifest_version": 1,
   "latest": {
-    "mihomo": "v1.19.25",
+    "mihomo": "v1.19.32",
     "mihomo_alpha": "alpha-301d580",
     "clash_premium": "2023-09-05-gdcc8d87"
   },
@@ -43,5 +43,17 @@
       "linux-armv7hf": "clash-linux-armv7-n{}.gz"
     }
   },
-  "updated_at": "2026-05-21T00:26:30.228Z"
+  "updated_at": "2026-10-10T19:55:33.315687+00:00",
+  "mihomo_asset_sha256": {
+    "mihomo-darwin-amd64-v1-v1.19.32.gz": "f6eef841308b682e48f9c3e4740af42f5644a53d2f18c4d4bf1ee6f8a7af7c8b",
+    "mihomo-darwin-arm64-v1.19.32.gz": "3312a6780652c622890fd4357c6a853bbf865464fd047ac7b7f52dab8de18652",
+    "mihomo-linux-386-v1.19.32.gz": "d9e27bfd2ffa5f71079d6addf52adc075701e8cb33012022392a8243d9663939",
+    "mihomo-linux-amd64-v1-v1.19.32.gz": "306f81e723e60ce6b828899a6fe83e1d00e9ecefb2dc8d4d849312a5bc00efdc",
+    "mihomo-linux-arm64-v1.19.32.gz": "9dd862e28b46ff7d775f169cceebc28deccaa0a9e804237d421cd2571e0caba0",
+    "mihomo-linux-armv5-v1.19.32.gz": "f0e90b3cdd957c8e8bd6e5ff515d7bf310452734af15c90fdda4f6fc212689a0",
+    "mihomo-linux-armv7-v1.19.32.gz": "f622cbe903ba1a11d30e9071d1c5373929c675b854856ff3e7f977255a25bb66",
+    "mihomo-windows-386-v1.19.32.zip": "2fb4cfe1552e74eb1b2a0b98ec334041286a0de2ca01ca1ae16b4bf179c09b3f",
+    "mihomo-windows-amd64-v1-v1.19.32.zip": "00549b347d8e124600e46cac67d59293358454f465e9d86d2511567da56b7029",
+    "mihomo-windows-arm64-v1.19.32.zip": "7a4f6e58af9a120920935f2150cf642d945085fdb3e753314505b334234e1d1e"
+  }
 }

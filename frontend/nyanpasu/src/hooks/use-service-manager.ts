@@ -7,6 +7,7 @@ import {
   type ServiceModeInfo,
   type StatusInfo,
 } from '@nyanpasu/interface'
+import { normalizeError } from '@nyanpasu/utils'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 const NYANPASU_SETTING_QUERY_KEY = 'settings'
@@ -68,7 +69,7 @@ interface ServiceManagerState {
   /**
    * 服务模式配置是否启用
    */
-  serviceModeEnabled: boolean
+  serviceModeEnabled?: boolean
   /**
    * 服务 IPC 是否已连通
    */
@@ -175,21 +176,20 @@ export const useServiceManager = (): UseServiceManagerReturn => {
   const [currentOperation, setCurrentOperation] = useState<
     'install' | 'uninstall' | 'start' | 'stop' | 'restart' | null
   >(null)
-  const [serviceStatusError, setServiceStatusError] = useState<
-    string | undefined
-  >(undefined)
-
   const unwrap = <T, E>(
     res: { status: 'ok'; data: T } | { status: 'error'; error: E },
   ) => {
     if (res.status === 'error') {
-      throw res.error
+      throw normalizeError(res.error)
     }
     return res.data
   }
 
   const isPermissionDeniedError = (error: unknown) => {
-    const message = String(error).toLowerCase()
+    const message =
+      error instanceof Error
+        ? error.message.toLowerCase()
+        : String(error).toLowerCase()
     return (
       message.includes('permission denied') ||
       message.includes('os error 13') ||
@@ -197,108 +197,45 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     )
   }
 
-  // Direct service status query implementation
+  // Keep query failures as failures. A failed status read must never be
+  // presented as an installed/stopped service because that enables unsafe
+  // actions from a state we do not actually know.
   const query = useQuery<StatusInfo>({
     queryKey: ['system-service'],
     enabled: isInTauri || isBrowser,
     queryFn: async () => {
       if (!isInTauri) {
-        try {
-          const res = await fetch('/__local_api/service/status', {
-            cache: 'no-store',
-          })
-          if (!res.ok) {
-            console.warn(`Local API failed with status: ${res.status}`)
-            setServiceStatusError(undefined)
-            return {
-              name: '',
-              version: '',
-              status: 'not_installed' as const,
-              server: null,
-            }
-          }
-          const data = (await res.json()) as {
-            status?: 'running' | 'stopped' | 'not_installed'
-            version?: string
-          }
-          const status = data.status ?? 'not_installed'
-          setServiceStatusError(undefined)
-          return {
-            name: '',
-            version: data.version ?? '',
-            status: status as 'running' | 'stopped' | 'not_installed',
-            server: null,
-          }
-        } catch (error) {
-          console.warn(
-            'Failed to query local API, treating as not_installed:',
-            error,
-          )
-          setServiceStatusError(undefined)
-          return {
-            name: '',
-            version: '',
-            status: 'not_installed' as const,
-            server: null,
-          }
-        }
-      }
-
-      try {
-        const result = await commands.serviceStatus()
-        if (result.status === 'error') {
-          console.warn('Service status command returned error:', result.error)
-          if (isPermissionDeniedError(result.error)) {
-            setServiceStatusError(
-              '无法访问系统服务。请重新登录系统，或确认当前用户已获得 nyanpasu 服务组权限。',
-            )
-            return {
-              name: '',
-              version: '',
-              status: 'stopped' as const,
-              server: null,
-            }
-          }
-          setServiceStatusError(undefined)
-          return {
-            name: '',
-            version: '',
-            status: 'not_installed' as const,
-            server: null,
-          }
-        }
-        setServiceStatusError(undefined)
-        return result.data
-      } catch (error) {
-        console.warn('Service status command failed:', error)
-        if (isPermissionDeniedError(error)) {
-          setServiceStatusError(
-            '无法访问系统服务。请重新登录系统，或确认当前用户已获得 nyanpasu 服务组权限。',
-          )
-          return {
-            name: '',
-            version: '',
-            status: 'stopped' as const,
-            server: null,
-          }
+        const res = await fetch('/__local_api/service/status', {
+          cache: 'no-store',
+        })
+        if (!res.ok) {
+          throw new Error(`本地服务状态接口读取失败（HTTP ${res.status}）。`)
         }
 
-        const message = String(error).toLowerCase()
-        setServiceStatusError(undefined)
-        console.debug('Service appears not installed:', message)
+        const data = (await res.json()) as {
+          status?: 'running' | 'stopped' | 'not_installed'
+          version?: string
+        }
+        if (
+          data.status !== 'running' &&
+          data.status !== 'stopped' &&
+          data.status !== 'not_installed'
+        ) {
+          throw new Error('本地服务状态接口返回了无法识别的状态。')
+        }
         return {
           name: '',
-          version: '',
-          status: 'not_installed' as const,
+          version: data.version ?? '',
+          status: data.status,
           server: null,
         }
       }
+
+      return unwrap(await commands.serviceStatus())
     },
     refetchInterval: 5000,
     // 禁用重试，避免重复错误日志
     retry: false,
-    // 确保即使查询失败也不会进入error状态
-    throwOnError: false,
   })
 
   const availabilityQuery = useQuery<ServiceModeInfo>({
@@ -365,6 +302,10 @@ export const useServiceManager = (): UseServiceManagerReturn => {
       for (let i = 0; i < maxSeconds; i++) {
         await new Promise((resolve) => setTimeout(resolve, 1000))
         const result = await query.refetch()
+        if (!result.isSuccess) {
+          setInstallStage(InstallStage.VERIFYING)
+          continue
+        }
         const currentStatus = result.data?.status
         console.debug(
           `Installation check ${i + 1}/${maxSeconds}s: status = ${currentStatus}`,
@@ -423,6 +364,8 @@ export const useServiceManager = (): UseServiceManagerReturn => {
         ])
 
         if (
+          availabilityResult.isSuccess &&
+          serviceStatusResult.isSuccess &&
           availabilityResult.data?.connected &&
           serviceStatusResult.data?.status === 'running'
         ) {
@@ -624,12 +567,30 @@ export const useServiceManager = (): UseServiceManagerReturn => {
     installStage,
     canCancel: false,
     serviceStatus: query.data?.status,
-    serviceModeEnabled: Boolean(settingsQuery.data?.enable_service_mode),
+    serviceModeEnabled: settingsQuery.data?.enable_service_mode ?? undefined,
     serviceConnected: availabilityQuery.data?.connected ?? false,
     isServiceInstalled:
       !!query.data?.status && query.data.status !== 'not_installed',
     lastError,
-    serviceStatusError,
+    serviceStatusError: (() => {
+      const statusError = query.error
+      if (statusError) {
+        const detail =
+          statusError instanceof Error
+            ? statusError.message
+            : String(statusError)
+        return isPermissionDeniedError(statusError)
+          ? `无法访问系统服务。请检查当前用户的服务组权限。\n${detail}`
+          : detail
+      }
+      if (settingsQuery.error) {
+        return `服务模式设置读取失败：${String(settingsQuery.error)}`
+      }
+      if (availabilityQuery.error) {
+        return `服务能力检查失败：${String(availabilityQuery.error)}`
+      }
+      return undefined
+    })(),
 
     // Methods
     installService,

@@ -1,5 +1,12 @@
 use crate::{
-    config::{profile::ProfileBuilder, *},
+    config::{
+        dns::{
+            DNS_OVERRIDES_KEY, DNS_SETTINGS_LOCK, DnsSettings, json_from_yaml_mapping,
+            normalize_overrides, validate_overrides, yaml_mapping_from_json,
+        },
+        profile::ProfileBuilder,
+        *,
+    },
     core::{
         logger::Logger, storage::Storage, tasks::jobs::ProfilesJobGuard,
         updater::ManifestVersionLatest, *,
@@ -56,16 +63,16 @@ impl serde::Serialize for IpcError {
     where
         S: serde::ser::Serializer,
     {
-        serializer.serialize_str(format!("{self:#?}").as_str())
+        crate::diagnostics::ipc_error_payload(self).serialize(serializer)
     }
 }
 
 impl specta::Type for IpcError {
     fn inline(
-        _type_map: &mut specta::TypeMap,
-        _generics: specta::Generics,
+        type_map: &mut specta::TypeMap,
+        generics: specta::Generics,
     ) -> specta::datatype::DataType {
-        specta::datatype::DataType::Primitive(specta::datatype::PrimitiveType::String)
+        <crate::diagnostics::StructuredIpcError as specta::Type>::inline(type_map, generics)
     }
 }
 
@@ -448,6 +455,81 @@ pub fn get_runtime_yaml() -> Result<String> {
             serde_yaml::to_string(config).context("failed to convert config to yaml")
         }))?;
     Ok(mapping)
+}
+
+/// Return persistent DNS overrides and DNS from the committed generated runtime config.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_dns_settings() -> Result<DnsSettings> {
+    let _guard = DNS_SETTINGS_LOCK.lock().await;
+    let overrides = {
+        let clash_config = Config::clash();
+        let clash = clash_config.data();
+        clash
+            .0
+            .get(DNS_OVERRIDES_KEY)
+            .and_then(serde_yaml::Value::as_mapping)
+            .map(json_from_yaml_mapping)
+            .unwrap_or(serde_json::Value::Null)
+    };
+
+    let effective = {
+        let runtime_config = Config::runtime();
+        let runtime = runtime_config.data();
+        runtime
+            .config
+            .as_ref()
+            .and_then(|config| config.get("dns"))
+            .and_then(|dns| serde_json::to_value(dns).ok())
+            .unwrap_or(serde_json::Value::Null)
+    };
+
+    let (state, _, _) = CoreManager::global().status().await;
+    Ok(DnsSettings {
+        overrides,
+        effective,
+        core_running: matches!(state.as_ref(), CoreState::Running),
+    })
+}
+
+/// Save app-owned DNS overrides and activate them through the generated runtime config.
+/// Passing null clears all overrides and follows the active profile again.
+#[tauri::command]
+#[specta::specta]
+pub async fn set_dns_settings(payload: Option<serde_json::Value>) -> Result<DnsSettings> {
+    let guard = DNS_SETTINGS_LOCK.lock().await;
+
+    let new_overrides = match payload {
+        None | Some(serde_json::Value::Null) => None,
+        Some(mut value) => {
+            normalize_overrides(&mut value);
+            validate_overrides(&value).map_err(IpcError::Custom)?;
+            if value.as_object().is_some_and(serde_json::Map::is_empty) {
+                None
+            } else {
+                Some(yaml_mapping_from_json(&value).map_err(IpcError::Custom)?)
+            }
+        }
+    };
+
+    crate::config::runtime_settings::apply_override_change(|clash| {
+        match new_overrides {
+            Some(overrides) => {
+                clash.0.insert(
+                    DNS_OVERRIDES_KEY.into(),
+                    serde_yaml::Value::Mapping(overrides),
+                );
+            }
+            None => {
+                clash.0.remove(DNS_OVERRIDES_KEY);
+            }
+        }
+        Ok(())
+    })
+    .await?;
+
+    drop(guard);
+    get_dns_settings().await
 }
 
 #[tauri::command]
@@ -1164,3 +1246,106 @@ pub async fn get_clash_ws_connections_state(
 // Updater block
 // NOTE: 自动更新功能现在由 tauri-plugin-updater 直接处理
 // 旧的 UpdateWrapper 和 check_update 已移除，前端应使用 tauri-plugin-updater 的 API
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_managed_runtime_settings() -> Result<crate::config::managed::ManagedRuntimeSettings>
+{
+    let _guard = crate::config::runtime_settings::SETTINGS_LOCK.lock().await;
+    managed_runtime_snapshot().await
+}
+
+async fn managed_runtime_snapshot() -> Result<crate::config::managed::ManagedRuntimeSettings> {
+    use crate::config::managed::{ManagedRuntimeFields, ManagedRuntimeSettings};
+    let fields = ManagedRuntimeFields::from_config(&Config::clash().data().0)?;
+    let (effective_unified_delay, effective_tcp_concurrent) = {
+        let runtime = Config::runtime();
+        let runtime = runtime.data();
+        let value = |key| {
+            runtime
+                .config
+                .as_ref()
+                .and_then(|config| config.get(key))
+                .and_then(serde_yaml::Value::as_bool)
+        };
+        (value("unified-delay"), value("tcp-concurrent"))
+    };
+    let (state, _, _) = CoreManager::global().status().await;
+    Ok(ManagedRuntimeSettings {
+        fields,
+        effective_unified_delay,
+        effective_tcp_concurrent,
+        core_running: matches!(state.as_ref(), CoreState::Running),
+    })
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn set_managed_runtime_settings(
+    payload: crate::config::managed::ManagedRuntimeFields,
+) -> Result<crate::config::managed::ManagedRuntimeSettings> {
+    use crate::config::managed::{MANAGED_FIELDS_KEY, ManagedRuntimeFields};
+    let _guard = crate::config::runtime_settings::SETTINGS_LOCK.lock().await;
+    crate::config::runtime_settings::apply_override_change(|clash| {
+        if payload == ManagedRuntimeFields::default() {
+            clash.0.remove(MANAGED_FIELDS_KEY);
+        } else {
+            clash
+                .0
+                .insert(MANAGED_FIELDS_KEY.into(), serde_yaml::to_value(payload)?);
+        }
+        Ok(())
+    })
+    .await?;
+    managed_runtime_snapshot().await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn clear_proxy_fixed(group: String) -> Result<()> {
+    use crate::core::clash::proxies::{ProxiesGuard, ProxiesGuardExt};
+    ProxiesGuard::global().clear_fixed_proxy(&group).await?;
+    let _ = crate::core::connection_interruption::ConnectionInterruptionService::on_proxy_change()
+        .await;
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn create_manual_backup(
+    app_handle: AppHandle,
+) -> Result<crate::core::backup::BackupInfo> {
+    let _guard = crate::config::runtime_settings::SETTINGS_LOCK.lock().await;
+    let storage = app_handle.state::<Storage>().inner().clone();
+    Ok(
+        tokio::task::spawn_blocking(move || crate::core::backup::create_manual_backup(&storage))
+            .await
+            .map_err(|e| anyhow!("backup task failed: {e}"))??,
+    )
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn list_backups() -> Result<Vec<crate::core::backup::BackupInfo>> {
+    Ok(
+        tokio::task::spawn_blocking(crate::core::backup::list_backups)
+            .await
+            .map_err(|e| anyhow!("backup listing task failed: {e}"))??,
+    )
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn verify_backup(name: String) -> Result<crate::core::backup::BackupInfo> {
+    Ok(
+        tokio::task::spawn_blocking(move || crate::core::backup::verify_backup(&name))
+            .await
+            .map_err(|e| anyhow!("backup verification task failed: {e}"))??,
+    )
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn open_backup_directory() -> Result<()> {
+    Ok(crate::core::backup::open_backup_directory()?)
+}

@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useClashAPI, type ClashDelayOptions } from '../service/clash-api'
+import {
+  DEFAULT_CLASH_DELAY_URL,
+  useClashAPI,
+  type ClashDelayOptions,
+} from '../service/clash-api'
 import { unwrapResult } from '../utils'
 import {
   commands,
@@ -9,6 +13,21 @@ import {
   type ProxyItem,
 } from './bindings'
 import { CLASH_PROXIES_QUERY_KEY } from './consts'
+import { useSetting } from './use-settings'
+
+const DEFAULT_PROXY_TEST_TIMEOUT_MS = 5000
+
+type ProxyGroupMetadata = {
+  testUrl?: string | null
+  expectedStatus?: string | null
+  fixed?: string | null
+  extra?: Record<string, unknown> | null
+}
+
+type ProxyGroupWithMetadata = ProxyGroupItem & ProxyGroupMetadata
+
+const currentFixed = (group: ProxyGroupWithMetadata) =>
+  typeof group.fixed === 'string' && group.fixed.length > 0
 
 export type ClashProxiesQueryHelperFn = {
   mutateDelay: (options?: ClashDelayOptions) => Promise<void>
@@ -20,8 +39,11 @@ export interface ClashProxiesQueryProxyItem
 }
 
 export interface ClashProxiesQueryGroupItem
-  extends ProxyGroupItem, ClashProxiesQueryHelperFn {
+  extends ProxyGroupWithMetadata, ClashProxiesQueryHelperFn {
   all: ClashProxiesQueryProxyItem[]
+  canSelect: boolean
+  canClearFixed: boolean
+  mutateClearFixed: () => Promise<void>
 }
 
 export interface ClashProxiesQuery extends Proxies {
@@ -48,6 +70,23 @@ export const useClashProxies = () => {
   const queryClient = useQueryClient()
 
   const { proxiesDelay, groupDelay } = useClashAPI()
+  const { value: defaultLatencyTest } = useSetting('default_latency_test')
+
+  const resolveOptions = (
+    options?: ClashDelayOptions,
+    group?: ProxyGroupMetadata,
+  ): ClashDelayOptions => ({
+    url:
+      options?.url?.trim() ||
+      group?.testUrl?.trim() ||
+      defaultLatencyTest?.trim() ||
+      DEFAULT_CLASH_DELAY_URL,
+    timeout: options?.timeout ?? DEFAULT_PROXY_TEST_TIMEOUT_MS,
+    expectedStatus:
+      options?.expectedStatus?.trim() ||
+      group?.expectedStatus?.trim() ||
+      undefined,
+  })
 
   const proxies = useQuery<ClashProxiesQuery | undefined>({
     queryKey: [CLASH_PROXIES_QUERY_KEY],
@@ -62,26 +101,113 @@ export const useClashProxies = () => {
       const createProxyWithHelpers = (
         proxy: ProxyItem,
         groupName: string,
+        parentGroup?: ProxyGroupMetadata,
+        canSelect = false,
       ): ClashProxiesQueryProxyItem => ({
         ...proxy,
         mutateDelay: async (options?: ClashDelayOptions) => {
-          await updateProxiesDelay.mutateAsync([proxy.name, options])
+          const result = await updateProxiesDelay.mutateAsync([
+            proxy.name,
+            resolveOptions(options, parentGroup),
+          ])
+          if (!Number.isFinite(result.delay) || result.delay <= 0) {
+            throw new Error(`Latency test failed for ${proxy.name}`)
+          }
         },
         mutateSelect: async () => {
-          await commands.selectProxy(groupName, proxy.name)
+          if (!canSelect) {
+            throw new Error(
+              `Proxy group ${groupName} does not support selection`,
+            )
+          }
+          unwrapResult(await commands.selectProxy(groupName, proxy.name))
           await proxies.refetch()
         },
       })
 
       const createGroupWithHelpers = (
-        group: ProxyGroupItem,
+        source: ProxyGroupItem,
       ): ClashProxiesQueryGroupItem => ({
-        ...group,
+        ...(source as ProxyGroupWithMetadata),
+        canSelect:
+          source.type === 'Selector' ||
+          ((source.type === 'URLTest' || source.type === 'Fallback') &&
+            typeof (source as ProxyGroupWithMetadata).fixed === 'string'),
+        canClearFixed:
+          (source.type === 'URLTest' || source.type === 'Fallback') &&
+          Boolean((source as ProxyGroupWithMetadata).fixed),
         mutateDelay: async (options?: ClashDelayOptions) => {
-          await updateGroupDelay.mutateAsync([group.name, options])
+          const latencyOptions = resolveOptions(
+            options,
+            source as ProxyGroupWithMetadata,
+          )
+          if (
+            (source.type === 'URLTest' || source.type === 'Fallback') &&
+            currentFixed(source as ProxyGroupWithMetadata)
+          ) {
+            const failures: string[] = []
+            for (let start = 0; start < source.all.length; start += 8) {
+              const batch = source.all.slice(start, start + 8)
+              await Promise.all(
+                batch.map(async (proxy) => {
+                  try {
+                    const result = await updateProxiesDelay.mutateAsync([
+                      proxy.name,
+                      latencyOptions,
+                    ])
+                    if (!Number.isFinite(result.delay) || result.delay <= 0) {
+                      failures.push(proxy.name)
+                    }
+                  } catch {
+                    failures.push(proxy.name)
+                    markDelayFailure(proxy.name)
+                  }
+                }),
+              )
+            }
+            if (failures.length) {
+              throw new Error(
+                `Latency test failed for ${failures.length} of ${source.all.length} members`,
+              )
+            }
+            return
+          }
+
+          const results = await updateGroupDelay.mutateAsync([
+            source.name,
+            latencyOptions,
+          ])
+          const failed = source.all.filter((proxy) => {
+            const delay = results[proxy.name]
+            return !Number.isFinite(delay) || delay <= 0
+          })
+          if (failed.length) {
+            throw new Error(
+              `Latency test failed for ${failed.length} of ${source.all.length} members`,
+            )
+          }
         },
-        all: group.all.map((proxy) =>
-          createProxyWithHelpers(proxy, group.name),
+        mutateClearFixed: async () => {
+          if (source.type !== 'URLTest' && source.type !== 'Fallback') {
+            throw new Error(
+              `Group ${source.name} cannot clear a fixed selection`,
+            )
+          }
+          if (!currentFixed(source as ProxyGroupWithMetadata)) {
+            return
+          }
+          unwrapResult(await commands.clearProxyFixed(source.name))
+          await proxies.refetch()
+        },
+        all: source.all.map((proxy) =>
+          createProxyWithHelpers(
+            proxy,
+            source.name,
+            source as ProxyGroupWithMetadata,
+            source.type === 'Selector' ||
+              ((source.type === 'URLTest' || source.type === 'Fallback') &&
+                typeof (source as ProxyGroupWithMetadata).fixed === 'string'),
+          ),
         ),
       })
 
@@ -110,6 +236,26 @@ export const useClashProxies = () => {
 
   const setQueryData = (data: ClashProxiesQuery) => {
     queryClient.setQueryData([CLASH_PROXIES_QUERY_KEY], data)
+  }
+
+  const markDelayFailure = (name: string) => {
+    const oldData = getQueryData()
+    if (!oldData) return
+    setQueryData({
+      ...oldData,
+      global: {
+        ...oldData.global,
+        all: oldData.global.all.map((proxy) =>
+          createUpdatedProxy(proxy, { name, delay: 0 }),
+        ),
+      },
+      groups: oldData.groups.map((group) => ({
+        ...group,
+        all: group.all.map((proxy) =>
+          createUpdatedProxy(proxy, { name, delay: 0 }),
+        ),
+      })),
+    })
   }
 
   const updateProxiesDelay = useMutation({
@@ -167,12 +313,9 @@ export const useClashProxies = () => {
             Object.prototype.hasOwnProperty.call(data, proxy.name)
               ? createUpdatedProxy(proxy, {
                   name: proxy.name,
-                  delay: data[proxy.name],
+                  delay: data[proxy.name] ?? 0,
                 })
-              : {
-                  ...proxy,
-                  history: [],
-                },
+              : createUpdatedProxy(proxy, { name: proxy.name, delay: 0 }),
           ),
         },
         groups: oldData.groups.map((group) => ({
@@ -181,12 +324,9 @@ export const useClashProxies = () => {
             Object.prototype.hasOwnProperty.call(data, proxy.name)
               ? createUpdatedProxy(proxy, {
                   name: proxy.name,
-                  delay: data[proxy.name],
+                  delay: data[proxy.name] ?? 0,
                 })
-              : {
-                  ...proxy,
-                  history: [],
-                },
+              : createUpdatedProxy(proxy, { name: proxy.name, delay: 0 }),
           ),
         })),
       } satisfies ClashProxiesQuery

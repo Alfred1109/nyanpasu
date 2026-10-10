@@ -9,8 +9,14 @@ const Header: FC<{ title?: ReactNode; header?: ReactNode }> = memo(
     header?: ReactNode
   }) {
     return (
-      <header className="pl-2 select-none" data-tauri-drag-region>
-        <h1 className="mb-1 text-4xl/1! font-medium" data-tauri-drag-region>
+      <header
+        className="page-header gap-2 pl-2 select-none"
+        data-tauri-drag-region
+      >
+        <h1
+          className="page-title mb-1 shrink-0 text-4xl/1! font-medium"
+          data-tauri-drag-region
+        >
           {title}
         </h1>
 

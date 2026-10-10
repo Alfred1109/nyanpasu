@@ -56,13 +56,13 @@ export const UpdateProviderButton = ({
   return (
     <Button
       variant="contained"
+      size="small"
       loading={loading}
       startIcon={<Refresh />}
       onClick={handleProviderUpdate}
-      className={className}
+      className={`max-w-full text-left leading-tight whitespace-normal ${className ?? ''}`}
     >
       {buttonText}
     </Button>
   )
 }
-

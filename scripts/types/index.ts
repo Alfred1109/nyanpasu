@@ -17,6 +17,7 @@ export interface BinInfo {
   exeFile: string
   tmpFile: string
   downloadURL: string
+  sha256?: string
 }
 
 export enum SupportedArch {
@@ -44,5 +45,6 @@ export interface ManifestVersion {
   manifest_version: number
   latest: { [K in SupportedCore]: string }
   arch_template: { [K in SupportedCore]: ArchMapping }
+  mihomo_asset_sha256?: Record<string, string>
   updated_at: string // ISO 8601
 }

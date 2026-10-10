@@ -55,6 +55,7 @@ const IPASNPanel = ({ refreshCount }: { refreshCount: number }) => {
   return (
     <Grid
       size={{
+        xs: 12,
         sm: isDrawer ? (supportMemory ? 6 : 12) : 12,
         md: supportMemory ? 8 : 12,
         lg: supportMemory ? 5 : 8,
@@ -132,16 +133,16 @@ const IPASNPanel = ({ refreshCount }: { refreshCount: number }) => {
           </>
         ) : (
           <>
-            <div className="mt-1.5 mb-2 h-9 w-12 animate-pulse rounded-lg bg-slate-700" />
+            <div className="mt-1.5 mb-2 h-9 w-12 shrink-0 animate-pulse rounded-lg bg-slate-700" />
 
-            <div className="flex flex-1 animate-pulse flex-col gap-1">
-              <div className="mt-1.5 h-6 w-20 rounded-full bg-slate-700" />
+            <div className="flex min-w-0 flex-1 animate-pulse flex-col gap-1">
+              <div className="mt-1.5 h-6 w-full max-w-20 rounded-full bg-slate-700" />
 
-              <div className="mt-1 h-5 w-44 rounded-full bg-slate-700" />
+              <div className="mt-1 h-5 w-full max-w-44 rounded-full bg-slate-700" />
 
-              <div className="mt-1 h-5 w-16 rounded-full bg-slate-700" />
+              <div className="mt-1 h-5 w-full max-w-16 rounded-full bg-slate-700" />
 
-              <div className="mt-1 h-6 w-32 rounded-lg bg-slate-700" />
+              <div className="mt-1 h-6 w-full max-w-32 rounded-lg bg-slate-700" />
             </div>
           </>
         )}

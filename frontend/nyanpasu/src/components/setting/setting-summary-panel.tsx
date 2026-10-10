@@ -14,10 +14,7 @@ export function SettingSummaryPanel({
       sx={(theme) => ({
         ...getTokenSurfaceStyles(theme, { elevated: true }),
         display: 'grid',
-        gridTemplateColumns: {
-          xs: '1fr',
-          sm: `repeat(${columns}, minmax(0, 1fr))`,
-        },
+        gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${columns === 2 ? 220 : 140}px), 1fr))`,
         gap: 0.75,
         p: 1,
         borderRadius: 2.5,
@@ -47,6 +44,7 @@ export function SettingSummaryItem({
       </Typography>
       <Typography
         variant="body2"
+        component="div"
         sx={{ fontWeight: 700, mt: 0.25, overflowWrap: 'anywhere' }}
       >
         {value}

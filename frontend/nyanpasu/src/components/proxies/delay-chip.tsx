@@ -1,4 +1,5 @@
 import { memo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getThemePaletteTokens, tokenAlpha } from '@/utils/theme'
 import { Bolt } from '@mui/icons-material'
 import { CircularProgress } from '@mui/material'
@@ -15,12 +16,17 @@ const DelayChip = memo(function DelayChip({
   onClick: () => Promise<void>
 }) {
   const [loading, setLoading] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const { t } = useTranslation()
 
   const handleClick = async () => {
     try {
       setLoading(true)
+      setFailed(false)
 
       await onClick()
+    } catch {
+      setFailed(true)
     } finally {
       setLoading(false)
     }
@@ -38,19 +44,19 @@ const DelayChip = memo(function DelayChip({
             color:
               delay === -1
                 ? tokens.text.secondary
-                : delay > 1000
+                : failed || delay === 0 || delay > 1000
                   ? tokens.error.main
                   : tokens.success.main,
             backgroundColor:
               delay === -1
                 ? tokenAlpha(tokens.text.primary, 0.08)
-                : delay > 1000
+                : failed || delay === 0 || delay > 1000
                   ? tokenAlpha(tokens.error.main, 0.12)
                   : tokenAlpha(tokens.success.main, 0.12),
             borderColor:
               delay === -1
                 ? tokenAlpha(tokens.divider, 0.8)
-                : delay > 1000
+                : failed || delay === 0 || delay > 1000
                   ? tokenAlpha(tokens.error.main, 0.22)
                   : tokenAlpha(tokens.success.main, 0.22),
           }
@@ -64,9 +70,11 @@ const DelayChip = memo(function DelayChip({
               loading ? 'opacity-0' : 'opacity-100',
             )}
           >
-            {delay === -1 ? (
+            {failed ? (
+              t('Latency test failed')
+            ) : delay === -1 ? (
               <Bolt className="scale-[0.6]" />
-            ) : !!delay && delay < 10000 ? (
+            ) : delay > 0 && delay < 10000 ? (
               `${delay} ms`
             ) : (
               'timeout'

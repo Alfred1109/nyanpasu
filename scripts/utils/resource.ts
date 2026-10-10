@@ -1,5 +1,6 @@
 // import { ArchMapping } from 'utils/manifest';
 import { fetch, type RequestInit } from 'undici'
+import versionManifest from '../../manifest/version.json'
 import {
   CLASH_META_ALPHA_MANIFEST,
   CLASH_META_MANIFEST,
@@ -136,12 +137,22 @@ export const getClashMetaInfo = ({
 
   const targetFile = `mihomo-${sidecarHost}${isWin ? '.exe' : ''}`
 
+  const sha256 =
+    versionManifest.mihomo_asset_sha256[
+      name as keyof typeof versionManifest.mihomo_asset_sha256
+    ]
+  if (!sha256)
+    throw new Error(
+      `Missing official SHA256 for ${name}; regenerate the version manifest`,
+    )
+
   return {
     name: 'mihomo',
     targetFile,
     exeFile,
     tmpFile,
     downloadURL,
+    sha256,
   }
 }
 

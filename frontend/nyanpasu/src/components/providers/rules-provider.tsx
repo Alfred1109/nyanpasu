@@ -33,28 +33,28 @@ export default function RulesProvider({ provider }: RulesProviderProps) {
 
   return (
     <Paper
-      className="flex flex-col gap-2 p-5"
+      className="flex h-full min-w-0 flex-col justify-between gap-3 p-4"
       sx={{
         borderRadius: 6,
       }}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="ml-1">
-          <p className="truncate text-lg font-bold">{provider.name}</p>
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-base font-bold">{provider.name}</p>
 
           <p className="truncate text-sm">
             {provider.vehicleType}/{provider.behavior}
           </p>
         </div>
 
-        <div className="text-right text-sm">
+        <div className="max-w-[45%] shrink-0 text-right text-xs leading-5">
           {t('Last Update', {
             fromNow: dayjs(provider.updatedAt).fromNow(),
           })}
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
         <Chip
           className="truncate font-bold"
           label={t('Rule Set rules', {
@@ -67,6 +67,7 @@ export default function RulesProvider({ provider }: RulesProviderProps) {
           size="small"
           variant="contained"
           className="size-8! min-w-0!"
+          disabled={loading}
           onClick={handleClick}
         >
           <Refresh />

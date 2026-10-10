@@ -67,11 +67,13 @@ function Connections() {
         title={t('Connections')}
         full
         header={
-          <div className="flex max-h-96 w-full flex-1 items-center justify-between gap-2 pl-5">
+          <div className="flex w-full min-w-0 flex-1 flex-wrap items-center justify-between gap-x-2 gap-y-1 pl-2 md:pl-5">
             <Suspense fallback={null}>
-              <ConnectionTotal />
+              <div className="shrink-0">
+                <ConnectionTotal />
+              </div>
             </Suspense>
-            <div className="flex items-center gap-1">
+            <div className="ml-auto flex max-w-full min-w-[12.75rem] flex-1 items-center justify-end gap-1">
               <Suspense fallback={null}>
                 <ColumnFilterDialog
                   open={openColumnFilter}
@@ -79,10 +81,14 @@ function Connections() {
                 />
               </Suspense>
               <HeaderSearch
+                className="min-w-0 flex-1"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <IconButton onClick={() => setOpenColumnFilter(true)}>
+              <IconButton
+                aria-label={t('Connection Columns')}
+                onClick={() => setOpenColumnFilter(true)}
+              >
                 <FilterAlt />
               </IconButton>
             </div>

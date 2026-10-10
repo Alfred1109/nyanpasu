@@ -13,6 +13,7 @@ export type LatestVersionResolver = Promise<{
   name: string
   version: string
   archMapping: ArchMapping
+  assetSha256?: Record<string, string>
 }>
 
 export const resolveMihomo = async (): LatestVersionResolver => {
@@ -38,10 +39,32 @@ export const resolveMihomo = async (): LatestVersionResolver => {
     [SupportedArch.LinuxArmv7hf]: 'mihomo-linux-armv7-{}.gz',
   } satisfies ArchMapping
 
+  const assetSha256 = Object.fromEntries(
+    latestRelease.data.assets.flatMap(
+      (asset: { name: string; digest?: string | null }) => {
+        const digest = asset.digest
+        return typeof digest === 'string' &&
+          /^sha256:[0-9a-f]{64}$/i.test(digest) &&
+          Object.values(archMapping).some(
+            (template) =>
+              template.replace('{}', latestRelease.data.tag_name) ===
+              asset.name,
+          )
+          ? [[asset.name, digest.slice(7).toLowerCase()]]
+          : []
+      },
+    ),
+  )
+  for (const template of Object.values(archMapping)) {
+    const name = template.replace('{}', latestRelease.data.tag_name)
+    if (!assetSha256[name])
+      throw new Error(`Missing official SHA256 for ${name}`)
+  }
   return {
     name: 'mihomo',
     version: latestRelease.data.tag_name,
     archMapping,
+    assetSha256,
   }
 }
 

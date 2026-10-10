@@ -13,6 +13,7 @@ export * from './use-clash-rules-provider'
 export * from './use-clash-rules'
 export * from './use-clash-traffic'
 export * from './use-clash-version'
+export * from './use-dns-settings'
 export * from './use-post-processing-output'
 export * from './use-profile-content'
 export * from './use-profile'
@@ -26,3 +27,7 @@ export type * from './bindings'
 
 // manually added
 export const openUWPTool = commands.invokeUwpTool
+
+export * from './use-managed-runtime-settings'
+
+export { useBackups, BACKUPS_QUERY_KEY } from './use-backups'

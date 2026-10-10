@@ -12,10 +12,12 @@ export const Route = createFileRoute('/(legacy)/rules')({
   component: RulesPage,
 })
 
+const Component = lazy(() => import('@/components/rules/rule-page'))
+
 function RulesPage() {
   const { t } = useTranslation()
 
-  const { data } = useClashRules()
+  const { data, isLoading, isError } = useClashRules()
 
   const [filterText, setFilterText] = useState('')
 
@@ -27,10 +29,12 @@ function RulesPage() {
     () => {
       setRule({
         data: data?.rules.filter((each) => each.payload.includes(filterText)),
+        isLoading,
+        isError,
         scrollRef: viewportRef as RefObject<HTMLElement>,
       })
     },
-    [data, viewportRef.current, filterText],
+    [data, isLoading, isError, viewportRef.current, filterText],
     { wait: 150 },
   )
 
@@ -45,8 +49,6 @@ function RulesPage() {
     }),
   }
 
-  const Component = lazy(() => import('@/components/rules/rule-page'))
-
   return (
     <BasePage
       full
@@ -59,7 +61,7 @@ function RulesPage() {
           value={filterText}
           placeholder={t('Filter conditions')}
           onChange={(e) => setFilterText(e.target.value)}
-          className="pb-0!"
+          className="w-full min-w-0 pb-0! sm:max-w-64"
           sx={{ input: { py: 1, fontSize: 14 } }}
           slotProps={{
             input: inputProps,

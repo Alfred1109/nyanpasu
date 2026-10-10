@@ -1,492 +1,164 @@
 import { useLockFn } from 'ahooks'
-import { useEffect, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useState } from 'react'
 import type { UseServiceManagerReturn } from '@/hooks/use-service-manager'
+import { formatError } from '@/utils'
 import { IS_IN_TAURI } from '@/utils/tauri'
+import { ShieldOutlined } from '@mui/icons-material'
 import {
-  getDefaultChipStyles,
-  getThemePaletteTokens,
-  getTokenSurfaceStyles,
-  tokenAlpha,
-} from '@/utils/theme'
-import {
-  CheckCircle as CheckIcon,
-  Error as ErrorIcon,
-  Info as InfoIcon,
-  Warning as WarningIcon,
-} from '@mui/icons-material'
-import { Alert, Box, Chip, Fade, Typography } from '@mui/material'
-import { toggleTunMode, useSetting } from '@nyanpasu/interface'
-import { BaseCard } from '@nyanpasu/ui'
-import { message } from '@tauri-apps/plugin-dialog'
-import { PaperSwitchButton } from './modules/system-proxy'
-import { getAvailabilityLabel, getOnOffLabel } from './setting-status'
-import {
-  SettingSummaryItem,
-  SettingSummaryPanel,
-} from './setting-summary-panel'
+  Alert,
+  Button,
+  CircularProgress,
+  Collapse,
+  Stack,
+  Switch,
+  Typography,
+} from '@mui/material'
+import { toggleTunMode, useClashConfig, useSetting } from '@nyanpasu/interface'
+import { SettingControlRow } from './setting-control-row'
 
-/**
- * 服务状态类型定义
- */
-type ServiceStatusInfo = {
-  status: 'not_installed' | 'stopped' | 'running'
-  canUseTun: boolean
-  message: string
-  severity: 'error' | 'warning' | 'info' | 'success'
-  actionHint?: string
+function tunRequirement(service: UseServiceManagerReturn) {
+  if (!IS_IN_TAURI) return '请在桌面应用中修改'
+  if (service.query.isError)
+    return `服务状态读取失败：${formatError(service.query.error)}`
+  if (service.settingsQuery.isError)
+    return `服务模式读取失败：${formatError(service.settingsQuery.error)}`
+  if (service.settingsQuery.isPending && !service.settingsQuery.data)
+    return '正在读取服务模式'
+  if (service.availabilityQuery.isError)
+    return `服务连接读取失败：${formatError(service.availabilityQuery.error)}`
+  if (service.serviceStatusError)
+    return `服务状态读取失败：${service.serviceStatusError}`
+  if (service.serviceStatus === undefined) return '正在读取服务状态'
+  if (service.serviceStatus === 'not_installed') return '需要安装系统服务'
+  if (!service.serviceModeEnabled) return '需要启用服务模式'
+  if (service.serviceStatus !== 'running') return '需要启动系统服务'
+  if (!service.serviceConnected) return '等待服务连接就绪'
+  return null
 }
 
-/**
- * 根据服务状态计算TUN模式的可用性和提示信息
- */
-const getServiceStatusInfo = (
-  serviceStatus?: string,
-  serviceConnected?: boolean,
-  isServiceInstalled?: boolean,
-  isServiceModeEnabled?: boolean,
-  serviceStatusError?: string,
-  isInTauri?: boolean,
-  t?: (key: string) => string,
-): ServiceStatusInfo => {
-  if (!isInTauri) {
-    return {
-      status: 'not_installed',
-      canUseTun: false,
-      message: '该功能仅在桌面应用中可用',
-      severity: 'info',
-      actionHint: '请使用桌面版应用',
-    }
-  }
-
-  if (serviceStatusError) {
-    return {
-      status: 'stopped',
-      canUseTun: false,
-      message: serviceStatusError,
-      severity: 'warning',
-      actionHint: '请先恢复服务访问权限，再启用 TUN 模式',
-    }
-  }
-
-  if (!isServiceInstalled || serviceStatus === 'not_installed') {
-    return {
-      status: 'not_installed',
-      canUseTun: false,
-      message: '需要先安装系统服务才能使用TUN模式',
-      severity: 'warning',
-      actionHint: '点击上方"安装服务"按钮',
-    }
-  }
-
-  if (!isServiceModeEnabled) {
-    return {
-      status: 'stopped',
-      canUseTun: false,
-      message: '系统服务已安装，但当前未启用服务模式',
-      severity: 'warning',
-      actionHint: '请先到上方“系统服务”卡片中启用服务模式',
-    }
-  }
-
-  if (serviceStatus === 'stopped') {
-    return {
-      status: 'stopped',
-      canUseTun: false,
-      message: '服务已安装但未运行，TUN模式无法使用',
-      severity: 'warning',
-      actionHint: '点击上方"启动服务"按钮',
-    }
-  }
-
-  if (serviceStatus === 'running') {
-    if (!serviceConnected) {
-      return {
-        status: 'stopped',
-        canUseTun: false,
-        message: '服务正在启动中，IPC 连接尚未就绪',
-        severity: 'info',
-        actionHint: '请稍等几秒后再启用 TUN 模式',
-      }
-    }
-
-    return {
-      status: 'running',
-      canUseTun: true,
-      message: '服务运行正常，TUN模式可用',
-      severity: 'success',
-    }
-  }
-
-  return {
-    status: 'not_installed',
-    canUseTun: false,
-    message: '正在检查服务状态...',
-    severity: 'info',
-  }
-}
-
-/**
- * 获取状态图标
- */
-const getStatusIcon = (severity: ServiceStatusInfo['severity']) => {
-  switch (severity) {
-    case 'success':
-      return <CheckIcon color="success" fontSize="small" />
-    case 'warning':
-      return <WarningIcon color="warning" fontSize="small" />
-    case 'error':
-      return <ErrorIcon color="error" fontSize="small" />
-    case 'info':
-    default:
-      return <InfoIcon color="info" fontSize="small" />
-  }
-}
-
-/**
- * 增强的TUN模式按钮组件
- */
-const EnhancedTunModeButton = ({
+export default function EnhancedTunModeCard({
   serviceManager,
+  onManageService,
 }: {
   serviceManager: UseServiceManagerReturn
-}) => {
-  const { t } = useTranslation()
-  const isInTauri = IS_IN_TAURI
-  const tunMode = useSetting('enable_tun_mode')
-
-  const [isToggling, setIsToggling] = useState(false)
-  const [lastToggleError, setLastToggleError] = useState<string | null>(null)
-  const [optimisticTunEnabled, setOptimisticTunEnabled] = useState<
-    boolean | null
-  >(null)
-
-  // 计算当前服务状态信息
-  const statusInfo = getServiceStatusInfo(
-    serviceManager.serviceStatus,
-    serviceManager.serviceConnected,
-    serviceManager.isServiceInstalled,
-    serviceManager.serviceModeEnabled,
-    serviceManager.serviceStatusError,
-    isInTauri,
-    t,
-  )
-
-  const handleTunMode = useLockFn(async () => {
-    // 如果服务不可用，显示提示而不执行切换
-    if (!statusInfo.canUseTun) {
-      message(
-        statusInfo.message +
-          (statusInfo.actionHint ? `\n\n${statusInfo.actionHint}` : ''),
-        {
-          title: t('TUN Mode'),
-          kind: 'warning',
-        },
-      )
-      return
-    }
-
-    setIsToggling(true)
-    setLastToggleError(null)
-    const currentEnabled = Boolean(tunMode.value)
-    const nextEnabled = !currentEnabled
-    setOptimisticTunEnabled(nextEnabled)
-
+  onManageService?: () => void
+}) {
+  const tun = useSetting('enable_tun_mode')
+  const coreConfig = useClashConfig()
+  const [pending, setPending] = useState(false)
+  const [feedback, setFeedback] = useState<{
+    error: boolean
+    text: string
+  } | null>(null)
+  const [details, setDetails] = useState(false)
+  const requirement = tunRequirement(serviceManager)
+  const enabled = tun.value === true
+  const effective = coreConfig.query.data?.tun?.enable
+  const state = !IS_IN_TAURI
+    ? '桌面端可用'
+    : tun.isError
+      ? '读取失败'
+      : tun.value === undefined
+        ? '读取中'
+        : enabled
+          ? '配置已开启'
+          : '配置已关闭'
+  const effectiveState = coreConfig.query.isError
+    ? '内核状态读取失败'
+    : typeof effective !== 'boolean'
+      ? '内核状态待确认'
+      : effective
+        ? '内核已开启'
+        : '内核已关闭'
+  const toggle = useLockFn(async () => {
+    if (requirement || pending || tun.value === undefined || tun.isError) return
+    setPending(true)
+    setFeedback(null)
     try {
       const result = await toggleTunMode()
-
-      // 如果后端返回了消息，显示给用户
-      if (
-        result &&
-        typeof result === 'object' &&
-        'message' in result &&
-        result.message
-      ) {
-        message(result.message, {
-          title: t('TUN Mode'),
-          kind: 'success' in result && result.success ? 'info' : 'warning',
-        })
-      }
-
-      // If backend reports failure (but not thrown), rollback optimistic UI
       if (
         result &&
         typeof result === 'object' &&
         'success' in result &&
         result.success === false
       ) {
-        setOptimisticTunEnabled(currentEnabled)
+        throw new Error(
+          'message' in result ? String(result.message) : 'TUN 配置未应用',
+        )
       }
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error)
-      setLastToggleError(errorMessage)
-      // rollback optimistic state
-      setOptimisticTunEnabled(currentEnabled)
-
-      const action = currentEnabled ? '关闭' : '开启'
-
-      message(`${action} TUN Mode 失败: ${errorMessage}`, {
-        title: t('Error'),
-        kind: 'error',
+      const refreshed = await coreConfig.query.refetch()
+      await tun.query.refetch()
+      setFeedback({
+        error: refreshed.isError,
+        text: refreshed.isError
+          ? `配置已提交，内核状态读取失败：${formatError(refreshed.error)}`
+          : 'TUN 配置已应用。',
       })
+    } catch (error) {
+      setFeedback({ error: true, text: formatError(error) })
     } finally {
-      setIsToggling(false)
+      setPending(false)
     }
   })
-
-  // 监听服务状态变化，清除之前的切换错误
-  useEffect(() => {
-    if (serviceManager.serviceStatus) {
-      setLastToggleError(null)
-    }
-  }, [
-    serviceManager.serviceStatus,
-    serviceManager.serviceStatusError,
-    serviceManager.serviceModeEnabled,
-  ])
-
-  // When underlying setting changes (query refresh), clear optimistic override
-  useEffect(() => {
-    setOptimisticTunEnabled(null)
-  }, [tunMode.value])
-
-  const isTunEnabled = optimisticTunEnabled ?? Boolean(tunMode.value)
-  const isDisabled = isToggling || serviceManager.isInstalling
-  const serviceModeEnabled = serviceManager.serviceModeEnabled
-
   return (
-    <Box>
-      <Box sx={{ mb: 1.5 }}>
-        <SettingSummaryPanel>
-          {[
-            {
-              label: 'TUN 状态',
-              value: getOnOffLabel(isTunEnabled),
-              tone: isTunEnabled ? 'success' : 'default',
-            },
-            {
-              label: '服务模式',
-              value: getOnOffLabel(Boolean(serviceModeEnabled)),
-              tone: serviceModeEnabled ? 'success' : 'warning',
-            },
-            {
-              label: '可用性',
-              value: getAvailabilityLabel(statusInfo.canUseTun),
-              tone: statusInfo.canUseTun ? 'success' : statusInfo.severity,
-            },
-          ].map((item) => (
-            <SettingSummaryItem
-              key={item.label}
-              label={item.label}
-              value={
-                <Chip
-                  size="small"
-                  color={
-                    item.tone as 'default' | 'success' | 'warning' | 'info'
-                  }
-                  variant="filled"
-                  label={item.value}
-                  sx={(theme) => ({
-                    fontWeight: 800,
-                    mt: 0.5,
-                    ...(item.tone === 'default'
-                      ? getDefaultChipStyles(theme)
-                      : {}),
-                  })}
-                />
+    <Stack spacing={0.5} sx={{ px: 2, py: 1.25 }}>
+      <SettingControlRow
+        title="TUN 模式"
+        icon={<ShieldOutlined color="action" />}
+        description={requirement ?? undefined}
+        status={pending ? '正在应用…' : `${state} · ${effectiveState}`}
+        control={
+          <Stack direction="row" alignItems="center" spacing={0.5}>
+            {pending && <CircularProgress size={16} />}
+            <Switch
+              size="small"
+              checked={enabled}
+              onChange={toggle}
+              disabled={
+                Boolean(requirement) ||
+                pending ||
+                serviceManager.isInstalling ||
+                tun.value === undefined ||
+                tun.isError
               }
+              slotProps={{ input: { 'aria-label': '切换 TUN 模式' } }}
             />
-          ))}
-        </SettingSummaryPanel>
-      </Box>
-
-      {/* 主要的TUN模式开关 */}
-      <PaperSwitchButton
-        label={t('TUN Mode')}
-        checked={isTunEnabled}
-        loading={isToggling}
-        onClick={handleTunMode}
-        disabled={isDisabled}
-        statusText={null}
-        sxPaper={(theme) => ({
-          ...(() => {
-            const tokens = getThemePaletteTokens(theme)
-
-            return {
-              background:
-                isTunEnabled && statusInfo.canUseTun
-                  ? tokens.primary.main
-                  : tokenAlpha(tokens.background.paper, 0.96),
-              borderColor:
-                isTunEnabled && statusInfo.canUseTun
-                  ? tokenAlpha(tokens.primary.main, 0.42)
-                  : tokenAlpha(tokens.text.primary, 0.1),
-              boxShadow:
-                isTunEnabled && statusInfo.canUseTun
-                  ? `0 16px 32px ${tokenAlpha(tokens.primary.main, 0.22)}`
-                  : `0 10px 24px ${tokenAlpha(tokens.text.primary, 0.08)}`,
-              '&:hover': {
-                backgroundColor:
-                  isTunEnabled && statusInfo.canUseTun
-                    ? tokens.primary.dark
-                    : tokenAlpha(tokens.primary.main, 0.1),
-              },
-            }
-          })(),
-        })}
-        sx={{
-          opacity: statusInfo.canUseTun ? 1 : 0.6,
-        }}
-      >
-        {/* 服务状态指示器 */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 1,
-            width: '100%',
-          }}
-        >
-          <Box display="flex" alignItems="center" gap={0.75}>
-            {statusInfo.canUseTun ? (
-              <Chip
-                icon={getStatusIcon('success')}
-                label={getAvailabilityLabel(true)}
-                size="small"
-                color="success"
-                variant="filled"
-                sx={{ fontSize: '0.65rem', height: 20 }}
-              />
-            ) : (
-              <Chip
-                icon={getStatusIcon(statusInfo.severity)}
-                label={getAvailabilityLabel(false)}
-                size="small"
-                color={statusInfo.severity}
-                variant="filled"
-                sx={{ fontSize: '0.65rem', height: 20, fontWeight: 700 }}
-              />
-            )}
-          </Box>
-
-          {/* TUN模式状态文本 */}
-          <Typography
-            variant="caption"
-            sx={{
-              color: isTunEnabled
-                ? statusInfo.canUseTun
-                  ? 'success.main'
-                  : 'warning.main'
-                : 'text.secondary',
-              fontWeight: 'medium',
-              fontSize: '0.7rem',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {`TUN${getOnOffLabel(isTunEnabled)}`}
-          </Typography>
-        </Box>
-      </PaperSwitchButton>
-
-      {/* 状态提示信息 */}
-      <Fade in timeout={300}>
-        <Alert
-          severity={statusInfo.severity}
-          icon={getStatusIcon(statusInfo.severity)}
-          sx={{
-            mt: 1.5,
-            '& .MuiAlert-message': {
-              width: '100%',
-            },
-          }}
-        >
-          <Box>
-            <Typography
-              variant="body2"
-              sx={{ mb: statusInfo.actionHint ? 1 : 0 }}
-            >
-              {statusInfo.message}
-            </Typography>
-
-            {statusInfo.actionHint && (
-              <Typography
-                variant="caption"
-                sx={{
-                  color: 'text.secondary',
-                  fontWeight: 500,
-                }}
-              >
-                提示: {statusInfo.actionHint}
-              </Typography>
-            )}
-
-            {/* 显示最近的切换错误 */}
-            {lastToggleError && (
-              <Typography
-                variant="caption"
-                sx={{
-                  color: 'error.main',
-                  display: 'block',
-                  mt: 1,
-                  fontFamily: 'monospace',
-                  fontSize: '0.75rem',
-                }}
-              >
-                操作失败: {lastToggleError}
-              </Typography>
-            )}
-          </Box>
-        </Alert>
-      </Fade>
-
-      {/* TUN模式技术说明 */}
-      <Box
-        sx={(theme) => ({
-          ...getTokenSurfaceStyles(theme, { tint: 'info' }),
-          mt: 1.5,
-          p: 1.5,
-          borderRadius: 2.5,
-          border: '1px solid',
-        })}
-      >
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ lineHeight: 1.4 }}
-        >
-          <strong>TUN模式说明:</strong>{' '}
-          TUN模式通过虚拟网络接口实现全局流量代理，
-          提供比系统代理更完整的网络拦截能力。需要系统服务支持和管理员权限。
-        </Typography>
-      </Box>
-    </Box>
-  )
-}
-
-/**
- * 增强版TUN模式设置卡片
- */
-export default function EnhancedTunModeCard({
-  serviceManager,
-}: {
-  serviceManager: UseServiceManagerReturn
-}) {
-  return (
-    <BaseCard
-      label="TUN模式管理"
-      labelChildren={
-        <Chip
+          </Stack>
+        }
+      />
+      <Stack direction="row" flexWrap="wrap" gap={0.5} sx={{ pl: 3.5 }}>
+        {IS_IN_TAURI && requirement && (
+          <Button size="small" onClick={onManageService}>
+            管理服务与权限
+          </Button>
+        )}
+        <Button
           size="small"
-          color={serviceManager.serviceConnected ? 'success' : 'warning'}
-          variant="filled"
-          label={serviceManager.serviceConnected ? '连接就绪' : '等待服务'}
-          sx={{ fontWeight: 700 }}
-        />
-      }
-    >
-      <EnhancedTunModeButton serviceManager={serviceManager} />
-    </BaseCard>
+          onClick={() => setDetails((value) => !value)}
+          aria-expanded={details}
+          aria-controls="tun-mode-details"
+          aria-label={details ? '收起 TUN 模式说明' : '查看 TUN 模式说明'}
+          sx={{ px: 0.5, minWidth: 0, minHeight: 28 }}
+        >
+          {details ? '收起' : '说明'}
+        </Button>
+      </Stack>
+      <Collapse id="tun-mode-details" in={details} sx={{ pl: 3.5 }}>
+        <Typography variant="body2" color="text.secondary">
+          TUN
+          通过虚拟网络接口接管流量，需要系统服务及管理员权限。系统代理由应用选择是否使用系统代理，TUN
+          可接管更多网络流量；两项可分别配置。
+        </Typography>
+      </Collapse>
+      {tun.isError && <Alert severity="error">{formatError(tun.error)}</Alert>}
+      {feedback && (
+        <Alert
+          severity={feedback.error ? 'error' : 'success'}
+          sx={{ overflowWrap: 'anywhere' }}
+        >
+          {feedback.text}
+        </Alert>
+      )}
+    </Stack>
   )
 }

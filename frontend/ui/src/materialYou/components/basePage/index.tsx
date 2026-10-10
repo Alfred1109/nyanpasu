@@ -37,7 +37,7 @@ export const BasePage: FC<BasePageProps> = ({
           <ScrollArea.Viewport
             className={cn(
               'relative h-full w-full [&>div]:block!',
-              full ?? 'p-6',
+              !full && 'p-6',
             )}
             ref={viewportRef}
             style={sectionStyle}

@@ -1,5 +1,6 @@
 import { useMount } from 'ahooks'
 import { PropsWithChildren, useRef } from 'react'
+import { isInTauri } from '@nyanpasu/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import {
@@ -15,11 +16,14 @@ import {
   NYANPASU_SYSTEM_PROXY_QUERY_KEY,
   PROFILES_QUERY_KEY,
 } from '../ipc/consts'
-import { isInTauri } from '@nyanpasu/utils'
+import { DNS_SETTINGS_QUERY_KEY } from '../ipc/use-dns-settings'
+import { MANAGED_RUNTIME_SETTINGS_QUERY_KEY } from '../ipc/use-managed-runtime-settings'
 
 type EventPayload = 'nyanpasu_config' | 'clash_config' | 'proxies' | 'profiles'
 
 const NYANPASU_CONFIG_MUTATION_KEYS = [
+  DNS_SETTINGS_QUERY_KEY,
+  MANAGED_RUNTIME_SETTINGS_QUERY_KEY,
   NYANPASU_SETTING_QUERY_KEY,
   NYANPASU_SYSTEM_PROXY_QUERY_KEY,
   CLASH_PROXIES_QUERY_KEY, // proxies hook refetch
@@ -27,6 +31,8 @@ const NYANPASU_CONFIG_MUTATION_KEYS = [
 ] as const
 
 const CLASH_CONFIG_MUTATION_KEYS = [
+  DNS_SETTINGS_QUERY_KEY,
+  MANAGED_RUNTIME_SETTINGS_QUERY_KEY,
   CLASH_VERSION_QUERY_KEY,
   CLASH_INFO_QUERY_KEY,
   CLASH_CONFIG_QUERY_KEY,
@@ -38,6 +44,8 @@ const CLASH_CONFIG_MUTATION_KEYS = [
 ] as const
 
 const PROFILES_MUTATION_KEYS = [
+  DNS_SETTINGS_QUERY_KEY,
+  MANAGED_RUNTIME_SETTINGS_QUERY_KEY,
   CLASH_VERSION_QUERY_KEY,
   CLASH_INFO_QUERY_KEY,
   CLASH_RULES_QUERY_KEY, // clash rules hook refetch
@@ -68,7 +76,7 @@ export const MutationProvider = ({ children }: PropsWithChildren) => {
   }
 
   useMount(() => {
-    if (!isInTauri) {
+    if (!isInTauri()) {
       return
     }
 

@@ -4,7 +4,7 @@ import LogToggle from './log-toggle'
 
 const LogHeader = () => {
   return (
-    <div className="flex gap-2">
+    <div className="flex w-full min-w-0 flex-wrap items-center gap-1.5">
       <LogToggle />
 
       <LogLevel />

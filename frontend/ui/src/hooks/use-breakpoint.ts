@@ -1,6 +1,5 @@
-import { useAsyncEffect, useSize } from 'ahooks'
-import { useEffect, useState } from 'react'
-import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { useSize } from 'ahooks'
+import { useEffect } from 'react'
 import { MUI_BREAKPOINTS } from '../materialYou/themeConsts.mjs'
 
 export type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
@@ -59,14 +58,5 @@ export const useBreakpointValue = <T>(
     return defaultValue ?? (values[breakpointsOrder[0]] as T)
   }
 
-  const [result, setResult] = useState<T>(calculateValue)
-
-  useAsyncEffect(async () => {
-    const appWindow = getCurrentWebviewWindow()
-    if (!(await appWindow.isMinimized())) {
-      setResult(calculateValue)
-    }
-  }, [currentBreakpoint, values, defaultValue])
-
-  return result
+  return calculateValue()
 }

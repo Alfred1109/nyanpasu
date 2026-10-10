@@ -35,10 +35,13 @@ const LogItem = ({
 
   return (
     <div
-      className={cn('w-full p-4 pt-2 pb-0 font-mono select-text', className)}
+      className={cn(
+        'w-full p-2 pt-2 pb-0 font-mono select-text sm:p-4 sm:pt-2 sm:pb-0',
+        className,
+      )}
     >
       <div className="flex gap-2">
-        <span className="font-thin">{value.time}</span>
+        <span className="font-thin [overflow-wrap:anywhere]">{value.time}</span>
 
         <Box
           component="span"
@@ -49,7 +52,7 @@ const LogItem = ({
         </Box>
       </div>
 
-      <div className="pb-2 text-wrap">
+      <div className="pb-2 text-wrap [overflow-wrap:anywhere]">
         <div
           className={cn(styles.item, mode === 'dark' && styles.dark)}
           style={

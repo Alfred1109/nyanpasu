@@ -1,4 +1,6 @@
 node_modules
+.run/
+output/playwright/
 .DS_Store
 dist
 dist-ssr
@@ -23,3 +25,8 @@ tauri-dev.*.log
 manifest/site/updater/*
 !manifest/site/updater/.gitkeep
 /backend/tauri/gen/
+
+/.playwright-cli/
+*.module.d.scss.ts
+
+/backend/rustc-ice-*.txt

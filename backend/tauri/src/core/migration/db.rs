@@ -1,10 +1,9 @@
-use derive_builder::Builder;
 use once_cell::sync::Lazy;
 use semver::Version;
 /// A simple file based database for storing the migration status.
 ///
 use serde::{Deserialize, Serialize};
-use std::{borrow::Cow, collections::HashMap, io::Write, path::PathBuf};
+use std::{borrow::Cow, collections::HashMap, hash::Hash, io::Write, path::PathBuf};
 
 use super::MigrationState;
 
@@ -16,25 +15,94 @@ static MIGRATION_LOCK_FILE: Lazy<PathBuf> = Lazy::new(|| {
     path
 });
 
-#[derive(Debug, Clone, Serialize, Deserialize, Builder)]
-#[builder(default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MigrationFile<'a> {
     pub version: Cow<'a, Version>,
-    pub states: HashMap<Cow<'a, str>, MigrationState>,
+    pub states: UniqueMap<Cow<'a, str>, MigrationState>,
 }
 
-impl MigrationFileBuilder<'_> {
-    pub fn read_file(mut self) -> Self {
-        let content = std::fs::read_to_string(&*MIGRATION_LOCK_FILE).ok();
-        if let Some(content) = content {
-            let file: Option<MigrationFile> = serde_yaml::from_str(&content).ok();
-            if let Some(file) = file {
-                self.version = Some(file.version);
-                self.states = Some(file.states);
+#[derive(Debug, Clone, Default)]
+pub struct UniqueMap<K, V>(pub HashMap<K, V>);
+
+impl<K, V> std::ops::Deref for UniqueMap<K, V> {
+    type Target = HashMap<K, V>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<K, V> std::ops::DerefMut for UniqueMap<K, V> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<'de, K, V> serde::Deserialize<'de> for UniqueMap<K, V>
+where
+    K: serde::Deserialize<'de> + Eq + Hash,
+    V: serde::Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct UniqueMapVisitor<K, V>(std::marker::PhantomData<(K, V)>);
+
+        impl<'de, K, V> serde::de::Visitor<'de> for UniqueMapVisitor<K, V>
+        where
+            K: serde::Deserialize<'de> + Eq + Hash,
+            V: serde::Deserialize<'de>,
+        {
+            type Value = UniqueMap<K, V>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a map with unique keys")
+            }
+
+            fn visit_map<A>(self, mut access: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::MapAccess<'de>,
+            {
+                let mut values = HashMap::new();
+                while let Some((key, value)) = access.next_entry()? {
+                    if values.insert(key, value).is_some() {
+                        return Err(serde::de::Error::custom("duplicate migration state key"));
+                    }
+                }
+                Ok(UniqueMap(values))
             }
         }
-        self
+
+        deserializer.deserialize_map(UniqueMapVisitor(std::marker::PhantomData))
     }
+}
+
+impl<K, V> Serialize for UniqueMap<K, V>
+where
+    K: Serialize + Eq + Hash,
+    V: Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.0.serialize(serializer)
+    }
+}
+
+pub fn read_validated_file() -> anyhow::Result<MigrationFile<'static>> {
+    if !MIGRATION_LOCK_FILE.exists() {
+        return Ok(MigrationFile::default());
+    }
+    let content = std::fs::read_to_string(&*MIGRATION_LOCK_FILE)
+        .map_err(|error| anyhow::anyhow!("读取 migration.lock 失败: {error}"))?;
+    let file: MigrationFile<'static> = serde_yaml::from_str(&content)
+        .map_err(|error| anyhow::anyhow!("migration.lock 格式无效: {error}"))?;
+    if file.states.0.keys().any(|name| name.trim().is_empty()) {
+        anyhow::bail!("migration.lock 包含空迁移名称");
+    }
+    Ok(file)
 }
 
 impl Default for MigrationFile<'_> {
@@ -43,7 +111,7 @@ impl Default for MigrationFile<'_> {
         let ver = Version::parse("1.5.1").unwrap();
         Self {
             version: Cow::Owned(ver),
-            states: HashMap::new(),
+            states: UniqueMap(HashMap::new()),
         }
     }
 }
@@ -51,24 +119,32 @@ impl Default for MigrationFile<'_> {
 impl<'a> MigrationFile<'a> {
     /// Create or Truncate the lock file and write the content.
     pub fn write_file(&self) -> Result<(), std::io::Error> {
-        let content = serde_yaml::to_string(self).map_err(|e| {
+        Self::write_file_to(&MIGRATION_LOCK_FILE, self)
+    }
+
+    pub(super) fn write_file_to(
+        path: &PathBuf,
+        value: &MigrationFile<'_>,
+    ) -> Result<(), std::io::Error> {
+        let content = serde_yaml::to_string(value).map_err(|e| {
             log::error!("Failed to serialize the migration file: {e}");
             std::io::Error::other(e)
         })?;
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(&*MIGRATION_LOCK_FILE)?;
-        file.write(
+        let parent = path
+            .parent()
+            .ok_or_else(|| std::io::Error::other("migration lock path has no parent directory"))?;
+        std::fs::create_dir_all(parent)?;
+        let mut temporary = tempfile::NamedTempFile::new_in(parent)?;
+        temporary.write_all(
             "# This file is generated by the migration system, do not edit it manually.\n"
                 .as_bytes(),
-        )
-        .map_err(|e| {
-            log::error!("Failed to write the migration file: {e}");
-            e
-        })?;
-        file.write_all(content.as_bytes())
+        )?;
+        temporary.write_all(content.as_bytes())?;
+        temporary.as_file().sync_all()?;
+        temporary.persist(path).map_err(|error| error.error)?;
+        #[cfg(unix)]
+        std::fs::File::open(parent)?.sync_all()?;
+        Ok(())
     }
 
     pub fn get_state(&self, name: &str) -> Option<MigrationState> {
@@ -77,5 +153,25 @@ impl<'a> MigrationFile<'a> {
 
     pub fn set_state(&mut self, name: Cow<'a, str>, state: MigrationState) {
         self.states.insert(name, state);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::MigrationFile;
+
+    #[test]
+    fn migration_lock_rejects_duplicate_state_keys() {
+        let content = "version: 3.0.4\nstates:\n  profile-migration: completed\n  profile-migration: failed\n";
+        assert!(serde_yaml::from_str::<MigrationFile<'_>>(content).is_err());
+    }
+
+    #[test]
+    fn migration_lock_rejects_unknown_state_values_and_fields() {
+        let unknown_state = "version: 3.0.4\nstates:\n  profile-migration: future-state\n";
+        assert!(serde_yaml::from_str::<MigrationFile<'_>>(unknown_state).is_err());
+
+        let unknown_field = "version: 3.0.4\nstates: {}\nfuture: true\n";
+        assert!(serde_yaml::from_str::<MigrationFile<'_>>(unknown_field).is_err());
     }
 }

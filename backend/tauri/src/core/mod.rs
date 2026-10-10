@@ -1,3 +1,4 @@
+pub mod backup;
 pub mod clash;
 pub mod connection_interruption;
 pub mod handle;

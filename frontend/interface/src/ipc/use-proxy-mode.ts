@@ -1,26 +1,21 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useClashAPI } from '../service/clash-api'
+import { CLASH_CONFIG_QUERY_KEY } from './consts'
+import {
+  updateProxyMode,
+  type ProxyModeUpdateResult,
+} from './proxy-mode-update'
 import { useClashConfig } from './use-clash-config'
 import { useSetting } from './use-settings'
 
-/**
- * Hook for managing proxy mode in Clash configuration
- *
- * @returns {Object} An object containing:
- * - value: Record of available proxy modes (rule, global, direct, script) with their active states
- * - upsert: Function to update the proxy mode and delete existing connections
- *
- * @remarks
- * - Script mode is only available when using Clash Premium
- * - Default mode is 'rule' if current mode is invalid or not set
- * - Changes to proxy mode will clear all existing connections
- */
+/** Manage the active proxy mode and report mode changes separately from cleanup. */
 export const useProxyMode = () => {
   const clashConfig = useClashConfig()
-
   const clashCore = useSetting('clash_core')
-
   const { deleteConnections } = useClashAPI()
+  const queryClient = useQueryClient()
+  const [isPending, setIsPending] = useState(false)
 
   const value = useMemo(() => {
     const modes: Record<'rule' | 'global' | 'direct', boolean> & {
@@ -31,33 +26,64 @@ export const useProxyMode = () => {
       direct: false,
     }
 
-    // only clash premium support script mode
     if (clashCore.value === 'clash') {
       modes.script = false
     }
 
+    // An unavailable config is unknown; do not present it as Rule mode.
     const currentMode = clashConfig.query.data?.mode?.toLowerCase()
-
     if (
       currentMode &&
       Object.prototype.hasOwnProperty.call(modes, currentMode)
     ) {
       modes[currentMode as keyof typeof modes] = true
-    } else {
-      modes.rule = true
     }
 
     return modes
-  }, [clashConfig.query.data])
+  }, [clashCore.value, clashConfig.query.data?.mode])
 
-  const upsert = async (mode: string) => {
-    await deleteConnections()
+  const upsert = async (mode: string): Promise<ProxyModeUpdateResult> => {
+    const currentConfig = clashConfig.query.data
+    if (!currentConfig) {
+      throw new Error('代理配置尚未加载，无法切换模式。')
+    }
+    if (clashConfig.query.isError) {
+      throw new Error('代理配置读取失败，无法安全切换模式。', {
+        cause: clashConfig.query.error,
+      })
+    }
 
-    await clashConfig.upsert.mutateAsync({ mode })
+    if (currentConfig.mode?.toLowerCase() === mode.toLowerCase()) {
+      return { changed: false, connectionsCleared: false }
+    }
+
+    setIsPending(true)
+    try {
+      return await updateProxyMode({
+        mode,
+        currentMode: currentConfig.mode,
+        queryError: clashConfig.query.isError ? true : undefined,
+        patch: async () => {
+          await clashConfig.upsert.mutateAsync({ mode })
+          // Reflect the confirmed PATCH immediately so other hook instances
+          // cannot issue a duplicate change while the next query is in flight.
+          queryClient.setQueryData(
+            [CLASH_CONFIG_QUERY_KEY],
+            (current: typeof currentConfig | undefined) =>
+              current ? { ...current, mode } : current,
+          )
+        },
+        clearConnections: deleteConnections,
+      })
+    } finally {
+      setIsPending(false)
+    }
   }
 
   return {
     value,
     upsert,
+    query: clashConfig.query,
+    isPending: isPending || clashConfig.upsert.isPending,
   }
 }

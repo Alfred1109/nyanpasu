@@ -10,12 +10,15 @@ const ProxyGroupName = memo(function ProxyGroupName({
   const { value: disbaleMotion } = useSetting('lighten_animation_effects')
 
   return disbaleMotion ? (
-    <>{name}</>
+    <span className="block max-w-full truncate" title={name}>
+      {name}
+    </span>
   ) : (
     <AnimatePresence mode="sync" initial={false}>
       <motion.div
         key={`group-name-${name}`}
-        className="absolute"
+        className="block max-w-full truncate"
+        title={name}
         initial={{ x: 100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: -100, opacity: 0 }}

@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { UseServiceManagerReturn } from '@/hooks/use-service-manager'
 import { IS_IN_TAURI } from '@/utils/tauri'
-import { getDefaultChipStyles, getTokenSurfaceStyles } from '@/utils/theme'
-import { Alert, Box, Button, Chip, Divider, Typography } from '@mui/material'
+import { Alert, Box, Button } from '@mui/material'
 import { BaseCard } from '@nyanpasu/ui'
 import ServiceInstallDialog from './modules/service-install-dialog'
 import {
@@ -22,7 +21,9 @@ export default function SettingSystemService({
   const [message, setMessage] = useState('')
   const isInTauri = IS_IN_TAURI
 
-  const isServiceModeEnabled = serviceManager.serviceModeEnabled
+  const isServiceModeEnabled = serviceManager.serviceModeEnabled === true
+  const canReadServiceStatus = serviceManager.query.isSuccess
+  const canReadSettings = serviceManager.settingsQuery.isSuccess
   const feedbackSeverity = serviceManager.lastError
     ? 'error'
     : message.includes('失败')
@@ -35,35 +36,51 @@ export default function SettingSystemService({
         : 'success'
   const primaryActionLabel = serviceManager.isInstalling
     ? '处理中...'
-    : !serviceManager.isServiceInstalled
-      ? '安装服务并启用'
-      : isServiceModeEnabled
-        ? '服务模式已启用'
-        : '启用服务模式'
+    : serviceManager.query.isPending
+      ? '正在检查服务'
+      : serviceManager.query.isError
+        ? '服务状态不可用'
+        : serviceManager.settingsQuery.isPending
+          ? '正在读取设置'
+          : serviceManager.settingsQuery.isError
+            ? '服务模式状态不可用'
+            : !serviceManager.isServiceInstalled
+              ? '安装服务并启用'
+              : isServiceModeEnabled
+                ? '服务模式已启用'
+                : '启用服务模式'
   const startActionLabel = !serviceManager.isServiceInstalled
     ? '启动服务'
-    : !isServiceModeEnabled
-      ? '先启用服务模式'
-      : serviceManager.serviceStatus === 'running'
-        ? '服务已运行'
-        : '启动服务'
+    : !canReadSettings
+      ? '服务模式状态不可用'
+      : !isServiceModeEnabled
+        ? '先启用服务模式'
+        : serviceManager.serviceStatus === 'running'
+          ? '服务已运行'
+          : '启动服务'
   const stopActionLabel =
     serviceManager.serviceStatus === 'running' ? '停止服务' : '服务已停止'
   const uninstallActionLabel = serviceManager.isServiceInstalled
     ? '卸载服务'
     : '服务未安装'
-  const serviceStatusLabel =
-    serviceManager.serviceStatus === 'running'
-      ? '运行中'
-      : serviceManager.serviceStatus === 'stopped'
-        ? '已停止'
-        : '未安装'
-  const serviceStatusTone =
-    serviceManager.serviceStatus === 'running'
-      ? 'success'
-      : serviceManager.serviceStatus === 'stopped'
-        ? 'warning'
-        : 'default'
+  const serviceStatusLabel = serviceManager.query.isError
+    ? '读取失败'
+    : serviceManager.query.isPending && !serviceManager.query.data
+      ? '正在检查'
+      : serviceManager.serviceStatus === 'running'
+        ? '运行中'
+        : serviceManager.serviceStatus === 'stopped'
+          ? '已停止'
+          : serviceManager.serviceStatus === 'not_installed'
+            ? '未安装'
+            : '状态未知'
+  const serviceModeLabel = !canReadSettings
+    ? serviceManager.settingsQuery.isError
+      ? '模式读取失败'
+      : '正在读取模式'
+    : isServiceModeEnabled
+      ? '模式已启用'
+      : '模式未启用'
   const handleInstallService = async () => {
     if (!isInTauri) {
       setMessage('该功能仅在桌面端可用，请使用 tauri dev 或安装版 exe 测试。')
@@ -146,8 +163,6 @@ export default function SettingSystemService({
   const actionItems = [
     {
       key: 'install',
-      title: '安装与启用',
-      description: '写入系统服务并打开服务模式，为 TUN 和后台接管做准备。',
       buttonLabel: primaryActionLabel,
       variant: 'contained' as const,
       color: 'primary' as const,
@@ -155,12 +170,12 @@ export default function SettingSystemService({
       disabled:
         !isInTauri ||
         serviceManager.isInstalling ||
+        !canReadServiceStatus ||
+        !canReadSettings ||
         (serviceManager.isServiceInstalled && isServiceModeEnabled),
     },
     {
       key: 'start',
-      title: '启动服务',
-      description: '在已安装且已启用服务模式后拉起后台服务进程。',
       buttonLabel: startActionLabel,
       variant: 'outlined' as const,
       color: 'primary' as const,
@@ -168,14 +183,14 @@ export default function SettingSystemService({
       disabled:
         !isInTauri ||
         serviceManager.isInstalling ||
+        !canReadServiceStatus ||
+        !canReadSettings ||
         !serviceManager.isServiceInstalled ||
         !isServiceModeEnabled ||
         serviceManager.serviceStatus === 'running',
     },
     {
       key: 'stop',
-      title: '停止服务',
-      description: '停止当前运行中的服务进程，但保留服务安装状态。',
       buttonLabel: stopActionLabel,
       variant: 'outlined' as const,
       color: 'primary' as const,
@@ -183,13 +198,12 @@ export default function SettingSystemService({
       disabled:
         !isInTauri ||
         serviceManager.isInstalling ||
+        !canReadServiceStatus ||
         !serviceManager.isServiceInstalled ||
         serviceManager.serviceStatus !== 'running',
     },
     {
       key: 'uninstall',
-      title: '卸载服务',
-      description: '移除本地服务安装，适合排障或恢复到不使用服务模式。',
       buttonLabel: uninstallActionLabel,
       variant: 'outlined' as const,
       color: 'error' as const,
@@ -197,44 +211,46 @@ export default function SettingSystemService({
       disabled:
         !isInTauri ||
         serviceManager.isInstalling ||
+        !canReadServiceStatus ||
         !serviceManager.isServiceInstalled,
     },
   ]
 
   return (
     <>
-      <BaseCard
-        label={t('System Service')}
-        labelChildren={
-          <Chip
-            size="small"
-            color={serviceStatusTone}
-            variant="filled"
-            label={serviceStatusLabel}
-            sx={(theme) => ({
-              fontWeight: 800,
-              ...(serviceStatusTone === 'default'
-                ? getDefaultChipStyles(theme)
-                : {}),
-            })}
-          />
-        }
-      >
-        <Box display="flex" flexDirection="column" gap={1.5}>
-          <Typography variant="body2" color="text.secondary">
-            系统服务为 TUN 和更稳定的代理接管提供底层能力，建议在需要 TUN
-            时优先完成这里的配置。
-          </Typography>
-
+      <BaseCard label={t('System Service')}>
+        <Box display="flex" flexDirection="column" gap={1}>
+          <SettingSummaryPanel columns={2}>
+            <SettingSummaryItem label="服务状态" value={serviceStatusLabel} />
+            <SettingSummaryItem label="服务模式" value={serviceModeLabel} />
+          </SettingSummaryPanel>
           {!isInTauri && (
-            <Alert severity="info" sx={{ mt: 1 }}>
+            <Alert
+              severity="info"
+              sx={{
+                py: 0.5,
+                '& .MuiAlert-message': {
+                  minWidth: 0,
+                  overflowWrap: 'anywhere',
+                },
+              }}
+            >
               该功能仅在桌面端可用（Tauri WebView）。浏览器 Dev
               模式无法调用系统服务。
             </Alert>
           )}
 
           {(message || serviceManager.lastError) && (
-            <Alert severity={feedbackSeverity} sx={{ mt: 1 }}>
+            <Alert
+              severity={feedbackSeverity}
+              sx={{
+                py: 0.5,
+                '& .MuiAlert-message': {
+                  minWidth: 0,
+                  overflowWrap: 'anywhere',
+                },
+              }}
+            >
               {message}
               {serviceManager.lastError && (
                 <>
@@ -248,108 +264,56 @@ export default function SettingSystemService({
             </Alert>
           )}
 
-          {serviceManager.serviceStatusError && (
-            <Alert severity="warning" sx={{ mt: 1 }}>
-              {serviceManager.serviceStatusError}
-            </Alert>
-          )}
-
-          <SettingSummaryPanel columns={2}>
-            {[
-              {
-                label: '服务进程',
-                value: serviceStatusLabel,
-                tone: serviceStatusTone,
-              },
-              {
-                label: '服务模式',
-                value: isServiceModeEnabled ? '已启用' : '未启用',
-                tone: isServiceModeEnabled ? 'success' : 'default',
-              },
-            ].map((item) => (
-              <SettingSummaryItem
-                key={item.label}
-                label={item.label}
-                value={
-                  <Chip
-                    size="small"
-                    color={item.tone as 'default' | 'success' | 'warning'}
-                    variant="filled"
-                    label={item.value}
-                    sx={(theme) => ({
-                      fontWeight: 800,
-                      mt: 0.5,
-                      ...(item.tone === 'default'
-                        ? getDefaultChipStyles(theme)
-                        : {}),
-                    })}
-                  />
-                }
-              />
-            ))}
-          </SettingSummaryPanel>
-
-          <Divider />
-
-          <Box display="flex" flexDirection="column" gap={1}>
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                服务操作面板
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                按安装、启动、停止、卸载的顺序组织，方便排障时逐步确认状态。
-              </Typography>
-            </Box>
-
-            <Box
+          {(serviceManager.serviceStatusError ||
+            serviceManager.settingsQuery.isError) && (
+            <Alert
+              severity="error"
               sx={{
-                display: 'grid',
-                gap: 1,
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  sm: 'repeat(2, minmax(0, 1fr))',
+                py: 0.5,
+                '& .MuiAlert-message': {
+                  minWidth: 0,
+                  overflowWrap: 'anywhere',
                 },
               }}
             >
-              {actionItems.map((item) => (
-                <Box
-                  key={item.key}
-                  sx={(theme) => ({
-                    ...getTokenSurfaceStyles(theme, { elevated: true }),
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 1,
-                    p: 1.25,
-                    borderRadius: 2.5,
-                    border: '1px solid',
-                  })}
-                >
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                      {item.title}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: 'block', mt: 0.5, lineHeight: 1.45 }}
-                    >
-                      {item.description}
-                    </Typography>
-                  </Box>
+              {serviceManager.serviceStatusError}
+              {serviceManager.settingsQuery.isError && (
+                <>
+                  {serviceManager.serviceStatusError && <br />}
+                  服务模式设置读取失败：
+                  {String(serviceManager.settingsQuery.error)}
+                </>
+              )}
+            </Alert>
+          )}
 
-                  <Button
-                    variant={item.variant}
-                    size="medium"
-                    color={item.color}
-                    sx={{ fontWeight: 700, borderRadius: 2.5, minHeight: 38 }}
-                    onClick={item.handleClick}
-                    disabled={item.disabled}
-                  >
-                    {item.buttonLabel}
-                  </Button>
-                </Box>
-              ))}
-            </Box>
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 0.75,
+              gridTemplateColumns:
+                'repeat(auto-fit, minmax(min(100%, 140px), 1fr))',
+            }}
+          >
+            {actionItems.map((item) => (
+              <Button
+                key={item.key}
+                variant={item.variant}
+                size="medium"
+                color={item.color}
+                onClick={item.handleClick}
+                disabled={item.disabled}
+                fullWidth
+                sx={{
+                  fontWeight: 700,
+                  minHeight: 38,
+                  lineHeight: 1.2,
+                  whiteSpace: 'normal',
+                }}
+              >
+                {item.buttonLabel}
+              </Button>
+            ))}
           </Box>
         </Box>
       </BaseCard>

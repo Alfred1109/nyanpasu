@@ -1,4 +1,3 @@
-import TextSnippetOutlined from '@mui/icons-material/TextSnippetOutlined'
 import { useLockFn, useSize } from 'ahooks'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAtom } from 'jotai'
@@ -23,6 +22,7 @@ import { ClashProfile, filterProfiles } from '@/components/profiles/utils'
 import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
 import { Public, Update } from '@mui/icons-material'
+import TextSnippetOutlined from '@mui/icons-material/TextSnippetOutlined'
 import { Badge, Button, CircularProgress, IconButton } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import type { SxProps, Theme } from '@mui/material/styles'
@@ -132,6 +132,10 @@ function ProfilePage() {
   }, [location.search])
 
   const hasSide = globalChain || chainsSelected
+  const sideTitle = globalChain
+    ? t('Global Proxy Chains')
+    : profiles.clash?.find((item) => item.uid === chainsSelected)?.name ||
+      t('Proxy Chains')
 
   const size = useSize(document.documentElement)
   const width = size?.width || 0
@@ -144,9 +148,7 @@ function ProfilePage() {
           (item) => item.type === 'remote',
         ) as RemoteProfile[]) || []
 
-      const updates: Array<Promise<void>> = []
-
-      for (const profile of remoteProfiles) {
+      const updates = remoteProfiles.map((profile) => {
         const option = {
           with_proxy: false,
           self_proxy: false,
@@ -155,18 +157,26 @@ function ProfilePage() {
           ...profile.option,
         } satisfies RemoteProfileOptionsBuilder
 
-        const result = await update.mutateAsync({
-          uid: profile.uid,
-          option,
-        })
-        updates.push(Promise.resolve(result || undefined))
-      }
-      try {
-        await Promise.all(updates)
-      } catch (e) {
-        message(`failed to update profiles: \n${formatError(e)}`, {
-          kind: 'error',
-        })
+        return update.mutateAsync({ uid: profile.uid, option })
+      })
+      const results = await Promise.allSettled(updates)
+      const failures = results.flatMap((result, index) =>
+        result.status === 'rejected'
+          ? [
+              `${remoteProfiles[index]?.name || remoteProfiles[index]?.uid}: ${formatError(result.reason)}`,
+            ]
+          : [],
+      )
+
+      if (failures.length) {
+        const succeeded = results.length - failures.length
+        message(
+          `批量更新完成：成功 ${succeeded} 个，失败 ${failures.length} 个。\n${failures.slice(0, 3).join('\n')}`,
+          {
+            kind: succeeded ? 'warning' : 'error',
+            title: '配置更新结果',
+          },
+        )
       }
     })
   })
@@ -174,6 +184,9 @@ function ProfilePage() {
   return (
     <SidePage
       title={t('Profiles')}
+      sideTitle={sideTitle}
+      sideOpenKey={globalChain ? 'global' : (chainsSelected ?? null)}
+      onSideClose={handleSideClose}
       flexReverse
       header={
         <div className="flex items-center gap-2">
@@ -182,7 +195,7 @@ function ProfilePage() {
             onClose={() => setRuntimeConfigViewerOpen(false)}
           />
           <IconButton
-            className="h-10 w-10"
+            className="h-10 w-10 shrink-0"
             color="inherit"
             title={t('Runtime Config')}
             onClick={() => {
@@ -208,6 +221,7 @@ function ProfilePage() {
           >
             <Button
               size="small"
+              className="max-w-[48vw] truncate"
               variant={globalChain ? 'contained' : 'outlined'}
               onClick={handleGlobalChainClick}
               startIcon={<Public />}

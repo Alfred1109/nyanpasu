@@ -1,2 +1,2 @@
-// Re-export unwrapResult from the centralized utils package
-export { unwrapResult } from '@nyanpasu/utils'
+// Re-export IPC result helpers from the centralized utils package
+export { IpcResultError, normalizeError, unwrapResult } from '@nyanpasu/utils'

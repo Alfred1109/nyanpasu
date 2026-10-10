@@ -25,61 +25,78 @@ function ProvidersPage() {
 
   return (
     <BasePage title={t('Providers')}>
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <Chip
-            className="h-10! truncate rounded-full! p-2! text-lg! font-bold"
-            label={`${t(`Proxies Providers`)} (${Object.entries(proxiesProvider.data ?? {}).length})`}
-          />
+      <div className="flex min-w-0 flex-col gap-5">
+        <section className="flex min-w-0 flex-col gap-3">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <h2 className="truncate text-base font-bold">
+                {t('Proxies Providers')}
+              </h2>
+              <Chip
+                size="small"
+                label={Object.entries(proxiesProvider.data ?? {}).length}
+              />
+            </div>
 
-          <UpdateProxiesProviders />
-        </div>
+            <UpdateProxiesProviders />
+          </div>
 
-        {proxiesProvider.data && (
-          <Grid container spacing={2}>
-            {Object.entries(proxiesProvider.data).map(([name, provider]) => (
-              <Grid
-                key={name}
-                className="w-full"
-                size={{
-                  sm: 12,
-                  md: 6,
-                  lg: 4,
-                  xl: 3,
-                }}
-              >
-                <ProxiesProvider provider={provider} />
-              </Grid>
-            ))}
-          </Grid>
-        )}
+          {proxiesProvider.data && (
+            <Grid container spacing={1.5}>
+              {Object.entries(proxiesProvider.data).map(([name, provider]) => (
+                <Grid
+                  key={name}
+                  className="min-w-0"
+                  size={{
+                    xs: 12,
+                    sm: 12,
+                    md: 6,
+                    lg: 4,
+                    xl: 3,
+                  }}
+                >
+                  <ProxiesProvider provider={provider} />
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </section>
 
-        <div className="flex items-center justify-between">
-          <Chip
-            className="h-10! truncate rounded-full! p-2! text-lg! font-bold"
-            label={`${t(`Rules Providers`)} (${Object.entries(rulesProvider.data ?? {}).length})`}
-          />
+        <section className="flex min-w-0 flex-col gap-3">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <h2 className="truncate text-base font-bold">
+                {t('Rules Providers')}
+              </h2>
+              <Chip
+                size="small"
+                label={Object.entries(rulesProvider.data ?? {}).length}
+              />
+            </div>
 
-          <UpdateProviders />
-        </div>
+            <UpdateProviders />
+          </div>
 
-        {rulesProvider.data && (
-          <Grid container spacing={2}>
-            {Object.entries(rulesProvider.data).map(([name, provider]) => (
-              <Grid
-                key={name}
-                size={{
-                  sm: 12,
-                  md: 6,
-                  lg: 4,
-                  xl: 3,
-                }}
-              >
-                <RulesProvider provider={provider} />
-              </Grid>
-            ))}
-          </Grid>
-        )}
+          {rulesProvider.data && (
+            <Grid container spacing={1.5}>
+              {Object.entries(rulesProvider.data).map(([name, provider]) => (
+                <Grid
+                  key={name}
+                  className="min-w-0"
+                  size={{
+                    xs: 12,
+                    sm: 12,
+                    md: 6,
+                    lg: 4,
+                    xl: 3,
+                  }}
+                >
+                  <RulesProvider provider={provider} />
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </section>
       </div>
     </BasePage>
   )

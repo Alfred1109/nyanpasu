@@ -128,6 +128,7 @@ const DataPanel = ({ visible = true }: { visible?: boolean }) => {
 
   const gridLayout = useMemo(
     () => ({
+      xs: 12,
       sm: isDrawer ? 6 : 12,
       md: 6,
       lg: supportMemory ? 3 : 4,

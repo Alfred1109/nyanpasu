@@ -1,109 +1,61 @@
-import { Feedback, GitHub, Inventory, Keyboard } from '@mui/icons-material'
 import { useLockFn } from 'ahooks'
-import React, { lazy } from 'react'
+import { lazy } from 'react'
 import { useTranslation } from 'react-i18next'
-import HotkeyDialog from '@/components/setting/modules/hotkey-dialog'
-import TrayIconDialog from '@/components/setting/modules/tray-icon-dialog'
 import { formatEnvInfos } from '@/utils'
-import { IconButton } from '@mui/material'
+import { Feedback, GitHub } from '@mui/icons-material'
+import { Box, IconButton } from '@mui/material'
 import { collectEnvs, openThat } from '@nyanpasu/interface'
 import { BasePage } from '@nyanpasu/ui'
 import { createFileRoute } from '@tanstack/react-router'
 
+const Component = lazy(() => import('@/components/setting/setting-page'))
 export const Route = createFileRoute('/(legacy)/settings')({
   component: SettingPage,
 })
 
 function SettingPage() {
   const { t } = useTranslation()
-
-  const Component = lazy(() => import('@/components/setting/setting-page'))
-
-  const GithubIcon = () => {
-    const toGithubRepo = useLockFn(() => {
-      return openThat('https://github.com/Alfred1109/clashnyanpasu')
-    })
-
-    return (
-      <IconButton
-        color="inherit"
-        title="@Alfred1109/clashnyanpasu"
-        onClick={toGithubRepo}
-      >
-        <GitHub fontSize="inherit" />
-      </IconButton>
+  const toGithub = useLockFn(() =>
+    openThat('https://github.com/Alfred1109/clashnyanpasu'),
+  )
+  const toFeedback = useLockFn(async () => {
+    const envs = await collectEnvs()
+    const formattedEnv = encodeURIComponent(
+      formatEnvInfos(envs)
+        .split('\n')
+        .map((value) => `> ${value}`)
+        .join('\n'),
     )
-  }
-
-  const FeedbackIcon = () => {
-    const toFeedback = useLockFn(async () => {
-      const envs = await collectEnvs()
-      const formattedEnv = encodeURIComponent(
-        formatEnvInfos(envs)
-          .split('\n')
-          .map((v: string) => `> ${v}`)
-          .join('\n'),
-      )
-      return openThat(
-        'https://github.com/Alfred1109/clashnyanpasu/issues/new?assignees=&labels=T%3A+Bug%2CS%3A+Untriaged&projects=&template=bug_report.yaml&env_infos=' +
-          formattedEnv,
-      )
-    })
-    return (
-      <IconButton color="inherit" title={t('Feedback')} onClick={toFeedback}>
-        <Feedback fontSize="inherit" />
-      </IconButton>
+    return openThat(
+      'https://github.com/Alfred1109/clashnyanpasu/issues/new?assignees=&labels=T%3A+Bug%2CS%3A+Untriaged&projects=&template=bug_report.yaml&env_infos=' +
+        formattedEnv,
     )
-  }
-
-  // FIXME: it should move to a proper place
-  const HotkeyButton = () => {
-    const [open, setOpen] = React.useState(false)
-    return (
-      <>
-        <HotkeyDialog open={open} onClose={() => setOpen(false)} />
-        <IconButton
-          color="inherit"
-          title={t('Hotkeys')}
-          onClick={() => setOpen(true)}
-        >
-          <Keyboard fontSize="inherit" />
-        </IconButton>
-      </>
-    )
-  }
-
-  // FIXME: it should move to a proper place
-  const TrayIconButton = () => {
-    const [open, setOpen] = React.useState(false)
-    return (
-      <>
-        <TrayIconDialog open={open} onClose={() => setOpen(false)} />
-        <IconButton
-          color="inherit"
-          title={t('Tray Icons')}
-          onClick={() => setOpen(true)}
-        >
-          <Inventory fontSize="inherit" />
-        </IconButton>
-      </>
-    )
-  }
-
+  })
   return (
     <BasePage
       title={t('Settings')}
       header={
-        <div className="flex gap-1">
-          <TrayIconButton />
-          <HotkeyButton />
-          <FeedbackIcon />
-          <GithubIcon />
-        </div>
+        <Box
+          data-inline-tools
+          sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}
+        >
+          <IconButton
+            color="inherit"
+            title={t('Feedback')}
+            onClick={toFeedback}
+          >
+            <Feedback fontSize="inherit" />
+          </IconButton>
+          <IconButton
+            color="inherit"
+            title="@Alfred1109/clashnyanpasu"
+            onClick={toGithub}
+          >
+            <GitHub fontSize="inherit" />
+          </IconButton>
+        </Box>
       }
-      sectionStyle={{
-        paddingRight: 0,
-      }}
+      sectionStyle={{ padding: '12px 16px' }}
     >
       <Component />
     </BasePage>

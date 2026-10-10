@@ -1,9 +1,9 @@
 import { useLockFn } from 'ahooks'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
-import { getThemePaletteTokens, tokenAlpha } from '@/utils/theme'
+import { IS_IN_TAURI } from '@/utils/tauri'
 import {
   Route as DirectIcon,
   ExpandLess,
@@ -12,21 +12,19 @@ import {
   Language as RuleIcon,
 } from '@mui/icons-material'
 import {
+  Alert,
   Box,
-  Chip,
+  Button,
   Collapse,
   MenuItem,
   Stack,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material'
 import { useClashConfig, useProxyMode } from '@nyanpasu/interface'
-import { BaseCard } from '@nyanpasu/ui'
-import { PaperSwitchButton } from './modules/system-proxy'
-import {
-  SettingSummaryItem,
-  SettingSummaryPanel,
-} from './setting-summary-panel'
+import { SettingControlRow } from './setting-control-row'
 
 const RULE_MODE_COUNTRIES = [
   { code: 'CN', label: '中国' },
@@ -44,38 +42,46 @@ const RULE_MODE_COUNTRIES = [
 ] as const
 
 const MODE_META = {
-  rule: {
-    icon: RuleIcon,
-    title: '规则模式',
-    description: '按规则分流，适合日常使用。',
-  },
-  global: {
-    icon: GlobalIcon,
-    title: '全局模式',
-    description: '所有流量统一走当前选择的代理。',
-  },
-  direct: {
-    icon: DirectIcon,
-    title: '直连模式',
-    description: '不经过代理，直接连接网络。',
-  },
+  rule: { icon: <RuleIcon fontSize="small" />, title: '规则' },
+  global: { icon: <GlobalIcon fontSize="small" />, title: '全局' },
+  direct: { icon: <DirectIcon fontSize="small" />, title: '直连' },
 } as const
+
+type ProxyModeName = keyof typeof MODE_META
 
 export default function SettingProxyMode() {
   const { t } = useTranslation()
-  const { value: proxyMode, upsert } = useProxyMode()
+  const proxyMode = useProxyMode()
   const clashConfig = useClashConfig()
+  const [geoipExpanded, setGeoipExpanded] = useState(false)
+  const [operationError, setOperationError] = useState<string>()
+  const [cleanupWarning, setCleanupWarning] = useState<string>()
 
   const ruleModeGeoipCode = useMemo(() => {
     const rawValue = clashConfig.query.data?.geoip_code?.trim().toUpperCase()
     return rawValue || 'CN'
   }, [clashConfig.query.data?.geoip_code])
 
-  const handleSwitchMode = useLockFn(async (mode: keyof typeof MODE_META) => {
+  const currentMode = (Object.keys(MODE_META) as ProxyModeName[]).find(
+    (mode) => proxyMode.value[mode],
+  )
+  const modeReady =
+    IS_IN_TAURI && Boolean(proxyMode.query.data) && !proxyMode.query.isError
+  const canWrite = modeReady && !proxyMode.isPending
+
+  const handleSwitchMode = useLockFn(async (mode: ProxyModeName) => {
+    setOperationError(undefined)
+    setCleanupWarning(undefined)
     try {
-      await upsert(mode)
+      const result = await proxyMode.upsert(mode)
+      if (result.cleanupError) {
+        const detail = formatError(result.cleanupError)
+        setCleanupWarning(`模式已切换，旧连接清理失败：${detail}`)
+      }
     } catch (error) {
-      await message(`代理模式切换失败\n${formatError(error)}`, {
+      const detail = formatError(error)
+      setOperationError(detail)
+      await message(`代理模式切换失败\n${detail}`, {
         title: t('Error'),
         kind: 'error',
       })
@@ -83,167 +89,146 @@ export default function SettingProxyMode() {
   })
 
   const handleGeoipCodeChange = useLockFn(async (geoipCode: string) => {
+    setOperationError(undefined)
     try {
       await clashConfig.upsert.mutateAsync({ geoip_code: geoipCode })
     } catch (error) {
-      await message(`规则模式国家切换失败\n${formatError(error)}`, {
+      const detail = formatError(error)
+      setOperationError(detail)
+      await message(`规则模式国家切换失败\n${detail}`, {
         title: t('Error'),
         kind: 'error',
       })
     }
   })
 
+  const modeStatus = !IS_IN_TAURI
+    ? '仅桌面端可修改'
+    : proxyMode.query.isLoading
+      ? '正在读取'
+      : proxyMode.query.isError
+        ? '读取失败'
+        : currentMode
+          ? `当前：${MODE_META[currentMode].title}模式`
+          : '配置未提供模式'
+
   return (
-    <BaseCard
-      label="代理模式"
-      labelChildren={
-        <Chip
-          size="small"
-          color="primary"
-          variant="filled"
-          label={`当前: ${
-            proxyMode.rule ? '规则' : proxyMode.global ? '全局' : '直连'
-          }`}
-          sx={{ fontWeight: 700 }}
-        />
-      }
-    >
-      <Box display="flex" flexDirection="column" gap={1.5}>
-        <Typography variant="body2" color="text.secondary">
-          在这里切换代理模式，并查看当前 GeoIP 国家。
-        </Typography>
+    <Stack spacing={1} sx={{ px: 2, py: 1.25 }}>
+      {proxyMode.query.isError && IS_IN_TAURI && (
+        <Alert severity="error" sx={{ py: 0 }}>
+          代理模式读取失败：{formatError(proxyMode.query.error)}
+        </Alert>
+      )}
+      {!proxyMode.query.isLoading &&
+        !proxyMode.query.isError &&
+        IS_IN_TAURI &&
+        !currentMode && (
+          <Alert severity="warning" sx={{ py: 0 }}>
+            当前配置未返回有效模式，已禁用切换。
+          </Alert>
+        )}
 
-        <SettingSummaryPanel>
-          {[
-            {
-              label: '活跃模式',
-              value: proxyMode.rule
-                ? '规则模式'
-                : proxyMode.global
-                  ? '全局模式'
-                  : '直连模式',
-            },
-            { label: '规则国家', value: ruleModeGeoipCode },
-            { label: '切换方式', value: '即时生效' },
-          ].map((item) => (
-            <SettingSummaryItem
-              key={item.label}
-              label={item.label}
-              value={item.value}
-            />
-          ))}
-        </SettingSummaryPanel>
-
-        <Stack spacing={1}>
-          {(Object.keys(MODE_META) as Array<keyof typeof MODE_META>).map(
-            (mode) => {
-              const checked = Boolean(proxyMode[mode])
-              const meta = MODE_META[mode]
-              const Icon = meta.icon
-
-              return (
-                <Box key={mode}>
-                  <PaperSwitchButton
-                    checked={checked}
-                    label={meta.title}
-                    onClick={() => handleSwitchMode(mode)}
-                    statusText={
-                      mode === 'rule' && checked
-                        ? `当前模式 · ${ruleModeGeoipCode}`
-                        : checked
-                          ? '当前模式'
-                          : '点击切换'
-                    }
-                  >
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="space-between"
-                      gap={1}
-                      color={checked ? 'primary.contrastText' : 'text.primary'}
-                    >
-                      <Box
-                        display="flex"
-                        alignItems="center"
-                        gap={1}
-                        minWidth={0}
-                      >
-                        <Icon fontSize="small" />
-                        <Typography
-                          variant="body2"
-                          color="inherit"
-                          sx={{ fontWeight: 500 }}
-                        >
-                          {meta.description}
-                        </Typography>
-                      </Box>
-
-                      {mode === 'rule' &&
-                        (checked ? (
-                          <ExpandLess fontSize="small" />
-                        ) : (
-                          <ExpandMore fontSize="small" />
-                        ))}
-                    </Box>
-                  </PaperSwitchButton>
-
-                  {mode === 'rule' && (
-                    <Collapse in={checked} timeout="auto" unmountOnExit>
-                      <Box
-                        mt={1}
-                        px={1.25}
-                        py={1.25}
-                        borderRadius={2.5}
-                        border="1px solid"
-                        sx={(theme) => ({
-                          backgroundColor: tokenAlpha(
-                            getThemePaletteTokens(theme).primary.main,
-                            0.08,
-                          ),
-                          borderColor: tokenAlpha(
-                            getThemePaletteTokens(theme).text.primary,
-                            0.1,
-                          ),
-                        })}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 600, mb: 0.75 }}
-                        >
-                          国家地区
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: 'block', mb: 1 }}
-                        >
-                          规则模式使用的 GeoIP 国家代码。
-                        </Typography>
-
-                        <TextField
-                          select
-                          fullWidth
-                          size="small"
-                          value={ruleModeGeoipCode}
-                          onChange={(event) => {
-                            handleGeoipCodeChange(event.target.value)
-                          }}
-                        >
-                          {RULE_MODE_COUNTRIES.map((country) => (
-                            <MenuItem key={country.code} value={country.code}>
-                              {country.label} ({country.code})
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                      </Box>
-                    </Collapse>
-                  )}
+      <SettingControlRow
+        title="代理模式"
+        icon={<GlobalIcon color="action" />}
+        status={modeStatus}
+        controlPlacement="below"
+        control={
+          <ToggleButtonGroup
+            exclusive
+            fullWidth
+            size="small"
+            value={currentMode ?? null}
+            disabled={!canWrite}
+            onChange={(_, value: ProxyModeName | null) => {
+              if (value) handleSwitchMode(value)
+            }}
+            aria-label="代理模式"
+            sx={{
+              '& .MuiToggleButton-root': {
+                flex: 1,
+                minWidth: 0,
+                px: 0.5,
+                py: 0.5,
+              },
+            }}
+          >
+            {(Object.keys(MODE_META) as ProxyModeName[]).map((mode) => (
+              <ToggleButton
+                key={mode}
+                value={mode}
+                aria-label={`${MODE_META[mode].title}模式`}
+              >
+                <Box display="flex" alignItems="center" gap={0.5}>
+                  {MODE_META[mode].icon}
+                  <Typography variant="caption" fontWeight={650}>
+                    {MODE_META[mode].title}
+                  </Typography>
                 </Box>
-              )
-            },
-          )}
-        </Stack>
-      </Box>
-    </BaseCard>
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        }
+      />
+
+      {operationError && <Alert severity="error">{operationError}</Alert>}
+      {cleanupWarning && <Alert severity="warning">{cleanupWarning}</Alert>}
+
+      {currentMode === 'rule' && (
+        <SettingControlRow
+          title="规则国家"
+          icon={<RuleIcon color="action" />}
+          description="GeoIP 匹配"
+          status={ruleModeGeoipCode}
+          control={
+            <Button
+              size="small"
+              variant="text"
+              endIcon={geoipExpanded ? <ExpandLess /> : <ExpandMore />}
+              onClick={() => setGeoipExpanded((expanded) => !expanded)}
+              aria-expanded={geoipExpanded}
+              aria-label={geoipExpanded ? '收起规则国家选择' : '修改规则国家'}
+            >
+              {geoipExpanded ? '收起' : '修改国家'}
+            </Button>
+          }
+          details={
+            <Box id="proxy-mode-geoip-details">
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label="GeoIP 国家或地区"
+                helperText="按此国家代码匹配 GeoIP 规则"
+                value={ruleModeGeoipCode}
+                disabled={
+                  !IS_IN_TAURI ||
+                  clashConfig.query.isLoading ||
+                  clashConfig.query.isError ||
+                  clashConfig.upsert.isPending
+                }
+                onChange={(event) => {
+                  handleGeoipCodeChange(event.target.value)
+                }}
+              >
+                {RULE_MODE_COUNTRIES.map((country) => (
+                  <MenuItem key={country.code} value={country.code}>
+                    {country.label} ({country.code})
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
+          }
+          expanded={geoipExpanded}
+          sx={{ border: 0, px: 0, py: 0 }}
+        />
+      )}
+
+      {geoipExpanded && clashConfig.query.isError && (
+        <Collapse in>
+          <Alert severity="error">GeoIP 配置读取失败，无法修改。</Alert>
+        </Collapse>
+      )}
+    </Stack>
   )
 }

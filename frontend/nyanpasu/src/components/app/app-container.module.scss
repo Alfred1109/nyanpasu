@@ -8,12 +8,15 @@
   width: 100%;
   height: 100vh;
   overflow: hidden;
+
   /* Background color handled by MUI theme system in React component */
 
   .container {
     position: relative;
-    flex: 1 1 75%;
+    flex: 1;
+    min-width: 0;
     height: 100%;
+
     /* Background color handled by MUI theme system in React component */
   }
 }

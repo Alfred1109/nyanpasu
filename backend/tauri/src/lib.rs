@@ -9,6 +9,7 @@ mod cmds;
 mod config;
 mod consts;
 mod core;
+mod diagnostics;
 mod enhance;
 mod feat;
 mod ipc;
@@ -243,6 +244,16 @@ pub fn run() -> std::io::Result<()> {
         ipc::restart_sidecar,
         // clash
         ipc::get_clash_info,
+        diagnostics::report_frontend_diagnostic,
+        ipc::get_managed_runtime_settings,
+        ipc::set_managed_runtime_settings,
+        ipc::clear_proxy_fixed,
+        ipc::create_manual_backup,
+        ipc::list_backups,
+        ipc::verify_backup,
+        ipc::open_backup_directory,
+        ipc::get_dns_settings,
+        ipc::set_dns_settings,
         ipc::get_clash_logs,
         ipc::patch_clash_config,
         ipc::change_clash_core,

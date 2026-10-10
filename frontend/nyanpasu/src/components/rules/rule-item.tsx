@@ -47,7 +47,7 @@ const RuleItem = ({ index, value }: Props) => {
   }
 
   return (
-    <div className="flex p-2 pr-7 pl-7 select-text">
+    <div className="flex min-w-0 gap-2 p-2 pr-3 pl-3 select-text sm:pr-7 sm:pl-7">
       <Box
         sx={(theme) => ({ color: theme.vars.palette.text.secondary })}
         className="min-w-14"
@@ -55,15 +55,21 @@ const RuleItem = ({ index, value }: Props) => {
         {index + 1}
       </Box>
 
-      <div className="flex flex-col gap-1">
-        <Box sx={(theme) => ({ color: theme.vars.palette.text.primary })}>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <Box
+          sx={(theme) => ({ color: theme.vars.palette.text.primary })}
+          className="[overflow-wrap:anywhere]"
+        >
           {value.payload || '-'}
         </Box>
 
-        <div className="flex gap-8">
-          <div className="min-w-40 text-sm">{value.type}</div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <div className="min-w-0 text-sm sm:min-w-40">{value.type}</div>
 
-          <Box className="text-s text-sm" sx={parseColorSx(value.proxy)}>
+          <Box
+            className="text-s text-sm [overflow-wrap:anywhere]"
+            sx={parseColorSx(value.proxy)}
+          >
             {value.proxy}
           </Box>
         </div>

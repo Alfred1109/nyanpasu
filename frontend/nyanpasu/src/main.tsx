@@ -11,14 +11,16 @@ import './assets/styles/index.scss'
 import './assets/styles/tailwind.css'
 import { routeTree } from './route-tree.gen'
 import './services/i18n'
+import {
+  installGlobalErrorReporting,
+  reportReactRootError,
+} from './services/error-reporting'
 
 if (!window.ResizeObserver) {
   window.ResizeObserver = ResizeObserver
 }
 
-window.addEventListener('error', (event) => {
-  console.error(event)
-})
+installGlobalErrorReporting()
 
 // Set up a Router instance
 const router = createRouter({
@@ -35,7 +37,18 @@ declare module '@tanstack/react-router' {
 
 const container = document.getElementById('root')!
 
-createRoot(container).render(
+createRoot(container, {
+  onCaughtError: (error, info) =>
+    reportReactRootError(error, 'caught', info.componentStack ?? undefined),
+  onUncaughtError: (error, info) =>
+    reportReactRootError(error, 'uncaught', info.componentStack ?? undefined),
+  onRecoverableError: (error, info) =>
+    reportReactRootError(
+      error,
+      'recoverable',
+      info.componentStack ?? undefined,
+    ),
+}).render(
   <React.StrictMode>
     <RouterProvider router={router} />
   </React.StrictMode>,

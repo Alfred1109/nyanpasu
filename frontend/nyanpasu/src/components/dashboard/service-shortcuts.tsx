@@ -3,12 +3,12 @@ import { useAtomValue } from 'jotai'
 import { isObject } from 'lodash-es'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useServiceManager } from '@/hooks/use-service-manager'
 import { atomIsDrawer } from '@/store'
 import { Box, CircularProgress, Paper, Tooltip } from '@mui/material'
 import Grid from '@mui/material/Grid'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { getCoreStatus } from '@nyanpasu/interface'
-import { useServiceManager } from '@/hooks/use-service-manager'
 import { alpha } from '@nyanpasu/ui'
 import { useQuery } from '@tanstack/react-query'
 
@@ -109,6 +109,7 @@ const ServiceShortcuts = () => {
   return (
     <Grid
       size={{
+        xs: 12,
         sm: isDrawer ? 6 : 12,
         md: 6,
         lg: 4,

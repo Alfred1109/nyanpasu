@@ -14,10 +14,10 @@ export enum SortType {
   Name = 'name',
 }
 
-export const nodeSortingFn = (
-  selectedGroup: ProxyGroupItem,
+export const nodeSortingFn = <T extends ProxyGroupItem>(
+  selectedGroup: T,
   type: SortType,
-) => {
+): T => {
   let sortedList = selectedGroup.all?.slice()
 
   switch (type) {
@@ -48,5 +48,5 @@ export const nodeSortingFn = (
   return {
     ...selectedGroup,
     all: sortedList,
-  }
+  } as T
 }

@@ -14,13 +14,13 @@ import { Virtualizer, VListHandle } from 'virtua'
 import { proxyGroupAtom, proxyGroupSortAtom } from '@/store'
 import { proxiesFilterAtom } from '@/store/proxies'
 import {
+  ClashProxiesQueryGroupItem,
   ClashProxiesQueryProxyItem,
-  ProxyGroupItem,
   useClashProxies,
   useProxyMode,
   useSetting,
 } from '@nyanpasu/interface'
-import { cn, useBreakpointValue } from '@nyanpasu/ui'
+import { useBreakpointValue } from '@nyanpasu/ui'
 import NodeCard from './node-card'
 import { nodeSortingFn } from './utils'
 
@@ -31,7 +31,10 @@ export interface NodeListRef {
 }
 
 export const NodeList = forwardRef(function NodeList(
-  { scrollRef }: { scrollRef: RefObject<HTMLElement> },
+  {
+    scrollRef,
+    toolbarHeight,
+  }: { scrollRef: RefObject<HTMLElement>; toolbarHeight?: number },
   ref,
 ) {
   const { data } = useClashProxies()
@@ -44,7 +47,7 @@ export const NodeList = forwardRef(function NodeList(
 
   const proxyGroupSort = useAtomValue(proxyGroupSortAtom)
 
-  const [group, setGroup] = useState<ProxyGroupItem>()
+  const [group, setGroup] = useState<ClashProxiesQueryGroupItem>()
 
   const sortGroup = useCallback(() => {
     if (!proxyMode.global) {
@@ -149,15 +152,19 @@ export const NodeList = forwardRef(function NodeList(
           return (
             <div
               key={index}
-              className={cn('grid gap-2 px-2 pb-2', index === 0 && 'pt-14')}
-              style={{ gridTemplateColumns: `repeat(${column} , 1fr)` }}
+              className="grid gap-2 px-2 pb-2"
+              style={{
+                gridTemplateColumns: `repeat(${column} , 1fr)`,
+                paddingTop: index === 0 ? (toolbarHeight ?? 56) : undefined,
+              }}
             >
               {node.map((render) => {
                 const Card = () => (
                   <NodeCard
                     node={render}
                     now={group?.now}
-                    disabled={group?.type !== 'Selector'}
+                    disabled={!group?.canSelect}
+                    pinned={group?.fixed === render.name}
                   />
                 )
 

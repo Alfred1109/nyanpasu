@@ -1,8 +1,56 @@
 /**
  * Error formatting utility
  */
+export interface StructuredErrorPayload {
+  code?: unknown
+  message: string
+  details?: unknown
+}
+
+function structuredError(value: unknown): StructuredErrorPayload | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const payload = value as Record<string, unknown>
+  if (typeof payload.message !== 'string') return undefined
+  if (typeof payload.code !== 'string' && typeof payload.details !== 'string') {
+    return undefined
+  }
+  return {
+    code: payload.code,
+    message: payload.message,
+    details: payload.details,
+  }
+}
+
+export function formatErrorDetails(err: unknown): string {
+  const structured = structuredError(err)
+  if (structured) {
+    const details = [
+      `Code: ${typeof structured.code === 'string' ? structured.code : 'unknown'}`,
+      `Message: ${structured.message}`,
+      typeof structured.details === 'string' && structured.details.trim()
+        ? `Details:\n${structured.details}`
+        : undefined,
+    ]
+      .filter((line): line is string => line !== undefined)
+      .join('\n')
+    if (err instanceof Error && err.stack)
+      return `${details}\nStack:\n${err.stack}`
+    return details
+  }
+
+  if (err instanceof Error) {
+    return [err.name, err.message, err.stack].filter(Boolean).join('\n')
+  }
+  return String(err)
+}
+
 export function formatError(err: unknown): string {
-  const rawMessage = err instanceof Error ? err.message : String(err)
+  const structured = structuredError(err)
+  const rawMessage = structured
+    ? structured.message
+    : err instanceof Error
+      ? err.message
+      : String(err)
 
   const invalidRuleMatch = rawMessage.match(
     /rules\[(\d+)\]\s+\[([^\]]+)\]\s+error:\s+proxy\s+\[([^\]]+)\]\s+not found/i,
@@ -20,6 +68,12 @@ export function formatError(err: unknown): string {
       `规则内容：${ruleText}`,
       hint,
     ].join('\n')
+  }
+
+  if (structured) {
+    const code =
+      typeof structured.code === 'string' ? `[${structured.code}] ` : ''
+    return `Error: ${code}${rawMessage}`
   }
 
   return `Error: ${rawMessage}`

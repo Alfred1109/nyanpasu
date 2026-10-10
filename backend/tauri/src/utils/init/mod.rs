@@ -19,6 +19,8 @@ mod logging;
 pub use logging::refresh_logger;
 
 pub fn run_pending_migrations() -> Result<()> {
+    crate::core::migration::validate_migration_lock()
+        .context("检测到不兼容的本地迁移状态，已阻止启动以保护配置")?;
     let current_exe = current_exe()?;
     let current_exe = dunce::canonicalize(current_exe)?;
     let file = std::fs::OpenOptions::new()

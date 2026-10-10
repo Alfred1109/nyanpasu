@@ -1,7 +1,6 @@
-import { merge } from 'lodash-es'
 import { useEffect } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isInTauri } from '@nyanpasu/utils'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { unwrapResult } from '../utils'
 import { commands, type IVerge } from './bindings'
 import { NYANPASU_SETTING_QUERY_KEY } from './consts'
@@ -34,7 +33,7 @@ export const useSettings = () => {
   const queryClient = useQueryClient()
 
   useEffect(() => {
-    if (!isInTauri) {
+    if (!isInTauri()) {
       return
     }
 
@@ -51,7 +50,10 @@ export const useSettings = () => {
     // Only keep DOM event as fallback for manual triggers
 
     return () => {
-      window.removeEventListener('nyanpasu-setting-changed', handleSettingChanged)
+      window.removeEventListener(
+        'nyanpasu-setting-changed',
+        handleSettingChanged,
+      )
     }
   }, [queryClient])
 
@@ -67,7 +69,7 @@ export const useSettings = () => {
    */
   const query = useQuery({
     queryKey: [NYANPASU_SETTING_QUERY_KEY],
-    enabled: isInTauri,
+    enabled: isInTauri(),
     queryFn: async () => {
       return unwrapResult(await commands.getVergeConfig())
     },
@@ -125,7 +127,7 @@ export const useSettings = () => {
  */
 export const useSetting = <K extends keyof IVerge>(key: K) => {
   const {
-    query: { data, ...query },
+    query: { data, ...queryState },
     upsert: update,
   } = useSettings()
 
@@ -139,11 +141,16 @@ export const useSetting = <K extends keyof IVerge>(key: K) => {
    * Updates a specific setting value in the Verge configuration
    * @param value - The new value to be set for the specified key
    * @returns void
-   * @remarks This function will not execute if the data is not available
+   * @remarks Rejects changes when configuration is unavailable or its read failed
    */
   const upsert = async (value: IVerge[K]) => {
+    if (queryState.isError) {
+      throw new Error('设置读取失败，无法安全保存修改。', {
+        cause: queryState.error,
+      })
+    }
     if (!data) {
-      return
+      throw new Error('设置尚未加载，无法保存修改。')
     }
 
     await update.mutateAsync({ [key]: value })
@@ -152,7 +159,14 @@ export const useSetting = <K extends keyof IVerge>(key: K) => {
   return {
     value,
     upsert,
-    // merge hook status
-    ...merge(query, update),
+    // Keep query and mutation state separate. `isPending` remains the legacy
+    // mutation alias used by existing setting rows; query state is available
+    // without ambiguity through `query` and the explicit query fields below.
+    ...queryState,
+    query: { ...queryState, data },
+    isPending: update.isPending,
+    upsertPending: update.isPending,
+    upsertError: update.error,
+    upsertStatus: update.status,
   }
 }

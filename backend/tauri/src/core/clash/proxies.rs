@@ -33,6 +33,15 @@ pub struct ProxyGroupItem {
     pub icon: Option<String>, // Mihomo Only
     #[serde(default)]
     pub hidden: bool, // Mihomo Only
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub test_url: Option<String>, // Mihomo Only
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected_status: Option<String>, // Mihomo Only
+    /// Present (including as an empty string) when Mihomo supports pinning this group.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fixed: Option<String>, // Mihomo/Meow Only
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extra: Option<serde_json::Value>, // Mihomo Only, per-URL delay history
                              // extra: {}, // Mihomo Only
 }
 
@@ -52,7 +61,25 @@ impl From<api::ProxyItem> for ProxyGroupItem {
             tfo: item.tfo,
             icon: item.icon,
             hidden: item.hidden,
+            test_url: item.test_url,
+            expected_status: item.expected_status,
+            fixed: item.fixed,
+            extra: item.extra,
         }
+    }
+}
+
+impl ProxyGroupItem {
+    /// `fixed` is exposed by Mihomo/Meow on URLTest and Fallback groups even
+    /// while empty. Older cores omit it and reject manual selection.
+    fn supports_select(&self) -> bool {
+        self.r#type == "Selector"
+            || (matches!(self.r#type.as_str(), "URLTest" | "Fallback") && self.fixed.is_some())
+    }
+
+    fn supports_clear_fixed(&self) -> bool {
+        matches!(self.r#type.as_str(), "URLTest" | "Fallback")
+            && self.fixed.as_deref().is_some_and(|fixed| !fixed.is_empty())
     }
 }
 
@@ -70,6 +97,48 @@ async fn fetch_proxies() -> Result<(api::ProxiesRes, api::ProvidersProxiesRes)> 
     try_join!(api::get_proxies(), api::get_providers_proxies())
 }
 
+fn merge_provider_proxies(
+    core_proxies: &IndexMap<String, api::ProxyItem>,
+    providers: IndexMap<String, api::ProxyProviderItem>,
+) -> (
+    IndexMap<String, api::ProxyItem>,
+    IndexMap<String, api::ProxyItem>,
+) {
+    let mut provider_groups = IndexMap::new();
+    let mut provider_nodes = IndexMap::new();
+
+    for (provider_name, provider) in providers.into_iter().filter(|(_, provider)| {
+        matches!(
+            provider.vehicle_type,
+            api::VehicleType::Http | api::VehicleType::File
+        )
+    }) {
+        let provider_group_name = provider.name.clone();
+        let mut provider_group: api::ProxyItem = provider.clone().into();
+        provider_group.provider = Some(provider_name.clone());
+        provider_groups
+            .entry(provider_group_name)
+            .or_insert(provider_group);
+
+        for mut proxy in provider.proxies {
+            if core_proxies.contains_key(&proxy.name) {
+                continue;
+            }
+            proxy.provider.get_or_insert_with(|| provider_name.clone());
+            // Provider iteration order is stable; the first provider wins duplicate
+            // names while the core /proxies entry always remains authoritative.
+            provider_nodes.entry(proxy.name.clone()).or_insert(proxy);
+        }
+    }
+
+    let mut records = core_proxies.clone();
+    for (name, proxy) in &provider_nodes {
+        records.entry(name.clone()).or_insert_with(|| proxy.clone());
+    }
+
+    (records, provider_groups)
+}
+
 impl Proxies {
     #[instrument]
     pub async fn fetch() -> Result<Self> {
@@ -77,32 +146,16 @@ impl Proxies {
             .retry(*CLASH_API_DEFAULT_BACKOFF_STRATEGY)
             .await?;
         let inner_proxies = inner_proxies.proxies;
-        // 1. filter out the Http or File type provider proxies
-        let providers_proxies: IndexMap<String, api::ProxyProviderItem> = {
-            let records = providers_proxies.providers;
-            records
-                .into_iter()
-                .filter(|(_k, v)| {
-                    matches!(
-                        v.vehicle_type,
-                        api::VehicleType::Http | api::VehicleType::File
-                    )
-                })
-                .collect()
-        };
-
-        // 2. mapping provider => providerProxiesItem to name => ProxyItem
-        let mut provider_map = IndexMap::<String, api::ProxyItem>::new();
-        for (provider, record) in providers_proxies.iter() {
-            let name = record.name.clone();
-            let mut record: api::ProxyItem = record.clone().into();
-            record.provider = Some(provider.clone());
-            provider_map.insert(name, record);
-        }
+        // Core entries are authoritative; provider records only supplement missing
+        // proxy nodes and retain their health history for the proxy/group UI.
+        let (records, provider_groups) =
+            merge_provider_proxies(&inner_proxies, providers_proxies.providers);
         let generate_item = |name: &str| {
             if let Some(r) = inner_proxies.get(name) {
                 r.clone()
-            } else if let Some(r) = provider_map.get(name) {
+            } else if let Some(r) = records.get(name) {
+                r.clone()
+            } else if let Some(r) = provider_groups.get(name) {
                 r.clone()
             } else {
                 api::ProxyItem {
@@ -174,6 +227,12 @@ impl Proxies {
             matches!(v.name.as_str(), "DIRECT" | "REJECT")
                 && (v.all.is_none() || v.all.as_ref().unwrap().is_empty())
         }));
+        proxies.extend(
+            records
+                .iter()
+                .filter(|(name, _)| !inner_proxies.contains_key(name.as_str()))
+                .map(|(_, proxy)| proxy.clone()),
+        );
 
         // 5. generate the global
         let global: Option<ProxyGroupItem> = global.map(|v| {
@@ -187,7 +246,7 @@ impl Proxies {
             global: global.unwrap_or_default(),
             direct,
             groups,
-            records: inner_proxies,
+            records,
             proxies,
         })
     }
@@ -255,6 +314,7 @@ impl ProxiesGuard {
 pub trait ProxiesGuardExt {
     async fn update(&self) -> Result<()>;
     async fn select_proxy(&self, group: &str, name: &str) -> Result<()>;
+    async fn clear_fixed_proxy(&self, group: &str) -> Result<()>;
 }
 
 type ProxiesGuardSingleton = &'static Arc<RwLock<ProxiesGuard>>;
@@ -275,8 +335,147 @@ impl ProxiesGuardExt for ProxiesGuardSingleton {
     }
 
     async fn select_proxy(&self, group: &str, name: &str) -> Result<()> {
+        self.update().await?;
+        let group_snapshot = {
+            let guard = self.read();
+            guard
+                .inner()
+                .groups
+                .iter()
+                .find(|candidate| candidate.name == group)
+                .or_else(|| (guard.inner().global.name == group).then_some(&guard.inner().global))
+                .cloned()
+        };
+        let group_snapshot = group_snapshot
+            .ok_or_else(|| anyhow::anyhow!("proxy group {group:?} does not exist"))?;
+        anyhow::ensure!(
+            group_snapshot.supports_select(),
+            "proxy group {group:?} does not support manual selection"
+        );
         api::update_proxy(group, name).await?;
         self.update().await?;
         Ok(())
+    }
+
+    async fn clear_fixed_proxy(&self, group: &str) -> Result<()> {
+        self.update().await?;
+        let group_snapshot = {
+            let guard = self.read();
+            guard
+                .inner()
+                .groups
+                .iter()
+                .find(|candidate| candidate.name == group)
+                .or_else(|| (guard.inner().global.name == group).then_some(&guard.inner().global))
+                .cloned()
+        };
+        let group_snapshot = group_snapshot
+            .ok_or_else(|| anyhow::anyhow!("proxy group {group:?} does not exist"))?;
+        anyhow::ensure!(
+            group_snapshot.supports_clear_fixed(),
+            "proxy group {group:?} has no fixed member to clear"
+        );
+        api::clear_proxy_selection(group).await?;
+        self.update().await?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod capability_tests {
+    use super::{ProxyGroupItem, merge_provider_proxies};
+    use crate::core::clash::api::{
+        ProviderType, ProxyItem, ProxyItemHistory, ProxyProviderItem, VehicleType,
+    };
+    use indexmap::IndexMap;
+
+    fn group(kind: &str, fixed: Option<&str>) -> ProxyGroupItem {
+        ProxyGroupItem {
+            r#type: kind.to_owned(),
+            fixed: fixed.map(str::to_owned),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn manual_selection_uses_core_reported_capability() {
+        assert!(group("Selector", None).supports_select());
+        assert!(!group("URLTest", None).supports_select());
+        assert!(group("URLTest", Some("")).supports_select());
+        assert!(group("Fallback", Some("node-a")).supports_select());
+        assert!(!group("LoadBalance", Some("node-a")).supports_select());
+    }
+
+    #[test]
+    fn automatic_selection_can_only_be_restored_for_a_real_pin() {
+        assert!(!group("Selector", None).supports_clear_fixed());
+        assert!(!group("Fallback", None).supports_clear_fixed());
+        assert!(!group("URLTest", Some("")).supports_clear_fixed());
+        assert!(group("Fallback", Some("node-a")).supports_clear_fixed());
+    }
+
+    fn proxy(name: &str, alive: Option<bool>, delay: i64) -> ProxyItem {
+        ProxyItem {
+            name: name.to_owned(),
+            r#type: "Shadowsocks".to_owned(),
+            alive,
+            history: if delay >= 0 {
+                vec![ProxyItemHistory {
+                    time: "2026-10-11T00:00:00Z".to_owned(),
+                    delay,
+                }]
+            } else {
+                vec![]
+            },
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn provider_health_supplements_missing_nodes_without_overriding_core() {
+        let mut core = IndexMap::new();
+        core.insert("duplicate".to_owned(), proxy("duplicate", Some(false), 0));
+
+        let mut provider_a = ProxyProviderItem {
+            name: "provider-a".to_owned(),
+            r#type: ProviderType::Proxy,
+            proxies: vec![
+                proxy("duplicate", Some(true), 25),
+                proxy("provider-only", Some(true), 41),
+            ],
+            vehicle_type: VehicleType::Http,
+            test_url: Some("https://probe.example/health".to_owned()),
+            expected_status: Some("200".to_owned()),
+        };
+        let provider_b = ProxyProviderItem {
+            name: "provider-b".to_owned(),
+            r#type: ProviderType::Proxy,
+            proxies: vec![proxy("provider-only", Some(false), 0)],
+            vehicle_type: VehicleType::File,
+            test_url: None,
+            expected_status: None,
+        };
+        // Keep construction mutable above to make it explicit that provider metadata
+        // is carried through the synthetic provider-group entry too.
+        provider_a.proxies[0].provider = Some("provider-a".to_owned());
+        let providers = IndexMap::from([
+            ("provider-a".to_owned(), provider_a),
+            ("provider-b".to_owned(), provider_b),
+        ]);
+
+        let (records, provider_groups) = merge_provider_proxies(&core, providers);
+
+        assert_eq!(records["duplicate"].alive, Some(false));
+        assert_eq!(records["duplicate"].history[0].delay, 0);
+        assert_eq!(records["provider-only"].alive, Some(true));
+        assert_eq!(records["provider-only"].history[0].delay, 41);
+        assert_eq!(
+            records["provider-only"].provider.as_deref(),
+            Some("provider-a")
+        );
+        assert_eq!(
+            provider_groups["provider-a"].test_url.as_deref(),
+            Some("https://probe.example/health")
+        );
     }
 }

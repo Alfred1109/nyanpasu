@@ -3,5 +3,6 @@ export {
   sleep,
   containsSearchTerm,
   formatError,
+  formatErrorDetails,
   formatEnvInfos,
 } from '@nyanpasu/utils'

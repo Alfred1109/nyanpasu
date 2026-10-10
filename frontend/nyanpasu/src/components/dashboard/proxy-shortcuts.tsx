@@ -1,15 +1,12 @@
 import { useLockFn } from 'ahooks'
-import { useTranslation } from 'react-i18next'
 import { useAtomValue } from 'jotai'
 import { useEffect, useState } from 'react'
-import { message } from '@tauri-apps/plugin-dialog'
-import { Chip, Grid, Paper } from '@mui/material'
-import { SettingsEthernet } from '@mui/icons-material'
-import {
-  toggleTunMode,
-  useSetting,
-} from '@nyanpasu/interface'
+import { useTranslation } from 'react-i18next'
 import { atomIsDrawer } from '@/store'
+import { SettingsEthernet } from '@mui/icons-material'
+import { Chip, Grid, Paper } from '@mui/material'
+import { toggleTunMode, useSetting } from '@nyanpasu/interface'
+import { message } from '@tauri-apps/plugin-dialog'
 import { PaperSwitchButton } from '../setting/modules/system-proxy'
 
 const TitleComp = () => {
@@ -35,7 +32,9 @@ const ProxyShortcuts = () => {
   const isDrawer = useAtomValue(atomIsDrawer)
 
   const tunMode = useSetting('enable_tun_mode')
-  const [optimisticTunEnabled, setOptimisticTunEnabled] = useState<boolean | null>(null)
+  const [optimisticTunEnabled, setOptimisticTunEnabled] = useState<
+    boolean | null
+  >(null)
 
   useEffect(() => {
     setOptimisticTunEnabled(null)
@@ -50,16 +49,26 @@ const ProxyShortcuts = () => {
       setOptimisticTunEnabled(nextEnabled)
 
       const result = await toggleTunMode()
-      
+
       // 如果后端返回了消息（比如服务未安装/未启动的提示），显示给用户
-      if (result && typeof result === 'object' && 'message' in result && result.message) {
+      if (
+        result &&
+        typeof result === 'object' &&
+        'message' in result &&
+        result.message
+      ) {
         message(result.message, {
           title: t('TUN Mode'),
           kind: 'success' in result && result.success ? 'info' : 'warning',
         })
       }
 
-      if (result && typeof result === 'object' && 'success' in result && result.success === false) {
+      if (
+        result &&
+        typeof result === 'object' &&
+        'success' in result &&
+        result.success === false
+      ) {
         setOptimisticTunEnabled(currentEnabled)
       }
     } catch (error) {
@@ -76,6 +85,7 @@ const ProxyShortcuts = () => {
   return (
     <Grid
       size={{
+        xs: 12,
         sm: isDrawer ? 6 : 12,
         md: 6,
         lg: 4,
@@ -87,10 +97,7 @@ const ProxyShortcuts = () => {
 
         <div className="flex gap-3">
           <div className="w-full!">
-            <PaperSwitchButton
-              checked={checked}
-              onClick={handleTunMode}
-            >
+            <PaperSwitchButton checked={checked} onClick={handleTunMode}>
               <div className="flex flex-col gap-2">
                 <SettingsEthernet />
 

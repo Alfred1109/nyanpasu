@@ -31,6 +31,7 @@ const TimingPanel = ({ data }: { data: { [key: string]: number } }) => {
   return (
     <Grid
       size={{
+        xs: 12,
         sm: isDrawer ? 6 : 12,
         md: supportMemory ? 4 : 6,
         lg: supportMemory ? 3 : 4,

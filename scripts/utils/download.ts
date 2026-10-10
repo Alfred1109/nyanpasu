@@ -1,4 +1,5 @@
-import { execSync } from 'child_process'
+import crypto from 'node:crypto'
+import { pipeline } from 'node:stream/promises'
 import path from 'path'
 import zlib from 'zlib'
 import AdmZip from 'adm-zip'
@@ -7,7 +8,7 @@ import * as tar from 'tar'
 import { BinInfo } from 'types'
 import { fetch, type RequestInit } from 'undici'
 import { getProxyAgent } from './'
-import { TAURI_APP_DIR, TEMP_DIR } from './env'
+import { TAURI_APP_DIR } from './env'
 import { colorize, consola } from './logger'
 
 /**
@@ -51,7 +52,8 @@ export const resolveSidecar = async (
   platform: string,
   option?: { force?: boolean },
 ) => {
-  const { name, targetFile, tmpFile, exeFile, downloadURL } = await binInfo
+  const { name, targetFile, tmpFile, exeFile, downloadURL, sha256 } =
+    await binInfo
 
   consola.debug(colorize`resolve {cyan ${name}}...`)
 
@@ -61,19 +63,43 @@ export const resolveSidecar = async (
 
   await fs.mkdirp(sidecarDir)
 
-  if (!option?.force && (await fs.pathExists(sidecarPath))) return
+  const receiptPath = `${sidecarPath}.source.json`
+  if (!option?.force && (await fs.pathExists(sidecarPath))) {
+    const receipt = await fs.readJSON(receiptPath).catch(() => null)
+    const binaryHash = crypto
+      .createHash('sha256')
+      .update(await fs.readFile(sidecarPath))
+      .digest('hex')
+    if (
+      receipt?.downloadURL === downloadURL &&
+      receipt?.archiveSha256 === sha256 &&
+      receipt?.binarySha256 === binaryHash
+    )
+      return
+  }
+  // Unique staging keeps concurrent preparations separate and leaves the
+  // previously usable sidecar intact if downloading or extraction fails.
 
-  const tempDir = path.join(TEMP_DIR, name)
+  const tempDir = await fs.mkdtemp(path.join(sidecarDir, `.${name}-`))
 
   const tempFile = path.join(tempDir, tmpFile)
 
   const tempExe = path.join(tempDir, exeFile)
+  const stagedPath = path.join(tempDir, targetFile)
 
   await fs.mkdirp(tempDir)
 
   try {
     if (!(await fs.pathExists(tempFile))) {
       await downloadFile(downloadURL, tempFile)
+    }
+    if (sha256) {
+      const actual = crypto
+        .createHash('sha256')
+        .update(await fs.readFile(tempFile))
+        .digest('hex')
+      if (actual !== sha256)
+        throw new Error(`SHA256 mismatch for ${tmpFile}: ${actual}`)
     }
     if (tmpFile.endsWith('.zip')) {
       const zip = new AdmZip(tempFile)
@@ -102,9 +128,7 @@ export const resolveSidecar = async (
         throw new Error('cannot find exe file in zip')
       }
 
-      await fs.rename(path.join(tempDir, entryName), tempExe)
-
-      await fs.rename(tempExe, sidecarPath)
+      await fs.rename(path.join(tempDir, entryName), stagedPath)
 
       consola.debug(colorize`{green "${name}"} unzip finished`)
     } else if (tmpFile.endsWith('.tar.gz')) {
@@ -113,51 +137,33 @@ export const resolveSidecar = async (
         file: tempFile,
         cwd: tempDir,
       })
-      await fs.rename(tempExe, sidecarPath)
+      await fs.rename(tempExe, stagedPath)
       consola.debug(colorize`{green "${name}"} untar finished`)
     } else if (tmpFile.endsWith('.gz')) {
-      // gz
-      const readStream = fs.createReadStream(tempFile)
-
-      const writeStream = fs.createWriteStream(sidecarPath)
-
-      await new Promise<void>((resolve, reject) => {
-        const onError = (error: Error) => {
-          consola.error(colorize`"${name}" gz failed:`, error)
-          reject(error)
-        }
-        readStream
-          .pipe(zlib.createGunzip().on('error', onError))
-          .pipe(writeStream)
-          .on('finish', () => {
-            consola.debug(colorize`{green "${name}"} gunzip finished`)
-
-            execSync(`chmod 755 ${sidecarPath}`)
-
-            consola.debug(colorize`{green "${name}"}chmod binary finished`)
-
-            resolve()
-          })
-          .on('error', onError)
-      })
+      await pipeline(
+        fs.createReadStream(tempFile),
+        zlib.createGunzip(),
+        fs.createWriteStream(stagedPath),
+      )
     } else {
       // Common Files
-      await fs.rename(tempFile, sidecarPath)
+      await fs.rename(tempFile, stagedPath)
 
       consola.info(colorize`{green "${name}"} rename finished`)
-
-      if (platform !== 'win32') {
-        execSync(`chmod 755 ${sidecarPath}`)
-
-        consola.info(colorize`{green "${name}"} chmod binary finished`)
-      }
     }
-    consola.success(colorize`resolve {green ${name}} finished`)
-  } catch (err) {
-    // 需要删除文件
-    await fs.remove(sidecarPath)
+    if (platform !== 'win32') await fs.chmod(stagedPath, 0o755)
+    const binarySha256 = crypto
+      .createHash('sha256')
+      .update(await fs.readFile(stagedPath))
+      .digest('hex')
+    await fs.rename(stagedPath, sidecarPath)
+    await fs.writeJSON(
+      receiptPath,
+      { downloadURL, archiveSha256: sha256, binarySha256 },
+      { spaces: 2 },
+    )
 
-    throw err
+    consola.success(colorize`resolve {green ${name}} finished`)
   } finally {
     // delete temp dir
     await fs.remove(tempDir)

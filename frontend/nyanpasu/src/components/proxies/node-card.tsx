@@ -1,6 +1,13 @@
 import { useLockFn } from 'ahooks'
+import { useAtomValue } from 'jotai'
 import { CSSProperties, memo, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
+import {
+  normalizeProxyTestTimeout,
+  proxyTestTimeoutAtom,
+} from '@/store/proxies'
 import { getThemePaletteTokens, tokenAlpha } from '@/utils/theme'
+import PushPinIcon from '@mui/icons-material/PushPin'
 import Box from '@mui/material/Box'
 import type { SxProps, Theme } from '@mui/material/styles'
 import { ClashProxiesQueryProxyItem } from '@nyanpasu/interface'
@@ -15,19 +22,23 @@ const NodeCard = memo(function NodeCard({
   node,
   now,
   disabled,
+  pinned,
   style,
 }: {
   node: ClashProxiesQueryProxyItem
   now?: string | null
   disabled?: boolean
+  pinned?: boolean
   style?: CSSProperties
 }) {
+  const { t } = useTranslation()
   const delay = useMemo(() => filterDelay(node.history), [node.history])
 
   const checked = node.name === now
+  const testTimeout = useAtomValue(proxyTestTimeoutAtom)
 
   const handleDelayClick = useLockFn(async () => {
-    await node.mutateDelay()
+    await node.mutateDelay({ timeout: normalizeProxyTestTimeout(testTimeout) })
   })
 
   const handleClick = useLockFn(async () => {
@@ -72,6 +83,14 @@ const NodeCard = memo(function NodeCard({
     >
       <Box width="100%" display="flex" gap={0.5}>
         <FeatureChip label={node.type} />
+
+        {pinned && (
+          <FeatureChip
+            icon={<PushPinIcon sx={{ fontSize: '12px !important' }} />}
+            label={t('Pinned')}
+            color="primary"
+          />
+        )}
 
         {node.udp && <FeatureChip label="UDP" />}
 

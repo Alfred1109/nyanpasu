@@ -1,7 +1,11 @@
 import { ofetch } from 'ofetch'
 import { useMemo } from 'react'
 import { isInTauri } from '@nyanpasu/utils'
-import type { ProxyGroupItem, SubscriptionInfo } from '../ipc/bindings'
+import type {
+  ProxyItem as ClashProxyItem,
+  ProxyGroupItem,
+  SubscriptionInfo,
+} from '../ipc/bindings'
 import { useClashInfo } from '../ipc/use-clash-info'
 
 const prepareServer = (server?: string) => {
@@ -15,6 +19,7 @@ const prepareServer = (server?: string) => {
 }
 
 export interface ClashConfig {
+  tun?: { enable?: boolean }
   port: number
   mode: string
   ipv6: boolean
@@ -39,6 +44,31 @@ export type ClashVersion = {
 export type ClashDelayOptions = {
   url?: string
   timeout?: number
+  expectedStatus?: string
+}
+
+export const DEFAULT_CLASH_DELAY_URL = 'http://www.gstatic.com/generate_204'
+
+const normalizeDelayUrl = (url?: string) => {
+  const value = url?.trim() || DEFAULT_CLASH_DELAY_URL
+  let parsed: URL
+  try {
+    parsed = new URL(value)
+  } catch {
+    throw new Error('Latency test URL must be a valid HTTP or HTTPS URL')
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.hostname) {
+    throw new Error('Latency test URL must be a valid HTTP or HTTPS URL')
+  }
+  return parsed.toString()
+}
+
+const normalizeDelayTimeout = (timeout?: number) => {
+  const value = timeout ?? 5000
+  if (!Number.isInteger(value) || value < 1000 || value > 30000) {
+    throw new Error('Latency test timeout must be between 1000 and 30000 ms')
+  }
+  return value
 }
 
 export type ClashProxyGroupItem = ProxyGroupItem
@@ -56,7 +86,7 @@ export type ClashProviderRule = {
 export type ClashProviderProxies = {
   name: string
   type: string
-  proxies: ClashProxyGroupItem[]
+  proxies: ClashProxyItem[]
   updatedAt?: string
   vehicleType: string
   subscriptionInfo?: SubscriptionInfo
@@ -111,7 +141,7 @@ type ClashConnectionsSnapshot = {
 }
 
 export const useClashAPI = () => {
-  if (!isInTauri) {
+  if (!isInTauri()) {
     return {
       configs: async () => ({}) as ClashConfig,
       patchConfigs: async () => ({}) as ClashConfig,
@@ -132,6 +162,7 @@ export const useClashAPI = () => {
         providers: {} as Record<string, ClashProviderProxies>,
       }),
       putProvidersProxies: async () => undefined,
+      healthcheckProvidersProxies: async () => undefined,
     }
   }
 
@@ -194,25 +225,33 @@ export const useClashAPI = () => {
   }
 
   const proxiesDelay = async (name: string, options?: ClashDelayOptions) => {
+    const params: Record<string, string | number> = {
+      timeout: normalizeDelayTimeout(options?.timeout),
+      url: normalizeDelayUrl(options?.url),
+    }
+    if (options?.expectedStatus?.trim()) {
+      params.expected = options.expectedStatus.trim()
+    }
     return await request<{ delay: number }>(
       `/proxies/${encodeURIComponent(name)}/delay`,
       {
-        params: {
-          timeout: options?.timeout || 10000,
-          url: options?.url || 'http://www.gstatic.com/generate_204',
-        },
+        params,
       },
     )
   }
 
   const groupDelay = async (group: string, options?: ClashDelayOptions) => {
+    const params: Record<string, string | number> = {
+      timeout: normalizeDelayTimeout(options?.timeout),
+      url: normalizeDelayUrl(options?.url),
+    }
+    if (options?.expectedStatus?.trim()) {
+      params.expected = options.expectedStatus.trim()
+    }
     return await request<Record<string, number>>(
       `/group/${encodeURIComponent(group)}/delay`,
       {
-        params: {
-          timeout: options?.timeout || 10000,
-          url: options?.url || 'http://www.gstatic.com/generate_204',
-        },
+        params,
       },
     )
   }
@@ -278,6 +317,12 @@ export const useClashAPI = () => {
     })
   }
 
+  const healthcheckProvidersProxies = async (name: string): Promise<void> => {
+    await request<void>(
+      `/providers/proxies/${encodeURIComponent(name)}/healthcheck`,
+    )
+  }
+
   return {
     configs,
     patchConfigs,
@@ -294,5 +339,6 @@ export const useClashAPI = () => {
     putProvidersRules,
     providersProxies,
     putProvidersProxies,
+    healthcheckProvidersProxies,
   }
 }

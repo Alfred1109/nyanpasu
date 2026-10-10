@@ -1,7 +1,7 @@
 import { useMount } from 'ahooks'
 import dayjs from 'dayjs'
 import { useNyanpasuStorageSubscribers } from '@/hooks/use-store'
-import { CssBaseline } from '@mui/material'
+import { Button, CssBaseline } from '@mui/material'
 import { StyledEngineProvider, useColorScheme } from '@mui/material/styles'
 import { cn } from '@nyanpasu/ui'
 import {
@@ -16,10 +16,12 @@ import 'dayjs/locale/zh-cn'
 import 'dayjs/locale/zh-tw'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { lazy } from 'react'
+import { lazy, useEffect, useState } from 'react'
 import { BlockTaskProvider } from '@/components/providers/block-task-provider'
 import { LanguageProvider } from '@/components/providers/language-provider'
 import { ExperimentalThemeProvider } from '@/components/providers/theme-provider'
+import { reportErrorBoundary } from '@/services/error-reporting'
+import { formatErrorDetails } from '@/utils'
 import { IS_IN_TAURI } from '@/utils/tauri'
 import { NyanpasuProvider } from '@nyanpasu/interface'
 import styles from './-__root.module.scss'
@@ -29,14 +31,39 @@ dayjs.extend(customParseFormat)
 
 const Catch = ({ error }: ErrorComponentProps) => {
   const { mode } = useColorScheme()
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    reportErrorBoundary(error)
+  }, [error])
+
+  const copyDetails = async () => {
+    const details = formatErrorDetails(error)
+    try {
+      await navigator.clipboard.writeText(details)
+    } catch {
+      const textArea = document.createElement('textarea')
+      textArea.value = details
+      textArea.style.position = 'fixed'
+      textArea.style.opacity = '0'
+      document.body.appendChild(textArea)
+      textArea.select()
+      const copiedToClipboard = document.execCommand('copy')
+      textArea.remove()
+      if (!copiedToClipboard) return
+    }
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 1800)
+  }
+
   return (
     <div className={cn(styles.oops, mode === 'dark' && styles.dark)}>
       <h1>Oops!</h1>
       <p>Something went wrong... Caught at _root error boundary.</p>
-      <pre>
-        {error.message}
-        {error.stack}
-      </pre>
+      <pre>{formatErrorDetails(error)}</pre>
+      <Button variant="outlined" onClick={copyDetails}>
+        {copied ? 'Copied' : 'Copy error details'}
+      </Button>
     </div>
   )
 }

@@ -1,279 +1,207 @@
+import { useLockFn } from 'ahooks'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatError } from '@/utils'
 import { message } from '@/utils/notification'
 import { IS_IN_TAURI } from '@/utils/tauri'
+import { ExpandLess, ExpandMore, Dns as ProxyIcon } from '@mui/icons-material'
 import {
-  getDefaultChipStyles,
-  getThemePaletteTokens,
-  tokenAlpha,
-} from '@/utils/theme'
-import { Dns as ProxyIcon } from '@mui/icons-material'
-import { Alert, Box, Chip, Divider, Typography } from '@mui/material'
-import type { Theme } from '@mui/material/styles'
+  Alert,
+  Box,
+  Button,
+  Collapse,
+  Stack,
+  Switch,
+  Typography,
+} from '@mui/material'
 import {
   commands,
   unwrapResult,
-  useSetting,
+  useSettings,
   useSystemProxy,
 } from '@nyanpasu/interface'
-import { BaseCard } from '@nyanpasu/ui'
-import { PaperSwitchButton } from './modules/system-proxy'
-import {
-  getOnOffLabel,
-  getSyncStatusLabel,
-  getTakeoverLabel,
-} from './setting-status'
-import {
-  SettingSummaryItem,
-  SettingSummaryPanel,
-} from './setting-summary-panel'
-
-const getSurfacePanelStyles =
-  (emphasized = false) =>
-  (theme: Theme) => ({
-    ...(() => {
-      const tokens = getThemePaletteTokens(theme)
-
-      return {
-        borderColor: emphasized
-          ? tokenAlpha(tokens.primary.main, 0.18)
-          : tokenAlpha(tokens.primary.main, 0.12),
-        backgroundColor: emphasized
-          ? tokenAlpha(tokens.primary.main, 0.08)
-          : tokenAlpha(tokens.primary.main, 0.05),
-      }
-    })(),
-    p: 1,
-    borderRadius: 2.5,
-    border: '1px solid',
-  })
-
-const getStatusSummaryItems = (
-  enabled: boolean,
-  systemProxyLoading: boolean,
-  systemProxyActive: boolean,
-  isStatusMismatched: boolean,
-) => [
-  { label: '应用开关', value: getOnOffLabel(enabled) },
-  {
-    label: '系统状态',
-    value: systemProxyLoading ? '读取中' : getTakeoverLabel(systemProxyActive),
-  },
-  {
-    label: '同步情况',
-    value: getSyncStatusLabel(!isStatusMismatched),
-  },
-]
-
-const getProxyDetailItems = (
-  systemProxyActive: boolean,
-  currentProxy?: { server?: string | null; bypass?: string | null } | null,
-) => [
-  {
-    label: systemProxyActive ? '当前地址' : '保留地址',
-    value: currentProxy?.server || '未设置',
-  },
-  {
-    label: '绕过列表',
-    value: currentProxy?.bypass || '未设置',
-  },
-]
+import { SettingControlRow } from './setting-control-row'
+import { getOnOffLabel, getTakeoverLabel } from './setting-status'
 
 export default function SettingSystemProxy() {
   const { t } = useTranslation()
-  const systemProxyEnabled = useSetting('enable_system_proxy')
+  const settings = useSettings()
   const systemProxy = useSystemProxy()
+  const [detailsExpanded, setDetailsExpanded] = useState(false)
   const [pending, setPending] = useState(false)
+  const [operationError, setOperationError] = useState<string>()
 
-  const isInTauri = IS_IN_TAURI
-  const enabled = Boolean(systemProxyEnabled.value)
+  const config = settings.query.data
+  const enabled = config?.enable_system_proxy
+  const currentProxy = systemProxy.data
+  const systemProxyActive = currentProxy?.enable
+  const hasKnownSetting = typeof enabled === 'boolean'
+  const hasKnownSystemState = typeof systemProxyActive === 'boolean'
+  const mismatch =
+    hasKnownSetting && hasKnownSystemState && enabled !== systemProxyActive
+  const canWrite =
+    IS_IN_TAURI &&
+    hasKnownSetting &&
+    !settings.query.isLoading &&
+    !settings.query.isError &&
+    !systemProxy.isError &&
+    hasKnownSystemState &&
+    !pending &&
+    !settings.upsert.isPending &&
+    !systemProxy.isLoading
 
-  const handleToggle = async () => {
-    if (!isInTauri) {
-      await message('该功能仅在桌面端可用。', {
-        title: t('System Proxy'),
-        kind: 'info',
-      })
-      return
-    }
-
-    if (pending || systemProxyEnabled.isPending) {
-      return
-    }
-
+  const handleToggle = useLockFn(async () => {
+    if (!canWrite || typeof enabled !== 'boolean') return
+    setOperationError(undefined)
     setPending(true)
     try {
       if (!enabled) {
         const hasPermission = unwrapResult(
           await commands.checkProxyPermission(),
         )
-
         if (!hasPermission) {
-          await unwrapResult(await commands.grantProxyPermission())
+          unwrapResult(await commands.grantProxyPermission())
         }
       }
-
-      await systemProxyEnabled.upsert(!enabled)
-      await systemProxy.refetch()
+      await settings.upsert.mutateAsync({ enable_system_proxy: !enabled })
+      const refreshed = await systemProxy.refetch()
+      if (refreshed.isError) {
+        const detail = formatError(refreshed.error)
+        setOperationError(`配置已提交，实际系统状态读取失败：${detail}`)
+        await message(`配置已提交，实际系统状态读取失败\n${detail}`, {
+          title: t('Error'),
+          kind: 'error',
+        })
+      }
     } catch (error) {
-      await message(`系统代理设置失败\n${formatError(error)}`, {
+      const detail = formatError(error)
+      setOperationError(detail)
+      await message(`系统代理设置失败\n${detail}`, {
         title: t('Error'),
         kind: 'error',
       })
     } finally {
       setPending(false)
     }
-  }
+  })
 
-  const currentProxy = systemProxy.data
-  const systemProxyActive = Boolean(currentProxy?.enable)
-  const hasStoredProxyConfig = Boolean(currentProxy?.server)
-  const isStatusMismatched =
-    currentProxy !== undefined && enabled !== systemProxyActive
-  const headerTone = systemProxyActive
-    ? 'success'
-    : enabled
-      ? 'warning'
-      : 'default'
-  const statusSummaryItems = getStatusSummaryItems(
-    enabled,
-    systemProxy.isLoading,
-    systemProxyActive,
-    isStatusMismatched,
-  )
-  const proxyDetailItems = getProxyDetailItems(systemProxyActive, currentProxy)
+  const settingStatus = !IS_IN_TAURI
+    ? '浏览器模式不可修改'
+    : settings.query.isLoading
+      ? '配置读取中'
+      : settings.query.isError
+        ? '配置读取失败'
+        : !hasKnownSetting
+          ? '配置未提供开关状态'
+          : getOnOffLabel(enabled === true)
+
+  const systemStatus = !IS_IN_TAURI
+    ? '桌面端可查看'
+    : systemProxy.isLoading
+      ? '系统状态读取中'
+      : systemProxy.isError
+        ? '系统状态读取失败'
+        : !hasKnownSystemState
+          ? '系统未返回状态'
+          : getTakeoverLabel(systemProxyActive === true)
 
   return (
-    <BaseCard
-      label={t('System Proxy')}
-      labelChildren={
-        <Chip
+    <Stack spacing={0.75} sx={{ px: 2, py: 1.25 }}>
+      {settings.query.isError && IS_IN_TAURI && (
+        <Alert severity="error" sx={{ py: 0 }}>
+          设置读取失败：{formatError(settings.query.error)}
+        </Alert>
+      )}
+      {systemProxy.isError && IS_IN_TAURI && (
+        <Alert severity="error" sx={{ py: 0 }}>
+          系统代理状态读取失败：{formatError(systemProxy.error)}
+        </Alert>
+      )}
+
+      <SettingControlRow
+        icon={<ProxyIcon fontSize="small" color="action" />}
+        title="系统代理"
+        status={`应用 ${pending ? '正在应用' : settingStatus} · 系统 ${systemStatus}`}
+        control={
+          <Switch
+            size="small"
+            checked={enabled === true}
+            disabled={!canWrite}
+            onChange={() => handleToggle()}
+            inputProps={{ 'aria-label': '系统代理' }}
+          />
+        }
+      />
+
+      {mismatch && (
+        <Alert severity="warning" sx={{ py: 0 }}>
+          应用开关与系统实际状态不同：应用为{getOnOffLabel(enabled === true)}
+          ，系统为
+          {getTakeoverLabel(systemProxyActive === true)}。
+        </Alert>
+      )}
+      {operationError && <Alert severity="error">{operationError}</Alert>}
+
+      <Box sx={{ pl: 3.5 }}>
+        <Button
           size="small"
-          color={headerTone}
-          variant="filled"
-          label={
-            systemProxy.isLoading
-              ? '读取中'
-              : systemProxyActive
-                ? getTakeoverLabel(true)
-                : enabled
-                  ? getSyncStatusLabel(false)
-                  : getTakeoverLabel(false)
-          }
-          sx={(theme) => ({
-            fontWeight: 800,
-            ...(headerTone === 'default' ? getDefaultChipStyles(theme) : {}),
-          })}
-        />
-      }
-    >
-      <Box display="flex" flexDirection="column" gap={1.5}>
-        <Typography variant="body2" color="text.secondary">
-          控制是否把当前 Clash 代理写入系统代理设置。
-        </Typography>
-
-        <SettingSummaryPanel>
-          {statusSummaryItems.map((item) => (
-            <SettingSummaryItem
-              key={item.label}
-              label={item.label}
-              value={item.value}
-            />
-          ))}
-        </SettingSummaryPanel>
-
-        {!isInTauri && (
-          <Alert severity="info">
-            该功能仅在桌面端可用，浏览器模式下无法修改系统网络代理。
-          </Alert>
-        )}
-
-        <PaperSwitchButton
-          checked={enabled}
-          loading={pending || systemProxyEnabled.isPending}
-          label={t('System Proxy')}
-          onClick={handleToggle}
-          statusText={getOnOffLabel(enabled)}
+          disabled={!IS_IN_TAURI}
+          endIcon={detailsExpanded ? <ExpandLess /> : <ExpandMore />}
+          onClick={() => setDetailsExpanded((value) => !value)}
+          aria-expanded={detailsExpanded}
+          aria-controls="system-proxy-details"
+          sx={{ px: 0.5, minWidth: 0, minHeight: 28 }}
         >
-          <Box
-            display="flex"
-            alignItems="center"
-            gap={1}
-            color={enabled ? 'primary.contrastText' : 'text.primary'}
-          >
-            <ProxyIcon fontSize="small" />
-            <Typography
-              variant="body2"
-              color="inherit"
-              sx={{ fontWeight: 500 }}
+          代理详情
+        </Button>
+        <Collapse id="system-proxy-details" in={detailsExpanded} unmountOnExit>
+          <Box display="grid" gap={0.5} pb={0.75}>
+            <Button
+              size="small"
+              disabled={!IS_IN_TAURI || systemProxy.isFetching}
+              onClick={() => systemProxy.refetch()}
+              sx={{ justifySelf: 'start', minHeight: 26 }}
             >
-              {enabled ? '系统流量将按当前代理设置接管' : '当前不修改系统代理'}
-            </Typography>
+              {systemProxy.isFetching ? '读取中' : '刷新系统状态'}
+            </Button>
+            {currentProxy ? (
+              <>
+                <ProxyDetail label="代理地址" value={currentProxy.server} />
+                <ProxyDetail label="绕过列表" value={currentProxy.bypass} />
+              </>
+            ) : (
+              <Typography variant="caption" color="text.secondary">
+                {systemProxy.isError
+                  ? '系统代理状态读取失败，可刷新后重试。'
+                  : '尚无系统代理详情。'}
+              </Typography>
+            )}
           </Box>
-        </PaperSwitchButton>
-
-        <Divider />
-
-        <Box display="flex" flexDirection="column" gap={0.75}>
-          <Typography variant="caption" color="text.secondary">
-            {t('Current System Proxy')}
-          </Typography>
-
-          {systemProxy.isLoading ? (
-            <Typography variant="body2" color="text.secondary">
-              正在读取系统代理状态...
-            </Typography>
-          ) : systemProxy.isError ? (
-            <Typography variant="body2" color="error.main">
-              读取系统代理状态失败
-            </Typography>
-          ) : (
-            <>
-              <Box
-                sx={(theme) => ({
-                  display: 'grid',
-                  gridTemplateColumns: {
-                    xs: '1fr',
-                    sm: 'repeat(2, minmax(0, 1fr))',
-                  },
-                  gap: 0.75,
-                })}
-              >
-                {proxyDetailItems.map((item) => (
-                  <Box key={item.label} sx={getSurfacePanelStyles()}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ fontWeight: 600 }}
-                    >
-                      {item.label}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ mt: 0.25, fontWeight: 700, wordBreak: 'break-all' }}
-                    >
-                      {item.value}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-
-              {isStatusMismatched && (
-                <Alert severity="warning" sx={{ mt: 0.5 }}>
-                  应用设置与系统状态暂时不一致，通常是系统尚未刷新或仍保留上次配置。
-                </Alert>
-              )}
-
-              {!systemProxyActive && hasStoredProxyConfig && (
-                <Typography variant="caption" color="text.secondary">
-                  系统代理关闭后，系统仍可能保留上次写入的地址和绕过列表，但当前不会继续接管流量。
-                </Typography>
-              )}
-            </>
-          )}
-        </Box>
+        </Collapse>
       </Box>
-    </BaseCard>
+    </Stack>
+  )
+}
+
+function ProxyDetail({
+  label,
+  value,
+}: {
+  label: string
+  value?: string | null
+}) {
+  return (
+    <Box display="flex" justifyContent="space-between" gap={1} minWidth={0}>
+      <Typography variant="caption" color="text.secondary" flexShrink={0}>
+        {label}
+      </Typography>
+      <Typography
+        variant="caption"
+        textAlign="right"
+        sx={{ minWidth: 0, overflowWrap: 'anywhere' }}
+      >
+        {value || '未设置'}
+      </Typography>
+    </Box>
   )
 }

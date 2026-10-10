@@ -14,7 +14,7 @@ import {
   type RunType,
   type StatusInfo,
 } from '../ipc/bindings'
-import { unwrapResult } from '../utils'
+import { normalizeError, unwrapResult } from '../utils'
 import { ManifestVersion } from './core'
 import { EnvInfos, InspectUpdater, SystemProxy, VergeConfig } from './types'
 
@@ -171,7 +171,7 @@ export const statusService = async () => {
   try {
     const res = await commands.serviceStatus()
     if (res.status === 'error') {
-      throw res.error
+      throw normalizeError(res.error)
     }
     const result = res.data as StatusInfo
     return result.status
@@ -183,31 +183,31 @@ export const statusService = async () => {
 
 export const installService = async () => {
   const res = await commands.serviceInstall()
-  if (res.status === 'error') throw res.error
+  if (res.status === 'error') throw normalizeError(res.error)
   return res.data
 }
 
 export const uninstallService = async () => {
   const res = await commands.serviceUninstall()
-  if (res.status === 'error') throw res.error
+  if (res.status === 'error') throw normalizeError(res.error)
   return res.data
 }
 
 export const startService = async () => {
   const res = await commands.serviceStart()
-  if (res.status === 'error') throw res.error
+  if (res.status === 'error') throw normalizeError(res.error)
   return res.data
 }
 
 export const stopService = async () => {
   const res = await commands.serviceStop()
-  if (res.status === 'error') throw res.error
+  if (res.status === 'error') throw normalizeError(res.error)
   return res.data
 }
 
 export const restartService = async () => {
   const res = await commands.serviceRestart()
-  if (res.status === 'error') throw res.error
+  if (res.status === 'error') throw normalizeError(res.error)
   return res.data
 }
 
@@ -224,7 +224,7 @@ export const openCoreDir = async () => {
 }
 
 export const getCoreDir = async () => {
-  if (!isInTauri) {
+  if (!isInTauri()) {
     return ''
   }
   return unwrapResult(await commands.getCoreDir())
@@ -304,14 +304,14 @@ export const getCoreStatus = async () => {
 }
 
 export const urlDelayTest = async (url: string, expectedStatus: number) => {
-  if (!isInTauri) {
+  if (!isInTauri()) {
     return null
   }
   return unwrapResult(await commands.urlDelayTest(url, expectedStatus))
 }
 
 export const getIpsbASN = async () => {
-  if (!isInTauri) {
+  if (!isInTauri()) {
     return null
   }
   return unwrapResult(await commands.getIpsbAsn()) as unknown as IPSBResponse
@@ -326,7 +326,7 @@ export const isAppImage = async () => {
 }
 
 export const getServiceInstallPrompt = async () => {
-  if (!isInTauri) {
+  if (!isInTauri()) {
     return ''
   }
   return unwrapResult(await commands.getServiceInstallPrompt())

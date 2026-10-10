@@ -10,6 +10,7 @@ import { lazy, useDeferredValue, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { connectionTableColumnsAtom } from '@/store'
 import { containsSearchTerm } from '@/utils'
+import { CircularProgress } from '@mui/material'
 import {
   useClashConnections,
   type ClashConnection,
@@ -33,7 +34,7 @@ const ConnectionsTable = ({ searchTerm }: { searchTerm?: string }) => {
   const { t, i18n } = useTranslation()
 
   const {
-    query: { data: clashConnections, isLoading },
+    query: { data: clashConnections, isLoading, isError, error },
   } = useClashConnections()
 
   const historyMessage = useRef<TableMessage | null>(null)
@@ -189,10 +190,12 @@ const ConnectionsTable = ({ searchTerm }: { searchTerm?: string }) => {
     columnVirtualizerOptions: { overscan: 2 },
   })
 
-  // Show loading state while data is being fetched
   if (isLoading && !connectionsMessage) {
-    // Don't show a separate loading indicator here since the parent component already handles it
-    return null
+    return (
+      <div className="flex h-full items-center justify-center">
+        <CircularProgress size={24} />
+      </div>
+    )
   }
 
   return connectionsMessage?.connections.length ? (
@@ -205,6 +208,11 @@ const ConnectionsTable = ({ searchTerm }: { searchTerm?: string }) => {
 
       <MaterialReactTable table={table} />
     </>
+  ) : isError ? (
+    <ContentDisplay
+      className="absolute! h-full! w-full!"
+      message={error instanceof Error ? error.message : t('Error')}
+    />
   ) : (
     <ContentDisplay
       className="absolute! h-full! w-full!"

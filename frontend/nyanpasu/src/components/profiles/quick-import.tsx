@@ -1,3 +1,4 @@
+import { useLockFn } from 'ahooks'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Notice } from '@/components/base'
@@ -68,10 +69,11 @@ export const QuickImport = () => {
   const { create } = useProfile()
 
   const onCopyLink = async () => {
-    const text = await readText()
-
-    if (text) {
-      setUrl(text.trim())
+    try {
+      const text = await readText()
+      if (text) setUrl(text.trim())
+    } catch (error) {
+      Notice.error(`无法读取剪贴板：${formatError(error)}`)
     }
   }
 
@@ -107,9 +109,9 @@ export const QuickImport = () => {
     )
   }
 
-  const handleImport = async () => {
+  const handleImport = useLockFn(async () => {
     const normalizedUrl = url.trim()
-    if (!normalizedUrl) return
+    if (!normalizedUrl || loading) return
 
     try {
       setLoading(true)
@@ -135,7 +137,7 @@ export const QuickImport = () => {
     } finally {
       setLoading(false)
     }
-  }
+  })
 
   const inputProps: Partial<FilledInputProps> = {
     sx: (theme) => ({
@@ -156,6 +158,7 @@ export const QuickImport = () => {
       autoComplete="off"
       spellCheck="false"
       value={url}
+      disabled={loading}
       placeholder={t('Profile URL')}
       onChange={(e) => setUrl(e.target.value)}
       onKeyDown={(e) =>

@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::config::{Config, nyanpasu::ClashCore};
 use anyhow::{Context, Result};
 use indexmap::IndexMap;
 use reqwest::{Method, StatusCode, header::HeaderMap};
@@ -12,17 +12,46 @@ use std::{
 use tracing_attributes::instrument;
 use url::Url;
 
-/// PUT /configs
-/// path 是绝对路径
+/// Reload the validated configuration without requiring Mihomo filesystem access.
+#[derive(Serialize)]
+struct ConfigReload {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    payload: Option<String>,
+}
+
+// Configuration contents can contain credentials. Keep transport tracing redacted.
+impl fmt::Debug for ConfigReload {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ConfigReload")
+            .field("path", &self.path)
+            .field("payload_bytes", &self.payload.as_ref().map(String::len))
+            .finish()
+    }
+}
+
 #[instrument]
 pub async fn put_configs(config_path: &str) -> Result<()> {
-    let path = "/configs";
-
-    let mut data = HashMap::new();
-    data.insert("path", config_path);
-
-    let _ = perform_request((Method::PUT, path, Data(data))).await?;
-
+    let core = Config::verge()
+        .latest()
+        .clash_core
+        .unwrap_or(ClashCore::ClashPremium);
+    let data = match core {
+        ClashCore::Mihomo | ClashCore::MihomoAlpha => ConfigReload {
+            path: None,
+            payload: Some(
+                tokio::fs::read_to_string(config_path)
+                    .await
+                    .context("failed to read generated core configuration")?,
+            ),
+        },
+        ClashCore::ClashPremium => ConfigReload {
+            path: Some(config_path.to_owned()),
+            payload: None,
+        },
+    };
+    perform_request((Method::PUT, "/configs", Data(data))).await?;
     Ok(())
 }
 
@@ -67,7 +96,15 @@ pub struct ProxyItem {
     pub icon: Option<String>, // Mihomo Only
     #[serde(default)]
     pub hidden: bool, // Mihomo Only
-                             // extra: {}, // Mihomo Only
+    /// Mihomo's group latency probe URL, when the group exposes one.
+    pub test_url: Option<String>,
+    /// Mihomo's expected HTTP status expression for group latency probes.
+    pub expected_status: Option<String>,
+    /// Mihomo reports an empty `fixed` string for groups that support pinning.
+    pub fixed: Option<String>,
+    /// Per-URL health and latency information returned by Mihomo.
+    pub extra: Option<serde_json::Value>,
+    // extra: {}, // Mihomo Only
 }
 
 impl From<ProxyProviderItem> for ProxyItem {
@@ -77,8 +114,8 @@ impl From<ProxyProviderItem> for ProxyItem {
             r#type,
             proxies,
             vehicle_type: _,
-            test_url: _,
-            expected_status: _,
+            test_url,
+            expected_status,
         } = item;
 
         let now = proxies
@@ -102,6 +139,10 @@ impl From<ProxyProviderItem> for ProxyItem {
             tfo: None,
             icon: None,
             hidden: false,
+            test_url,
+            expected_status,
+            fixed: None,
+            extra: None,
         }
     }
 }
@@ -143,6 +184,15 @@ pub async fn update_proxy(group: &str, name: &str) -> Result<()> {
     data.insert("name", name);
 
     let _ = perform_request((Method::PUT, path.as_str(), Data(data))).await?;
+    Ok(())
+}
+
+/// DELETE /proxies/{group}
+/// Clear a pinned URLTest/Fallback selection and restore automatic selection.
+#[instrument]
+pub async fn clear_proxy_selection(group: &str) -> Result<()> {
+    let path = format!("/proxies/{group}");
+    let _ = perform_request((Method::DELETE, path.as_str())).await?;
     Ok(())
 }
 
@@ -226,22 +276,90 @@ pub async fn update_providers_proxies_group(name: &str) -> Result<()> {
 }
 
 /// GET /providers/proxies/:name/healthcheck
-/// 获取代理集合的健康检查
+/// Trigger a provider health check. Mihomo returns HTTP 204 with no body.
 /// name: 代理集合名称
 #[allow(dead_code)]
 #[instrument]
-pub async fn get_providers_proxies_healthcheck(name: String) -> Result<Mapping> {
+pub async fn get_providers_proxies_healthcheck(name: &str) -> Result<()> {
     let path = format!("/providers/proxies/{name}/healthcheck");
-    let resp: Mapping = perform_request((Method::GET, path.as_str()))
-        .await?
-        .json()
-        .await?;
-    Ok(resp)
+    let _ = perform_request((Method::GET, path.as_str())).await?;
+    Ok(())
 }
 
 #[derive(Default, Debug, Clone, Deserialize, Serialize, Type)]
 pub struct DelayRes {
     delay: u64,
+}
+
+#[cfg(test)]
+mod proxy_metadata_tests {
+    use super::{ConfigReload, ProxyItem};
+    use serde_json::json;
+
+    #[test]
+    fn reload_payload_is_serialized_but_never_printed_in_transport_logs() {
+        let request = ConfigReload {
+            path: None,
+            payload: Some("secret: do-not-log-this".to_owned()),
+        };
+        assert_eq!(
+            serde_json::to_value(&request).unwrap(),
+            json!({
+                "payload": "secret: do-not-log-this"
+            })
+        );
+        assert!(!format!("{request:?}").contains("do-not-log-this"));
+    }
+
+    #[test]
+    fn proxy_snapshot_preserves_group_probe_and_pin_metadata() {
+        let raw = json!({
+            "name": "Auto",
+            "type": "URLTest",
+            "udp": true,
+            "history": [],
+            "all": ["node-a"],
+            "now": "node-a",
+            "testUrl": "https://probe.example/health",
+            "expectedStatus": "200/204",
+            "fixed": "node-a",
+            "extra": {
+                "https://probe.example/health": {
+                    "alive": true,
+                    "history": [{ "time": "2026-10-11T00:00:00Z", "delay": 42 }]
+                }
+            }
+        });
+
+        let item: ProxyItem = serde_json::from_value(raw).unwrap();
+        assert_eq!(
+            item.test_url.as_deref(),
+            Some("https://probe.example/health")
+        );
+        assert_eq!(item.expected_status.as_deref(), Some("200/204"));
+        assert_eq!(item.fixed.as_deref(), Some("node-a"));
+        assert_eq!(
+            item.extra.as_ref().unwrap()["https://probe.example/health"]["history"][0]["delay"],
+            42
+        );
+    }
+
+    #[test]
+    fn proxy_snapshot_from_older_cores_keeps_metadata_optional() {
+        let raw = json!({
+            "name": "Manual",
+            "type": "Selector",
+            "udp": false,
+            "history": [],
+            "all": ["node-a"],
+            "now": "node-a"
+        });
+        let item: ProxyItem = serde_json::from_value(raw).unwrap();
+        assert!(item.test_url.is_none());
+        assert!(item.expected_status.is_none());
+        assert!(item.fixed.is_none());
+        assert!(item.extra.is_none());
+    }
 }
 
 /// GET /proxies/{name}/delay

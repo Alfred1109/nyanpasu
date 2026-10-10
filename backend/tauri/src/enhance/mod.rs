@@ -18,7 +18,7 @@ use utils::{merge_profiles, process_chain};
 
 /// Enhance mode
 /// 返回最终配置、该配置包含的键、和script执行的结果
-pub async fn enhance() -> (Mapping, Vec<String>, PostProcessingOutput) {
+pub async fn enhance() -> anyhow::Result<(Mapping, Vec<String>, PostProcessingOutput)> {
     // config.yaml 的配置
     let clash_config = { Config::clash().latest().0.clone() };
 
@@ -142,6 +142,32 @@ pub async fn enhance() -> (Mapping, Vec<String>, PostProcessingOutput) {
         }
     }
 
+    // Ownership settings apply after profile transformations and stay out of
+    // the generated core configuration themselves.
+    crate::config::managed::ManagedRuntimeFields::from_config(&clash_config)?.apply(&mut config);
+
+    // App-owned DNS overrides are applied after subscription and built-in
+    // transformations so the settings remain global across profile changes.
+    // TUN is applied afterwards because it must keep DNS enabled while active.
+    if let Some(overrides) = clash_config
+        .get(crate::config::dns::DNS_OVERRIDES_KEY)
+        .and_then(Value::as_mapping)
+    {
+        let dns_key = Value::String("dns".into());
+        let mut dns = config
+            .get(&dns_key)
+            .cloned()
+            .and_then(|value| serde_json::to_value(value).ok())
+            .filter(serde_json::Value::is_object)
+            .unwrap_or_else(|| serde_json::json!({}));
+        let overrides = serde_json::to_value(Value::Mapping(overrides.clone()))
+            .unwrap_or_else(|_| serde_json::json!({}));
+        crate::config::dns::merge_overrides(&mut dns, &overrides);
+        if let Ok(dns) = serde_yaml::to_value(dns) {
+            config.insert(dns_key, dns);
+        }
+    }
+
     config = use_whitelist_fields_filter(config, &clash_fields, enable_filter);
     config = use_tun(config, enable_tun);
     config = use_include_all_proxy_groups(config);
@@ -155,7 +181,7 @@ pub async fn enhance() -> (Mapping, Vec<String>, PostProcessingOutput) {
     exists_set.extend(exists_keys.into_iter().filter(|s| clash_fields.contains(s)));
     exists_keys = exists_set.into_iter().collect();
 
-    (config, exists_keys, postprocessing_output)
+    Ok((config, exists_keys, postprocessing_output))
 }
 
 /// Process proxy groups with include-all field

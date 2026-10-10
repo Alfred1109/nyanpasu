@@ -28,6 +28,8 @@ export async function generateLatestVersion() {
   } as ManifestVersion
 
   for (const result of results) {
+    if (result.name === 'mihomo')
+      manifest.mihomo_asset_sha256 = result.assetSha256
     manifest.latest[result.name as SupportedCore] = result.version
     manifest.arch_template[result.name as SupportedCore] = result.archMapping
   }

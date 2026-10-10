@@ -607,6 +607,7 @@ impl CoreManager {
         }
         instance.start().await?;
         wait_for_clash_api_ready(20, Duration::from_millis(250)).await?;
+        Config::runtime().apply();
         Handle::refresh_clash();
         Ok(())
     }
@@ -737,6 +738,12 @@ impl CoreManager {
         // 检查配置是否正常
         self.check_config().await?;
 
+        self.load_generated_config().await
+    }
+
+    /// Load the already generated and checked configuration without running
+    /// profile scripts a second time. Commit runtime state only after acceptance.
+    pub async fn load_generated_config(&self) -> Result<()> {
         // 更新运行时配置
         let path = Config::generate_file(ConfigType::Run)?;
         let path = dirs::path_to_str(&path)?;
@@ -756,6 +763,7 @@ impl CoreManager {
             sleep(Duration::from_millis(250)).await;
         }
 
+        Config::runtime().apply();
         Ok(())
     }
 
