@@ -88,6 +88,7 @@ pub fn parse() -> anyhow::Result<()> {
                 std::process::Command::new(path).args(args).spawn().unwrap();
             }
             Commands::Collect => {
+                println!("Bundle type: {:?}", tauri::utils::platform::bundle_type());
                 let envs = crate::utils::collect::collect_envs().unwrap();
                 println!("{envs:#?}");
             }

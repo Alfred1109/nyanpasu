@@ -34,3 +34,9 @@ Linux x86_64 与 Windows x86_64 随包资源已准备并验证下载摘要；Win
 设置页采用常用操作区与应用、网络、维护三个分区，统一设置行的图标列、标题、状态、说明和操作位置。共享页面容器按实际可用宽度响应，修复首页窄屏卡片，并整理连接、规则、日志、订阅、提供商与代理页面的窄屏交互。
 
 已安装客户端通过 `./start.sh --installed` / `./stop.sh --installed` 启停；本机内核托管服务通过 `./start.sh --service` / `./stop.sh --service` 启停。服务操作需要本机 sudo 权限。开发与网页预览继续使用原有参数。
+
+## Linux 更新包类型识别
+
+Tauri CLI 固定为 2.10.1，其打包器包含官方 [#14521](https://github.com/tauri-apps/tauri/pull/14521) 修复：按默认标记的二进制内容写入安装包类型，不再依赖被 release 符号移除清除的符号表。保留 `strip = true`、LTO 与大小优化。
+
+`nyanpasu collect` 会输出运行时 `Bundle type`，用于核对 updater 识别到的实际安装格式。Linux deb 验收应同时检查：正式构建不再出现 `Failed to add bundler type` 警告；安装后的 `nyanpasu collect` 输出 `Bundle type: Some(Deb)`。此检查验证安装格式识别，不代表已执行未来版本的在线下载、签名校验和升级。
