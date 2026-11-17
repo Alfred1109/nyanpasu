@@ -1,7 +1,5 @@
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '15 22 * * *' # 每天 06:15 UTC+8 自动构建
 
 name: Daily
 
